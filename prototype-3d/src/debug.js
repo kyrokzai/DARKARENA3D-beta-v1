@@ -3,11 +3,16 @@ import { canStand } from './sim/collision.js';
 import { PLAYER_RADIUS } from './config.js';
 import { installDebugPanel } from './debug-panel.js';
 
-export function installDebug({ game, input, view, settings, stats, touch, hud, editor, getState, show }) {
-  const panel = installDebugPanel(game);
+export function installDebug({ game, input, view, settings, stats, touch, hud, editor, gameHud, sfx, getState, show }) {
+  // Skin switch is test-mode only in M1.3 (cosmetic, stored so it survives a reload).
+  const setSkin = id => { view.setSkin(id); settings.weaponSkin = id; try { localStorage.setItem('darkarena_proto3d_settings_v1', JSON.stringify(settings)); } catch {} };
+  const panel = installDebugPanel(game, { setSkin });
   window.__DA3 = {
     game, input, settings, stats, hud, editor,
     gs: game.state,            // gameplay state model read by the HUD
+    weapon: game.weapon, view, sfx, setSkin,
+    get vm() { const v = view.vm; return { skin: v.skin, flash: v.flashVisible, smoke: v.smokeActive, stats: { ...v.stats }, rig: { x: v.rig.position.x, y: v.rig.position.y, z: v.rig.position.z }, mag: { y: v.model.parts.mag.position.y, visible: v.model.parts.mag.visible } }; },
+    get crosshairGap() { return gameHud ? gameHud.crosshairGap : 0; },
     dbg: panel.actions,        // debug panel actions (same as its buttons)
     get hudRects() { return hud.state.rects.map(r => ({ ...r })); },
     get layout() { return JSON.parse(JSON.stringify(hud.layout)); },

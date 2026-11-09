@@ -26,7 +26,7 @@ Debug/test hook: add `?debug=1` (exposes `window.__DA3`; never needed for normal
 |---|---|
 | Click PLAY → mouse is captured (Pointer Lock) | Left 40 % of the safe area: movement joystick (floating or fixed) |
 | WASD — move, mouse — look, arrows — turn | Right side: swipe to look, or a right virtual joystick (setting) |
-| Esc / P — pause (if capture is refused: hold left button and drag to look) | ☰ — pause; FIRE / AIM / RELOAD / JUMP buttons emit intents (mechanics come in M1.3+) |
+| Esc / P — pause (if capture is refused: hold left button and drag to look) | ☰ — pause; ОГОНЬ / ПРИЦЕЛ / ПЕРЕЗАР. work (M1.3), ПРЫЖОК comes in M1 later |
 
 Fingers are independent: move + look + two buttons (4 fingers) work at the same time; a finger that holds FIRE
 can also turn the camera (setting). All fingers are released on app switch, notification, rotation.
@@ -52,6 +52,22 @@ Values come only from `src/sim/game-state.js` (no fake enemies or shooting). Wit
 (top centre, during play) opens a panel to change HP, ammo, reload, wave and hits; tests use the same actions
 via `window.__DA3.dbg` / `window.__DA3.gs`.
 
+## Weapon: DA-R1 RAVEN (M1.3)
+
+Assault rifle: 30/120, full auto 600 RPM, reload 1.3 s, hitscan through the crosshair (walls block),
+head 50 / body 25 damage, controllable vertical recoil, small horizontal drift, spread grows when moving and
+during long sprays (short bursts stay accurate), ADS (smooth move to the red-dot, FOV ×0.8, spread ×0.3,
+recoil ×0.7, look sensitivity ×0.7). Muzzle flash, smoke after bursts, ejected casings, wall decals + sparks,
+dynamic crosshair, original Web Audio sounds (shot, dry fire, reload, hit/headshot/kill).
+
+| PC | Phone |
+|---|---|
+| LMB (mouse captured) — fire, hold = auto · RMB hold — ADS · R — reload · F — fire without mouse capture | ОГОНЬ hold = auto · ПРИЦЕЛ tap toggles ADS · ПЕРЕЗАР. |
+
+Test mode `?debug=1` → **DBG**: skins OBSIDIAN / BLOODLINE / NEON GHOST, training targets, real reload.
+Model viewer (developer tool, not part of the game): `prototype-3d/tools/weapon-viewer.html` (`?sheet=1` = all
+skins × angles). Weapon stats live in `src/sim/weapons/defs.js`; new weapons are new entries there.
+
 ## Structure
 
 ```
@@ -69,6 +85,13 @@ prototype-3d/
     render/             renderer.js (camera, resize, context loss), level.js (map → meshes), textures.js
     ui/settings.js      tabbed settings screen + persistence
     sim/game-state.js   HP / ammo / reload / wave model + events (what the HUD reads)
+    sim/weapons/        defs.js (weapon data), weapon-system.js (generic fire/reload/ADS/spread/recoil)
+    sim/hitscan.js      3D ray vs grid walls/floor/ceiling and hittables (head/body)
+    sim/targets.js      training targets (test mode) — same hittable interface enemies will use
+    render/weapons/     raven-model.js (procedural model), raven-skins.js, viewmodel.js, weapon-textures.js, studio-env.js
+    render/effects/     impacts.js (decals + sparks), render/targets.js
+    audio/sfx.js        Web Audio sounds with Safari/iOS unlock handling
+    tools/weapon-viewer.js  model viewer (with ../tools/weapon-viewer.html)
     ui/game-hud.js      binds GameState → health, ammo, wave panels, hit marker, vignette, banner
     debug-panel.js      ?debug=1 only: buttons that change GameState
     ui/hud-layout.js    HUD layout model (pure): elements, touch & desktop profiles, safe-area rects, overlap checks
@@ -88,4 +111,6 @@ node tests/sim-m0.test.mjs          # pure logic, no browser
 node tests/prototype-m0.test.js     # Playwright + Chromium (needs: npm i -D playwright)
 node tests/m1.1-mobile.test.js      # M1.1 mobile controls & HUD editor
 node tests/m1.2-hud.test.js         # M1.2 gameplay HUD (model + browser)
+node tests/sim-m1.3.test.mjs        # M1.3 weapon logic (Node)
+node tests/m1.3-weapon.test.js      # M1.3 weapon in the browser
 ```

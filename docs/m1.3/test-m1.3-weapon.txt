@@ -1,0 +1,46 @@
+PASS  Game boots with DA-R1 RAVEN equipped, no JS errors
+PASS  Viewmodel budget: ≤ 25 draw calls, ≤ 12k triangles  — {"calls":16,"triangles":6922}
+PASS  World budget unchanged (≤ 20 draw calls without targets)  — {"calls":7,"triangles":808,"geometries":27,"textures":14}
+PASS  Hip position: weapon in the lower-right, centre of the screen stays clear  — {"minX":0.17328980344722103,"maxY":-0.08114219365622129}
+PASS  600 RPM: shots exactly every 6 sim ticks (0.1 s)  — 13 shots, gaps 6
+PASS  Ammo: HUD shows the GameState count (30 − shots)  — {"mag":"17","res":"120","model":17}
+PASS  Releasing the trigger stops automatic fire
+PASS  Crosshair widens during a spray (bloom)  — 8.1 → 28.3 px
+PASS  Recoil climbs during the spray and mostly recovers after  — pitch 0.129 → 0.028
+PASS  Crosshair recovers after the spray  — 9.0 px
+PASS  Empty mag: dry click, auto-reload, HUD "ПЕРЕЗАРЯДКА"  — {"reloading":true,"text":"ПЕРЕЗАРЯДКА","dry":1}
+PASS  Cannot fire during reload
+PASS  Reload completes in 1.3 s → 30 / 90 on the HUD
+PASS  Reload animation: magazine leaves and returns during the reload  — 4/14 frames with the magazine out
+PASS  Muzzle flash shown on shot
+PASS  Smoke puffs after a burst (≥ 4 shots)  — {"shots":19,"flashes":19,"smokeEmitted":5,"casings":19}
+PASS  Casings ejected (one per shot)
+PASS  Wall impacts: bullet-hole decals + sparks  — {"decals":19,"sparks":107}
+PASS  Headshot on target: 50 dmg, gold hit marker, headshot sound  — {"hp":50,"mark":"show head","snd":{"headshot":1,"shot":1}}
+PASS  Bodyshot: 25 dmg
+PASS  Second headshot kills: red kill marker, kill sound, target falls  — {"alive":false,"mark":"show kill head","snd":1}
+PASS  No shooting through walls: target behind the pillar unharmed
+PASS  ADS: red-dot reticle aligned with the screen centre  — ndc (0.0000, 0.0000)
+PASS  ADS: FOV reduced (×0.8)  — 75 → 60.0
+PASS  ADS: spread reduced, crosshair hidden  — {"sx":0,"sy":0,"fov":60,"spread":0.18000000000000002,"cross":0,"ads":1}
+PASS  Leaving ADS is smooth (mid-way after 6 ticks = 0.1 s), then back to hip FOV  — per-tick 0.91 0.81 0.72 0.63 0.54 0.44 0.35 0.26 0.17 0.07 0.00 0.00
+PASS  Pause while aiming + firing: fire and ADS released  — {"st":"paused","fire":false,"aim":false,"ads":false,"trig":false}
+PASS  Click on PLAY locks the mouse and does not fire
+PASS  LMB held → automatic fire at 600 RPM (gaps of 6 ticks)  — 4 rounds, gaps 6
+PASS  RMB held → ADS; released → hip
+PASS  R → reload
+PASS  Focus loss while firing → fire stops
+PASS  Touch: holding ОГОНЬ = automatic fire at 600 RPM  — 5 rounds, gaps 6
+PASS  Touch: one tap on ПРИЦЕЛ enters ADS and stays (button lit)  — {"ads":1,"cls":true}
+PASS  Touch: second tap leaves ADS
+PASS  Touch: ПЕРЕЗАР. starts reload
+PASS  4 fingers: move + look + fire + ПРИЦЕЛ together  — {"count":4,"ads":true}
+PASS  Touch pause: ADS toggle cleared
+PASS  All skins share one geometry (different material instances only)
+PASS  Skins look different: Bloodline red accent/grip, Neon glow lines  — {"obsidian":{"accent":"2c2f35","grip":"141518","line":0,"def":"{\"body\":25,\"head\":50}600"},"bloodline":{"accent":"7d1424","grip":"6e1220","line":0.6,"def":"{\"body\":25,\"head\":50}600"},"neon_ghost":{"accent":"2b3038","grip":"1b1d22","line":1.25,"def":"{\"body\":25,\"head\":50}600"}}
+PASS  Skins never change weapon stats
+PASS  Debug skin choice persists after reload
+PASS  Recoil spring: same motion at 30 Hz and 120 Hz (fixed sub-steps)  — [0,0,0]
+PASS  Audio unlocked by the first gesture; shot & reload sounds triggered  — {"state":"running","unlocked":true,"played":{"shot":3,"impact":2,"reload":1}}
+
+44/44 passed

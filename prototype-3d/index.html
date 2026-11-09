@@ -17,12 +17,12 @@
   <!-- canvas is inserted here by the renderer; HUD controls are built by src/ui/hud.js -->
   <div id="vignette" aria-hidden="true"></div>
   <div class="hud">
-    <div id="cross" aria-hidden="true"></div>
+    <div id="cross" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b></div>
     <div id="hitmark" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
     <div id="banner" role="status" aria-live="polite"></div>
     <div id="fps" class="hidden"></div>
     <button type="button" id="pauseBtn" aria-label="Пауза"><span></span><span></span><span></span></button>
-    <div id="hint">WASD — движение · мышь — обзор · Esc — пауза</div>
+    <div id="hint">WASD · мышь · ЛКМ — огонь · ПКМ — прицел · R — перезарядка · Esc — пауза</div>
   </div>
   <div id="editBar" class="hidden" role="toolbar" aria-label="Редактор HUD">
     <div class="ed-title"><small>РЕДАКТОР HUD</small><b class="ed-name"></b></div>
@@ -36,12 +36,12 @@
 
 <div id="menu" class="screen"><div class="panel">
   <h1 class="logo">DARK ARENA</h1>
-  <div class="sub">3D PROTOTYPE · M1.2 · THREE.JS r186</div>
-  <p class="lead">Прототип на Three.js: Training Grounds в 3D. Сейчас проверяем движение, обзор и мобильное управление.</p>
+  <div class="sub">3D PROTOTYPE · M1.3 · THREE.JS r186</div>
+  <p class="lead">Прототип на Three.js: Training Grounds в 3D. Оружие DA-R1 RAVEN: стрельба, прицеливание, перезарядка.</p>
   <button type="button" class="primary" id="playBtn">ИГРАТЬ</button>
   <button type="button" class="secondary" id="menuSettings">НАСТРОЙКИ</button>
-  <p class="tiny">ПК: клик — захват мыши · WASD · стрелки · Esc/P — пауза.<br>
-  Телефон: горизонтально · слева — движение · справа — обзор.</p>
+  <p class="tiny">ПК: клик — захват мыши · WASD · ЛКМ — огонь · ПКМ — прицел · R — перезарядка · Esc/P — пауза.<br>
+  Телефон: горизонтально · слева — движение · справа — обзор · ОГОНЬ / ПРИЦЕЛ / ПЕРЕЗАР.</p>
 </div></div>
 
 <div id="paused" class="screen hidden"><div class="panel">

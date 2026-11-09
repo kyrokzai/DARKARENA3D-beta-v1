@@ -77,7 +77,9 @@ const audit = page => DA(page, () => {
   {
     const { ctx, page } = await open(browser, base, desktop);
     check('?debug=1: debug panel present', await DA(page, () => !!document.getElementById('debugPanel') && !!__DA3.dbg));
-    await dbg(page, 'hp-10'); await sleep(250); // main bar animation (0.18 s) done, trail still waiting
+    await dbg(page, 'hp-10');
+    // Wait until the main bar has reached 90 % (0.18 s CSS transition; slower frames under load), then read the trail.
+    await page.waitForFunction(() => { const e = document.querySelector('.hp-fill'); return e.getBoundingClientRect().width / e.parentElement.getBoundingClientRect().width < 0.905; }, null, { timeout: 2000, polling: 'raf' });
     const t0 = { num: await txt(page, '[data-v=hp]'), fill: await widthPct(page, '.hp-fill'), trail: await widthPct(page, '.hp-trail') };
     await sleep(1400);
     const t1 = { fill: await widthPct(page, '.hp-fill'), trail: await widthPct(page, '.hp-trail') };

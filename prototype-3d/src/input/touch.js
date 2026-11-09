@@ -73,7 +73,7 @@ export function setupTouchInput({ input, layer, hud, getSettings, isPlaying }) {
       else { lookStick.x = lookStick.y = 0; }
     } else if (r.role === 'button') {
       hud.els[r.id].classList.remove('pressed');
-      input.setAction(HUD_ELEMENTS[r.id].action, false);
+      if (r.id !== 'aim') input.setAction(HUD_ELEMENTS[r.id].action, false);
     }
   }
   const releaseAll = () => { for (const id of [...roles.keys()]) release(id); };
@@ -99,7 +99,8 @@ export function setupTouchInput({ input, layer, hud, getSettings, isPlaying }) {
       if (roleTaken('btn:' + id)) return;
       roles.set(e.pointerId, { role: 'button', tag: 'btn:' + id, id, lastX: e.clientX, lastY: e.clientY });
       hit.classList.add('pressed');
-      input.setAction(HUD_ELEMENTS[id].action, true);
+      // ПРИЦЕЛ toggles ADS with one tap; other buttons are held actions (fire = automatic while held).
+      if (id === 'aim') input.toggleAim(); else input.setAction(HUD_ELEMENTS[id].action, true);
       capture();
       return;
     }

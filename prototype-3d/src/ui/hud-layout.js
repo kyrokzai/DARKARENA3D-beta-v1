@@ -9,9 +9,9 @@
 export const HUD_ELEMENTS = {
   move:    { label: 'Движение',    kind: 'stick',  shape: 'circle', w: 132, h: 132, touchOnly: true },
   look:    { label: 'Обзор',       kind: 'stick',  shape: 'circle', w: 132, h: 132, touchOnly: true },
-  fire:    { label: 'Огонь',       kind: 'button', shape: 'circle', w: 92, h: 92, action: 'fire', future: true, touchOnly: true },
-  aim:     { label: 'Прицел',      kind: 'button', shape: 'circle', w: 62, h: 62, action: 'aim', future: true, touchOnly: true },
-  reload:  { label: 'Перезарядка', kind: 'button', shape: 'circle', w: 60, h: 60, action: 'reload', future: true, touchOnly: true },
+  fire:    { label: 'Огонь',       kind: 'button', shape: 'circle', w: 92, h: 92, action: 'fire', touchOnly: true },
+  aim:     { label: 'Прицел',      kind: 'button', shape: 'circle', w: 62, h: 62, action: 'aim', touchOnly: true },
+  reload:  { label: 'Перезарядка', kind: 'button', shape: 'circle', w: 60, h: 60, action: 'reload', touchOnly: true },
   jump:    { label: 'Прыжок',      kind: 'button', shape: 'circle', w: 62, h: 62, action: 'jump', future: true, touchOnly: true },
   minimap: { label: 'Мини-карта',  kind: 'map',    shape: 'rect',   w: 112, h: 112 },
   health:  { label: 'Здоровье',    kind: 'info',   shape: 'rect',   w: 196, h: 40 },

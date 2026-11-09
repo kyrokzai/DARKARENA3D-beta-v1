@@ -30,8 +30,13 @@ export const DEFAULT_SETTINGS = Object.freeze({
   hudOpacity: 0.8,
   showMinimap: true,
   showActionButtons: true,   // fire / aim / reload / jump (mechanics arrive in M1.3+)
+  // Audio
+  volume: 0.7,
+  mute: false,
+  // Weapon cosmetics (changed only in ?debug=1 during M1.3; never affects stats)
+  weaponSkin: 'obsidian',
   // Graphics
   fov: 75,               // vertical field of view, degrees
-  renderScale: 0.5,      // fraction of device resolution (retro pixels + performance)
+  renderScale: 0.75,     // fraction of device resolution (0.5 = chunky retro; 0.75 keeps the weapon readable)
   showFps: true,
 });

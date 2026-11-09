@@ -13,7 +13,7 @@ export class GameState {
   constructor(emit = () => {}) {
     this.emit = emit;
     this.health = { hp: 100, max: 100 };
-    this.weapon = { ...DEFAULT_WEAPON, reloading: false, reloadProgress: 0 };
+    this.weapon = { ...DEFAULT_WEAPON, name: '', reloading: false, reloadProgress: 0, spread: 0, ads: 0 };
     this.wave = { number: 1, remaining: 0, total: 0, phase: 'idle' }; // idle | active | cleared
   }
 
@@ -28,6 +28,14 @@ export class GameState {
   heal(n) { this.setHealth(this.health.hp + Math.max(0, n)); }
 
   // ---- weapon / ammo ----
+  /** Equip a weapon definition (from sim/weapons/defs.js): magazine, reserve, reload time, name. */
+  setWeapon(def) {
+    Object.assign(this.weapon, { name: def.name, magSize: def.magSize, mag: def.magSize, reserve: def.reserve, reloadTime: def.reloadTime, reloading: false, reloadProgress: 0 });
+    this.emit('weapon', { name: def.name });
+    this.emit('ammo', { mag: this.weapon.mag, reserve: this.weapon.reserve, magSize: this.weapon.magSize });
+  }
+  /** Per-tick aim info for the crosshair (spread in degrees, ADS 0..1). Polled by the HUD — no event spam. */
+  setAim({ spread, ads }) { this.weapon.spread = spread; this.weapon.ads = ads; }
   setAmmo(mag, reserve = this.weapon.reserve) {
     const w = this.weapon;
     w.mag = clampInt(mag, 0, w.magSize);

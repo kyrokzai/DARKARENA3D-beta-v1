@@ -10,7 +10,11 @@ export class InputState {
     // Action intents (held state + press counters). The sim reads them once mechanics exist (M1.3+).
     this.actions = { fire: false, aim: false, reload: false, jump: false };
     this.presses = { fire: 0, aim: 0, reload: 0, jump: 0 };
+    // ADS: PC holds the right mouse button (aimHeld); touch toggles with one tap on ПРИЦЕЛ (aimToggle).
+    this.aimHeld = false;
+    this.aimToggle = false;
   }
+  toggleAim() { this.aimToggle = !this.aimToggle; this.presses.aim++; }
   setAction(name, down) {
     if (down && !this.actions[name]) this.presses[name]++;
     this.actions[name] = down;
@@ -27,6 +31,7 @@ export class InputState {
   clear() {
     this.keyMove.x = this.keyMove.y = this.stickMove.x = this.stickMove.y = 0;
     for (const k in this.actions) this.actions[k] = false;
+    this.aimHeld = false; this.aimToggle = false; // pause / focus loss: always leave ADS safely
     this.consumeLook(); this.update();
   }
 }

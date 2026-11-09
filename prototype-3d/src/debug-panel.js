@@ -1,12 +1,12 @@
 // DEBUG-only panel (loaded only with ?debug=1). Changes the GameState model directly so the HUD can be
-// checked before real weapon/enemy mechanics exist. It does NOT spawn enemies or simulate shooting.
-export function installDebugPanel(game) {
+// checked independently of the weapon. Test-only extras: weapon skins, training targets (no enemies).
+export function installDebugPanel(game, extra = {}) {
   const st = game.state;
   const wrap = document.createElement('div');
   wrap.id = 'debugPanel';
   wrap.innerHTML = `<button type="button" class="dbg-toggle" aria-expanded="false">DBG</button>
   <div class="dbg-body hidden">
-    <div class="dbg-title">DEBUG · модель HUD</div>
+    <div class="dbg-title">DEBUG · модель HUD · оружие</div>
     <div class="dbg-row"><span>HP</span>
       <button data-d="hp-10">−10</button><button data-d="hp-35">−35</button><button data-d="hp+25">+25</button>
       <button data-d="hp=15">15</button><button data-d="hp=100">100</button></div>
@@ -15,6 +15,10 @@ export function installDebugPanel(game) {
       <button data-d="ammoReset">30/120</button><button data-d="dry">0/0</button></div>
     <div class="dbg-row"><span>Волна</span>
       <button data-d="waveStart">старт</button><button data-d="kill">−1 враг</button><button data-d="waveNext">след.</button><button data-d="waveIdle">ожид.</button></div>
+    <div class="dbg-row"><span>Скин</span>
+      <button data-d="skin:obsidian">OBSIDIAN</button><button data-d="skin:bloodline">BLOODLINE</button><button data-d="skin:neon_ghost">NEON GHOST</button></div>
+    <div class="dbg-row"><span>Полигон</span>
+      <button data-d="targets">мишени</button><button data-d="targetsOff">убрать</button><button data-d="realReload">перезарядка (R)</button></div>
     <div class="dbg-row"><span>Попадание</span>
       <button data-d="hit">хит</button><button data-d="head">в голову</button><button data-d="killhit">убийство</button></div>
   </div>`;
@@ -48,6 +52,10 @@ export function installDebugPanel(game) {
     waveIdle: () => st.setWave({ phase: 'idle', remaining: 0, total: 0 }),
     hit: () => st.registerHit({}), head: () => st.registerHit({ headshot: true }), killhit: () => st.registerHit({ kill: true }),
   };
+  actions.targets = () => game.spawnTrainingTargets();
+  actions.targetsOff = () => { game.hittables = []; };
+  actions.realReload = () => game.weapon.startReload();
+  for (const id of ['obsidian', 'bloodline', 'neon_ghost']) actions['skin:' + id] = () => extra.setSkin && extra.setSkin(id);
   body.addEventListener('click', e => { const b = e.target.closest('[data-d]'); if (b) actions[b.dataset.d](); });
   return { actions };
 }

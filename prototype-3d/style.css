@@ -24,10 +24,14 @@ button, input { font: inherit; color: inherit; }
 .hud { position: absolute; inset: 0; pointer-events: none; }
 body:not(.playing):not(.editing) .hud { display: none; }
 
-#cross { position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; transform: translate(-50%, -50%); }
-#cross::before, #cross::after { content: ""; position: absolute; background: #eef3ee; box-shadow: 0 0 2px #000, 0 0 1px #000; }
-#cross::before { left: 8px; top: 2px; width: 2px; height: 14px; }
-#cross::after { top: 8px; left: 2px; height: 2px; width: 14px; }
+/* Dynamic crosshair: four ticks pushed out by --gap (= current spread on screen), centre dot. */
+#cross { --gap: 6px; position: absolute; left: 50%; top: 50%; width: 0; height: 0; transition: opacity .08s; }
+#cross i, #cross b { position: absolute; background: #f2f6f2; box-shadow: 0 0 0 1px #0008; }
+#cross i:nth-child(1) { width: 2px; height: 8px; left: -1px; top: calc(-1 * var(--gap) - 8px); }
+#cross i:nth-child(2) { width: 2px; height: 8px; left: -1px; top: var(--gap); }
+#cross i:nth-child(3) { height: 2px; width: 8px; top: -1px; left: calc(-1 * var(--gap) - 8px); }
+#cross i:nth-child(4) { height: 2px; width: 8px; top: -1px; left: var(--gap); }
+#cross b { width: 2px; height: 2px; left: -1px; top: -1px; border-radius: 1px; }
 body.editing #cross { opacity: .25; }
 #fps { position: absolute; right: calc(var(--sa-right) + 72px); top: calc(var(--sa-top) + 12px); font: 600 11px/1.3 ui-monospace, monospace;
   background: #0009; padding: 3px 6px; border-radius: 3px; color: #b9f5c4; }
@@ -191,10 +195,11 @@ body.ctx-lost #ctxLost { display: flex; }
 .am-mag { font-size: calc(30px * var(--k)); font-weight: 900; min-width: 2ch; text-align: right; }
 .am-sep { font-size: calc(16px * var(--k)); color: #ffffff60; }
 .am-res { font-size: calc(16px * var(--k)); font-weight: 700; color: #b9bfcc; min-width: 3ch; }
-.hud-ammo:not(.has-state) .am-sub { visibility: hidden; }
+
 .am-sub { display: flex; align-items: center; gap: calc(5px * var(--k)); height: calc(12px * var(--k)); }
 .am-icon { width: calc(11px * var(--k)); height: calc(11px * var(--k)); }
 .am-icon svg { width: 100%; height: 100%; fill: none; stroke: #9aa2b4; stroke-width: 2; }
+.am-name { font-size: calc(9px * var(--k)); font-weight: 700; letter-spacing: 1.4px; color: #8f97a8; }
 .am-state { font-size: calc(10px * var(--k)); font-weight: 800; letter-spacing: 1.2px; color: var(--warn); }
 .am-reload { position: absolute; left: 0; right: 0; bottom: 0; height: calc(3px * var(--k)); background: transparent; }
 .am-reload-fill { height: 100%; width: 0; background: var(--warn); }
@@ -256,3 +261,6 @@ body.editing #banner, body.editing #hitmark { display: none; }
 .dbg-row span { width: 70px; }
 .dbg-row button { min-height: 28px; padding: 0 6px; background: #2d2414; border: 1px solid #6b5530; color: #ffe0b0; border-radius: 3px; cursor: pointer; }
 body:not(.playing) #debugPanel { display: none; }
+
+/* M1.3: ПРИЦЕЛ shows its toggle state */
+.hud-aim.toggled { border-color: #ff9aa4; background: radial-gradient(circle at 50% 35%, #8a2333ee, #3a0e16ee); }

@@ -102,7 +102,10 @@ const audit = page => DA(page, () => {
     await touch(cdp, 'touchEnd', []); await sleep(40);
     t = await tstate(page);
     check('All fingers up: everything released', t.count === 0 && !t.actions.fire && t.stick.x === 0 && t.stick.y === 0, JSON.stringify(t));
-    // FIRE + drag turns the camera (option on), and not when off
+    // FIRE + drag turns the camera (option on), and not when off.
+    // M1.3: FIRE is a real weapon now and recoil also moves the aim, so ammo is emptied for this check
+    // (dry trigger, no recoil) to isolate the finger-look behaviour.
+    await DA(page, () => __DA3.gs.setAmmo(0, 0));
     const fy0 = (await player(page)).yaw;
     await touch(cdp, 'touchStart', [{ x: fire.cx, y: fire.cy, id: 6 }]);
     for (let i = 1; i <= 5; i++) { await touch(cdp, 'touchMove', [{ x: fire.cx - i * 8, y: fire.cy, id: 6 }]); await sleep(20); }

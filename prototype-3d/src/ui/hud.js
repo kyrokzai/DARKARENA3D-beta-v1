@@ -21,7 +21,7 @@ const INFO_HTML = {
     <div class="hp-body"><div class="hp-track"><div class="hp-trail"></div><div class="hp-fill"></div><i class="hp-ticks"></i></div></div>
     <div class="hp-num" data-v="hp">100</div>`,
   ammo: `<div class="am-main"><span class="am-mag" data-v="mag">30</span><span class="am-sep">/</span><span class="am-res" data-v="reserve">120</span></div>
-    <div class="am-sub"><span class="am-icon">${ICONS.bullet}</span><span class="am-state" data-v="ammoState"></span></div>
+    <div class="am-sub"><span class="am-icon">${ICONS.bullet}</span><span class="am-state" data-v="ammoState"></span><span class="am-name" data-v="weaponName"></span></div>
     <div class="am-reload"><div class="am-reload-fill"></div></div>`,
   wave: `<div class="wv-top"><span class="wv-label">ВОЛНА</span><span class="wv-num" data-v="wave">1</span></div>
     <div class="wv-sub"><span data-v="remainingText">—</span></div>

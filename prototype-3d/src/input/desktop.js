@@ -29,6 +29,26 @@ export function setupDesktopInput({ input, canvas, getSettings, isPlaying, onLoc
   canvas.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse' && dragFallback) dragging = true; });
   addEventListener('pointerup', e => { if (e.pointerType === 'mouse') dragging = false; });
 
+  // Weapon: LMB fires only while the mouse is captured (the click that captures it never fires);
+  // RMB = aim down sights while held. F also fires (keyboard / drag-fallback mode). R reloads.
+  const locked = () => document.pointerLockElement === canvas;
+  document.addEventListener('mousedown', e => {
+    if (!isPlaying()) return;
+    if (e.button === 0 && locked()) input.setAction('fire', true);
+    if (e.button === 2 && (locked() || dragFallback)) input.aimHeld = true;
+  });
+  document.addEventListener('mouseup', e => {
+    if (e.button === 0) input.setAction('fire', false);
+    if (e.button === 2) input.aimHeld = false;
+  });
+  canvas.addEventListener('contextmenu', e => e.preventDefault());
+  addEventListener('keydown', e => {
+    if (e.repeat || !isPlaying()) return;
+    if (e.code === 'KeyR') { input.setAction('reload', true); input.setAction('reload', false); }
+    if (e.code === 'KeyF') input.setAction('fire', true);
+  });
+  addEventListener('keyup', e => { if (e.code === 'KeyF') input.setAction('fire', false); });
+
   document.addEventListener('pointerlockchange', () => {
     if (document.pointerLockElement !== canvas && isPlaying() && !dragFallback) onLockLost();
   });
@@ -50,7 +70,7 @@ export function setupDesktopInput({ input, canvas, getSettings, isPlaying, onLoc
       const pitch = (keys.has('ArrowUp') ? 1 : 0) - (keys.has('ArrowDown') ? 1 : 0);
       if (yaw || pitch) input.addLook(yaw * 1.9 * dt, pitch * 1.2 * dt);
     },
-    release() { keys.clear(); dragging = false; recomputeKeys(); },
+    release() { keys.clear(); dragging = false; recomputeKeys(); input.setAction('fire', false); input.aimHeld = false; },
     get usesDragFallback() { return dragFallback; },
   };
 }

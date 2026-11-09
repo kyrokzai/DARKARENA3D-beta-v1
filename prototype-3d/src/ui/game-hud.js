@@ -10,6 +10,8 @@ export function createGameHud({ game, hud }) {
   const am = { mag: q('ammo', '[data-v=mag]'), res: q('ammo', '[data-v=reserve]'), state: q('ammo', '[data-v=ammoState]'), bar: q('ammo', '.am-reload-fill') };
   const wv = { num: q('wave', '[data-v=wave]'), sub: q('wave', '[data-v=remainingText]'), fill: q('wave', '.wv-fill') };
   const hit = document.getElementById('hitmark');
+  const cross = document.getElementById('cross');
+  const wname = q('ammo', '[data-v=weaponName]');
   const vignette = document.getElementById('vignette');
   const banner = document.getElementById('banner');
   const root = hud.els.health.parentElement;
@@ -42,6 +44,7 @@ export function createGameHud({ game, hud }) {
     hud.els.ammo.classList.toggle('reloading', w.reloading);
     am.state.textContent = w.reloading ? 'ПЕРЕЗАРЯДКА' : empty ? (w.reserve > 0 ? 'ПЕРЕЗАРЯДИ' : 'НЕТ ПАТРОНОВ') : '';
     hud.els.ammo.classList.toggle('has-state', !!am.state.textContent);
+    wname.textContent = am.state.textContent ? '' : (w.name || '');
     am.bar.style.width = (w.reloading ? w.reloadProgress * 100 : 0) + '%';
   }
 
@@ -81,7 +84,18 @@ export function createGameHud({ game, hud }) {
   game.on('wave', renderWave);
   game.on('waveCleared', e => showBanner(`ВОЛНА ${e.number} ЗАЧИЩЕНА`, 'cleared'));
   game.on('hit', onHit);
+  game.on('weapon', renderAmmo);
 
   renderHealth(); renderAmmo(); renderWave();
-  return { renderAll() { renderHealth(); renderAmmo(); renderWave(); }, CRITICAL_HP };
+  // ---- dynamic crosshair: the gap shows the real spread cone; hidden while aiming down sights ----
+  let gapNow = 6;
+  function frame(fovDeg) {
+    const w = st.weapon, halfH = innerHeight / 2;
+    const target = 4 + Math.tan((w.spread || 0) * Math.PI / 180) / Math.tan(fovDeg * Math.PI / 360) * halfH;
+    gapNow += (target - gapNow) * 0.35;
+    cross.style.setProperty('--gap', gapNow.toFixed(1) + 'px');
+    cross.style.opacity = String(Math.max(0, 1 - (w.ads || 0) * 1.6));
+    hud.els.aim.classList.toggle('toggled', (w.ads || 0) > 0.01);
+  }
+  return { renderAll() { renderHealth(); renderAmmo(); renderWave(); }, frame, CRITICAL_HP, get crosshairGap() { return gapNow; } };
 }

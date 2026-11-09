@@ -37,6 +37,10 @@ const TABS = [
     ['range', 'mouseSens', 'Чувствительность мыши', 0.2, 3, 0.05, x],
     ['toggle', 'invertY', 'Инверсия вертикали'],
   ] },
+  { id: 'audio', title: 'ЗВУК', items: [
+    ['range', 'volume', 'Громкость', 0, 1, 0.05, pct],
+    ['toggle', 'mute', 'Без звука'],
+  ] },
   { id: 'gfx', title: 'ГРАФИКА', items: [
     ['range', 'fov', 'Угол обзора', 60, 100, 1, deg],
     ['range', 'renderScale', 'Разрешение (ретро ↔ чётко)', 0.3, 1, 0.05, pct],
