@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#07090d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>DARK ARENA · 3D Prototype</title>
+<link rel="stylesheet" href="./style.css">
+<script type="importmap">{ "imports": { "three": "./vendor/three/three.module.js" } }</script>
+</head>
+<body>
+<div id="safeProbe" aria-hidden="true"></div>
+
+<div id="game">
+  <!-- canvas is inserted here by the renderer; HUD controls are built by src/ui/hud.js -->
+  <div id="vignette" aria-hidden="true"></div>
+  <div class="hud">
+    <div id="cross" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b></div>
+    <div id="hitmark" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <div id="banner" role="status" aria-live="polite"></div>
+    <div id="fps" class="hidden"></div>
+    <button type="button" id="pauseBtn" aria-label="Пауза"><span></span><span></span><span></span></button>
+    <div id="hint">WASD · мышь · ЛКМ — огонь · ПКМ — прицел · R — перезарядка · Esc — пауза</div>
+  </div>
+  <div id="editBar" class="hidden" role="toolbar" aria-label="Редактор HUD">
+    <div class="ed-title"><small>РЕДАКТОР HUD</small><b class="ed-name"></b></div>
+    <div class="ed-sizer"><button type="button" data-ed="minus" aria-label="Меньше">−</button><span class="ed-size"></span><button type="button" data-ed="plus" aria-label="Больше">+</button></div>
+    <button type="button" class="ed-btn" data-ed="reset">Стандарт</button>
+    <button type="button" class="ed-btn" data-ed="cancel">Отмена</button>
+    <button type="button" class="ed-btn ok" data-ed="done">Готово</button>
+    <div class="ed-toast" aria-live="polite"></div>
+  </div>
+</div>
+
+<div id="menu" class="screen"><div class="panel">
+  <h1 class="logo">DARK ARENA</h1>
+  <div class="sub">3D PROTOTYPE · M1.3 · THREE.JS r186</div>
+  <p class="lead">Прототип на Three.js: Training Grounds в 3D. Оружие DA-R1 RAVEN: стрельба, прицеливание, перезарядка.</p>
+  <button type="button" class="primary" id="playBtn">ИГРАТЬ</button>
+  <button type="button" class="secondary" id="menuSettings">НАСТРОЙКИ</button>
+  <p class="tiny">ПК: клик — захват мыши · WASD · ЛКМ — огонь · ПКМ — прицел · R — перезарядка · Esc/P — пауза.<br>
+  Телефон: горизонтально · слева — движение · справа — обзор · ОГОНЬ / ПРИЦЕЛ / ПЕРЕЗАР.</p>
+</div></div>
+
+<div id="paused" class="screen hidden"><div class="panel">
+  <h2>ПАУЗА</h2>
+  <button type="button" class="primary" id="resumeBtn">ПРОДОЛЖИТЬ</button>
+  <button type="button" class="secondary" id="pauseEditHud">РАССТАВИТЬ HUD</button>
+  <button type="button" class="secondary" id="pauseSettings">НАСТРОЙКИ</button>
+  <button type="button" class="secondary" id="quitBtn">ГЛАВНОЕ МЕНЮ</button>
+</div></div>
+
+<div id="settings" class="screen hidden"><div class="panel wide-panel">
+  <div class="panel-head"><h2>НАСТРОЙКИ</h2><button type="button" class="primary small" id="settingsBack">ГОТОВО</button></div>
+  <form id="settingsForm" onsubmit="return false"></form>
+</div></div>
+
+<div id="rotate" class="rotate"><span>↻</span>Поверни телефон горизонтально</div>
+<div id="ctxLost" class="rotate">Графика перезапускается…</div>
+<noscript>Для игры нужен JavaScript.</noscript>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
