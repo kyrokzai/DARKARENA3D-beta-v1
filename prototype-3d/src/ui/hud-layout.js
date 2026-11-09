@@ -12,7 +12,7 @@ export const HUD_ELEMENTS = {
   fire:    { label: 'Огонь',       kind: 'button', shape: 'circle', w: 92, h: 92, action: 'fire', touchOnly: true },
   aim:     { label: 'Прицел',      kind: 'button', shape: 'circle', w: 62, h: 62, action: 'aim', touchOnly: true },
   reload:  { label: 'Перезарядка', kind: 'button', shape: 'circle', w: 60, h: 60, action: 'reload', touchOnly: true },
-  jump:    { label: 'Прыжок',      kind: 'button', shape: 'circle', w: 62, h: 62, action: 'jump', future: true, touchOnly: true },
+  jump:    { label: 'Прыжок',      kind: 'button', shape: 'circle', w: 62, h: 62, action: 'jump', touchOnly: true },
   minimap: { label: 'Мини-карта',  kind: 'map',    shape: 'rect',   w: 112, h: 112 },
   health:  { label: 'Здоровье',    kind: 'info',   shape: 'rect',   w: 196, h: 40 },
   ammo:    { label: 'Патроны',     kind: 'info',   shape: 'rect',   w: 148, h: 52 },

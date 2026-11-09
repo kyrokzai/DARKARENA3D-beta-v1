@@ -62,7 +62,7 @@ dynamic crosshair, original Web Audio sounds (shot, dry fire, reload, hit/headsh
 
 | PC | Phone |
 |---|---|
-| LMB (mouse captured) — fire, hold = auto · RMB hold — ADS · R — reload · F — fire without mouse capture | ОГОНЬ hold = auto · ПРИЦЕЛ tap toggles ADS · ПЕРЕЗАР. |
+| LMB (mouse captured) — fire, hold = auto · RMB hold — ADS · R — reload · Space — jump · F — fire without mouse capture | ОГОНЬ hold = auto · ПРИЦЕЛ tap toggles ADS · ПЕРЕЗАР. · ПРЫЖОК |
 
 Test mode `?debug=1` → **DBG**: skins OBSIDIAN / BLOODLINE / NEON GHOST, training targets, real reload.
 Model viewer (developer tool, not part of the game): `prototype-3d/tools/weapon-viewer.html` (`?sheet=1` = all
@@ -128,4 +128,5 @@ node tests/m1.2-hud.test.js         # M1.2 gameplay HUD (model + browser)
 node tests/sim-m1.3.test.mjs        # M1.3 weapon logic (Node)
 node tests/m1.3-weapon.test.js      # M1.3 weapon in the browser
 node tests/m1.4-hands.test.js       # M1.4 hands + weapon animations
+node tests/m1.4.1-jump.test.js      # M1.4.1 jump (sim + desktop + touch)
 ```

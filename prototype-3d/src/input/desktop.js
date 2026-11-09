@@ -14,9 +14,10 @@ export function setupDesktopInput({ input, canvas, getSettings, isPlaying, onLoc
     if (e.repeat) return;
     keys.add(e.code);
     if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code) && isPlaying()) e.preventDefault();
+    if (e.code === 'Space' && isPlaying()) input.setAction('jump', true); // M1.4.1: Space = jump
     recomputeKeys();
   });
-  addEventListener('keyup', e => { keys.delete(e.code); recomputeKeys(); });
+  addEventListener('keyup', e => { keys.delete(e.code); if (e.code === 'Space') input.setAction('jump', false); recomputeKeys(); });
 
   const look = (mx, my) => {
     const s = getSettings(), k = MOUSE_RAD_PER_COUNT * s.mouseSens;

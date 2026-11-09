@@ -124,7 +124,7 @@ export class WeaponSystem {
     const g = this.game, st = g.state, def = this.def, p = g.player, w = st.weapon;
     st.setAmmo(w.mag - 1, w.reserve);
     const spread = this.currentSpread();
-    const origin = { x: p.x, y: p.y, z: EYE_Z };
+    const origin = { x: p.x, y: p.y, z: EYE_Z + (p.z || 0) }; // shots come from the eye, also mid-jump
     const base = aimDir(p.yaw, p.pitch);
     let firstHit = null;
     for (let i = 0; i < (def.pellets || 1); i++) {

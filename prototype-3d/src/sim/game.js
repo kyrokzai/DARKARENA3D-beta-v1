@@ -18,6 +18,7 @@ export class Game {
     this.state = new GameState((type, data) => this.emit(type, data));
     // Everything that bullets can hit besides the map: training targets now, infected later.
     this.hittables = [];
+    this.lastJumpPress = 0; this.jumpResync = true; // first step (and after a pause) adopts the counter
     this.weapon = new WeaponSystem(this, getWeaponDef(opts.weapon), { rng: opts.rng || Math.random });
   }
   /** Test mode only: place training targets on the range. */
@@ -27,10 +28,13 @@ export class Game {
     return this.hittables;
   }
   /** Pause / focus loss / menus: stop firing, leave ADS. */
-  releaseCombat() { this.weapon.release(); }
+  releaseCombat() { this.weapon.release(); this.jumpResync = true; } // a press made just before pausing is dropped
   /** Fixed-step update. cmd = InputState snapshot {move:{x,y}} */
   step(cmd, dt) {
-    stepPlayer(this.world, this.player, cmd.move, dt);
+    const jp = cmd.presses ? cmd.presses.jump : 0;
+    if (this.jumpResync) { this.lastJumpPress = jp; this.jumpResync = false; }
+    const jumpPressed = jp !== this.lastJumpPress; this.lastJumpPress = jp;
+    stepPlayer(this.world, this.player, cmd.move, dt, jumpPressed);
     if (cmd.actions) this.weapon.step(cmd, dt);
     for (const h of this.hittables) h.step(dt);
     this.tick++;
@@ -39,5 +43,5 @@ export class Game {
   on(type, fn) { (this.listeners.get(type) || this.listeners.set(type, []).get(type)).push(fn); }
   emit(type, data) { for (const fn of this.listeners.get(type) || []) fn(data); }
   /** Serializable snapshot — basis for save/replay/co-op later. */
-  snapshot() { const p = this.player; return { tick: this.tick, player: { x: p.x, y: p.y, yaw: p.yaw, pitch: p.pitch }, state: this.state.snapshot() }; }
+  snapshot() { const p = this.player; return { tick: this.tick, player: { x: p.x, y: p.y, z: p.z, yaw: p.yaw, pitch: p.pitch }, state: this.state.snapshot() }; }
 }

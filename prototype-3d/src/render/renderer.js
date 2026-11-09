@@ -62,7 +62,8 @@ export function createRenderer({ container, world, getSettings, skin }) {
   /** Place camera from interpolated player state. Sim yaw 0 = +X; three camera looks down -Z by default. */
   function syncCamera(p, alpha) {
     const x = p.prevX + (p.x - p.prevX) * alpha, y = p.prevY + (p.y - p.prevY) * alpha;
-    camera.position.set(x * S, EYE_HEIGHT, y * S);
+    const z = (p.prevZ ?? 0) + ((p.z ?? 0) - (p.prevZ ?? 0)) * alpha;
+    camera.position.set(x * S, EYE_HEIGHT + z * S, y * S);
     camera.rotation.y = -p.yaw - Math.PI / 2;
     camera.rotation.x = p.pitch + kick.p;
     camera.rotation.z = kick.roll;

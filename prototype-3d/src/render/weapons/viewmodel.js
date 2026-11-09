@@ -49,7 +49,7 @@ export function createViewmodel({ renderer, skin }) {
   const ELBOW = { right: new THREE.Vector3(0.30, -0.46, 0.12), left: new THREE.Vector3(-0.34, -0.40, -0.16) };
   const elbowM = { right: new THREE.Vector3(), left: new THREE.Vector3() };
   const invModel = new THREE.Matrix4();
-  let triggerPullT = 0, breathT = 0;
+  let triggerPullT = 0, breathT = 0, landT = 0, lastLandings = null;
   const ads = { pos: new THREE.Vector3(-model.anchors.sight.position.x, -model.anchors.sight.position.y, -ADS_EYE_DIST - model.anchors.sight.position.z), rot: new THREE.Euler(0, 0, 0) };
 
   // ---- muzzle flash (crossed quads + front sprite) and its light ----
@@ -121,7 +121,7 @@ export function createViewmodel({ renderer, skin }) {
     const swayY = THREE.MathUtils.clamp(dPitch / Math.max(dt, 1e-3) * 0.004, -0.02, 0.02) * adsK;
     // walk bob from actual movement speed
     const speed = Math.min(1, Math.hypot(p.x - p.prevX, p.y - p.prevY) * 60 / PLAYER_SPEED);
-    bobAmp += ((speed > 0.05 ? 1 : 0) - bobAmp) * Math.min(1, dt * 8);
+    bobAmp += ((speed > 0.05 && p.onGround !== false ? 1 : 0) - bobAmp) * Math.min(1, dt * 8); // no step bob in the air
     bobPhase += dt * (6.5 + speed * 3.5);
     acc += dt;
     while (acc >= SUB) {
@@ -136,6 +136,10 @@ export function createViewmodel({ renderer, skin }) {
     const bob = bobAmp * (1 - a * 0.85);
     rig.position.x += Math.sin(bobPhase) * 0.006 * bob + sp.sx.x;
     rig.position.y += -Math.abs(Math.cos(bobPhase)) * 0.007 * bob + sp.sy.x;
+    // jump (M1.4.1): the weapon lags behind vertical speed and dips briefly on landing
+    if (p.landings !== undefined && p.landings !== lastLandings) { if (lastLandings !== null) landT = 0.2; lastLandings = p.landings; }
+    rig.position.y += THREE.MathUtils.clamp(-(p.vz || 0) * 0.003, -0.009, 0.009) * (1 - s.ads * 0.7);
+    if (landT > 0) { landT = Math.max(0, landT - dt); rig.position.y -= Math.sin((1 - landT / 0.2) * Math.PI) * 0.011 * (1 - s.ads * 0.7); }
     rig.rotation.y += sp.syaw.x * 1.5;
     rig.position.z += sp.kz.x * 0.06;
     rig.rotation.x += sp.kp.x * 0.012 * (1 - a * 0.4);

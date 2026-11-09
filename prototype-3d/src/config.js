@@ -7,6 +7,11 @@ export const SIM_HZ = 60;        // fixed simulation step
 export const PLAYER_RADIUS = 0.26;   // cells (0.52 m) — same as BUILD 1.3
 export const PLAYER_SPEED = 2.75;    // cells per second (5.5 m/s) — same as BUILD 1.3
 export const PITCH_LIMIT = 1.4;      // radians (~80°)
+// Jump (M1.4.1). Vertical axis z = feet height above the floor, in cells (like x/y). Walls are full height,
+// so a jump never lands on top of anything — it is a dodge / feel mechanic on a flat floor.
+export const GRAVITY = 11;           // cells/s² (22 m/s²)
+export const JUMP_SPEED = 3.3;       // cells/s (6.6 m/s) → apex ≈ 0.5 cells (≈ 1.0 m), airtime ≈ 0.6 s
+export const JUMP_BUFFER = 0.12;     // s: a press this long before landing still jumps on touchdown
 
 export const SETTINGS_KEY = 'darkarena_proto3d_settings_v1';
 export const LAYOUT_KEY = 'darkarena_proto3d_layout_v1';
@@ -29,7 +34,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   hudScale: 1.0,
   hudOpacity: 0.8,
   showMinimap: true,
-  showActionButtons: true,   // fire / aim / reload / jump (mechanics arrive in M1.3+)
+  showActionButtons: true,   // shows controls marked `future` (none since M1.4.1: fire/aim/reload/jump all work)
   // Audio
   volume: 0.7,
   mute: false,
