@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#07090d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>DARK ARENA · 3D Prototype M0</title>
+<link rel="stylesheet" href="./style.css">
+<script type="importmap">{ "imports": { "three": "./vendor/three/three.module.js" } }</script>
+</head>
+<body>
+<div id="safeProbe" aria-hidden="true"></div>
+
+<div id="game">
+  <!-- canvas is inserted here by the renderer -->
+  <div class="hud">
+    <div id="cross">+</div>
+    <div id="fps" class="hidden"></div>
+    <button type="button" id="pauseBtn" aria-label="Пауза">☰</button>
+    <div id="stickBase"><div id="stickKnob"></div></div>
+    <div id="hint">WASD — движение · мышь — обзор · Esc — пауза</div>
+  </div>
+</div>
+
+<div id="menu" class="screen"><div class="panel">
+  <h1 class="logo">DARK ARENA</h1>
+  <div class="sub">3D PROTOTYPE · M0 · THREE.JS r186</div>
+  <p>Технический прототип: карта Training Grounds в настоящем 3D. Врагов и оружия пока нет — проверяем движение, обзор и управление.</p>
+  <button type="button" class="primary" id="playBtn">ИГРАТЬ</button>
+  <button type="button" class="secondary" id="menuSettings">⚙ НАСТРОЙКИ</button>
+  <p class="tiny">ПК: клик — захват мыши, WASD — движение, стрелки — поворот, Esc/P — пауза.<br>
+  Телефон: горизонтально; левая часть экрана — джойстик, правая — обзор.</p>
+</div></div>
+
+<div id="paused" class="screen hidden"><div class="panel">
+  <h2>ПАУЗА</h2>
+  <button type="button" class="primary" id="resumeBtn">ПРОДОЛЖИТЬ</button>
+  <button type="button" class="secondary" id="pauseSettings">⚙ НАСТРОЙКИ</button>
+  <button type="button" class="secondary" id="quitBtn">ГЛАВНОЕ МЕНЮ</button>
+</div></div>
+
+<div id="settings" class="screen hidden"><div class="panel">
+  <h2>⚙ НАСТРОЙКИ</h2>
+  <form id="settingsForm" onsubmit="return false"></form>
+  <button type="button" class="primary" id="settingsBack">ГОТОВО</button>
+</div></div>
+
+<div id="rotate" class="rotate"><span>↻</span>Поверни телефон горизонтально</div>
+<div id="ctxLost" class="rotate">Графика перезапускается…</div>
+<noscript>Для игры нужен JavaScript.</noscript>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>

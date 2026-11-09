@@ -1,0 +1,29 @@
+PASS  Map is 16×16 with 66 solid cells
+PASS  strafe right @yaw 0 → +y (start y=3.5)  — dx=0.000 dy=0.825
+PASS  strafe right @yaw 0 → +y (start y=8)  — dx=0.000 dy=0.825
+PASS  strafe right @yaw 0 → +y (start y=11)  — dx=0.000 dy=0.825
+PASS  strafe left @yaw 0 → −y (start y=3.5)  — dx=0.000 dy=-0.825
+PASS  strafe left @yaw 0 → −y (start y=8)  — dx=0.000 dy=-0.733
+PASS  strafe left @yaw 0 → −y (start y=11)  — dx=0.000 dy=-0.825
+PASS  forward @yaw 0 → +x (start y=3.5)  — dx=0.825 dy=0.000
+PASS  forward @yaw 0 → +x (start y=8)  — dx=0.825 dy=0.000
+PASS  forward @yaw 0 → +x (start y=11)  — dx=0.825 dy=0.000
+PASS  strafe right @yaw 90° → −x (start y=3.5)  — dx=-0.825 dy=0.000
+PASS  strafe right @yaw 90° → −x (start y=8)  — dx=-0.825 dy=0.000
+PASS  strafe right @yaw 90° → −x (start y=11)  — dx=-0.825 dy=0.000
+PASS  forward @yaw 180° → −x (start y=3.5)  — dx=-0.825 dy=0.000
+PASS  forward @yaw 180° → −x (start y=8)  — dx=-0.825 dy=0.000
+PASS  forward @yaw 180° → −x (start y=11)  — dx=-0.825 dy=0.000
+PASS  Speed = 2.75 cells/s (5.5 m/s)  — 2.750 cells
+PASS  Diagonal not faster than straight  — 2.750
+PASS  Stops at east wall  — 14.6958
+PASS  Slides along wall  — x=14.700 y=9.196
+PASS  Pillar blocks  — 6.696
+PASS  Strafe along pillar face  — 5.50→8.25
+PASS  Corner: valid position  — (14.718, 14.718)
+PASS  Fuzz 5000 random steps: never inside walls  — invalid=0
+PASS  Pitch clamped
+PASS  Yaw wrapped to [0, 2π)
+PASS  Snapshot serialisable
+
+27/27 passed

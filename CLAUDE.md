@@ -15,6 +15,7 @@ Browser FPS (survival vs. waves of infected). Owner makes key decisions; work in
 4. iPhone Safari (landscape, multitouch) is a first-class target; desktop keeps full mouse/keyboard control.
    For anything touching input/HUD use the `dark-arena-mobile` skill.
 5. Never delete existing mechanics or old builds without agreement. Keep a restore point (git tag) before big changes.
-6. Every change: run `node tests/build-1.3.test.js` (or the relevant suite), report changed files,
+6. Every change: run `node tests/build-1.3.test.js` (main game) and, for the 3D prototype,
+   `node tests/sim-m0.test.mjs` + `node tests/prototype-m0.test.js`; report changed files,
    test results, how to verify on PC and iPhone, and known limitations. Not accepted until the owner confirms.
 7. Test hooks are allowed only behind `?debug=1`.
