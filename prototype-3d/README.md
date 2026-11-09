@@ -68,7 +68,21 @@ Test mode `?debug=1` → **DBG**: skins OBSIDIAN / BLOODLINE / NEON GHOST, train
 Model viewer (developer tool, not part of the game): `prototype-3d/tools/weapon-viewer.html` (`?sheet=1` = all
 skins × angles). Weapon stats live in `src/sim/weapons/defs.js`; new weapons are new entries there.
 
-## Structure
+## First-person hands (M1.4)
+
+Black tactical gloves (separate fingers, knuckle guards, finger pads), dark sleeves with graphite inserts. Right hand
+on the pistol grip with the index finger on the trigger (squeezes on every shot, leaves the trigger during reload);
+left hand under the handguard. Idle breathing; walk bob, recoil and ADS come from the weapon rig (the hands are
+children of the weapon). Reload (same 1.3 s): release handguard → magazine out with the hand → new magazine →
+insert → palm slap → charging handle → back to the handguard.
+
+- `render/weapons/hands-model.js` — geometry + rig (instanced: 7 draw calls for both hands, ~12.6k triangles)
+- `render/weapons/hand-poses.js` — weapon proxy volumes, finger wrap / reach solvers, named poses, blending, penetration check
+- `render/weapons/weapon-anim.js` — the ONE reload timeline (weapon tilt, magazines, charging handle, left-hand keys)
+- `render/weapons/hands-controller.js` — applies the timeline + poses (shared by the game and the viewer)
+
+Viewer: `tools/weapon-viewer.html?hands=1&r=0.3` (r = reload progress, −1 = holding).
+
 
 ```
 prototype-3d/
@@ -113,4 +127,5 @@ node tests/m1.1-mobile.test.js      # M1.1 mobile controls & HUD editor
 node tests/m1.2-hud.test.js         # M1.2 gameplay HUD (model + browser)
 node tests/sim-m1.3.test.mjs        # M1.3 weapon logic (Node)
 node tests/m1.3-weapon.test.js      # M1.3 weapon in the browser
+node tests/m1.4-hands.test.js       # M1.4 hands + weapon animations
 ```

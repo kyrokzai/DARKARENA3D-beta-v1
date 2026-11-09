@@ -4,6 +4,8 @@ import * as THREE from 'three';
 import { createRavenModel } from '../render/weapons/raven-model.js';
 import { SKINS, SKIN_IDS } from '../render/weapons/raven-skins.js';
 import { getStudioEnv } from '../render/weapons/studio-env.js';
+import { createHands } from '../render/weapons/hands-model.js';
+import { createHandsController } from '../render/weapons/hands-controller.js';
 
 const params = new URLSearchParams(location.search);
 const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
@@ -31,6 +33,16 @@ const ANGLES = {
 };
 const model = createRavenModel(params.get('skin') || 'obsidian');
 const pivot = new THREE.Group(); pivot.add(model.group);
+// ?hands=1 → show the first-person hands; &r=0.3 → reload stage (−1 = holding the weapon)
+const showHands = params.get('hands') === '1';
+let reloadR = Number(params.get('r') ?? -1);
+const hands = showHands ? createHands() : null;
+if (hands) model.group.add(hands.group);
+const ctl = createHandsController(model, hands);
+// elbows in model space for a natural stance in the viewer (behind / below the weapon)
+const elbows = { right: new THREE.Vector3(0.20, -0.30, 0.42), left: new THREE.Vector3(-0.30, -0.28, -0.10) };
+function applyHands() { ctl.apply(reloadR, 0, elbows); }
+applyHands();
 model.group.position.set(0, -0.02, 0.19); // centre of mass roughly at the origin
 const stage = makeStage(); stage.add(pivot);
 const camera = new THREE.PerspectiveCamera(28, 1, 0.01, 20);
@@ -85,6 +97,6 @@ if (params.get('sheet') === '1') {
   renderer.domElement.addEventListener('pointermove', e => { if (!drag) return; yaw -= (e.clientX - drag.x) * 0.01; pitch = Math.max(-1.3, Math.min(1.3, pitch + (e.clientY - drag.y) * 0.01)); drag = { x: e.clientX, y: e.clientY }; });
   renderer.domElement.addEventListener('pointerup', () => { drag = null; });
   renderer.domElement.addEventListener('wheel', e => { dist = Math.max(0.6, Math.min(4, dist * (1 + Math.sign(e.deltaY) * 0.1))); }, { passive: true });
-  renderer.setAnimationLoop(() => { place(camera, yaw, pitch, dist); renderer.render(stage, camera); });
-  window.__viewer = { setSkin: id => { model.setSkin(id); refreshButtons(); }, setAngle: a => { [yaw, pitch] = ANGLES[a]; }, setDist: d => { dist = d; }, model };
+  renderer.setAnimationLoop(() => { applyHands(); place(camera, yaw, pitch, dist); renderer.render(stage, camera); });
+  window.__viewer = { setSkin: id => { model.setSkin(id); refreshButtons(); }, setAngle: a => { [yaw, pitch] = ANGLES[a]; }, setView: (y, p) => { yaw = y; pitch = p; }, setDist: d => { dist = d; }, setReload: r => { reloadR = r; }, setTarget: (x, y, z) => { model.group.position.set(x, y, z); }, model, hands };
 }

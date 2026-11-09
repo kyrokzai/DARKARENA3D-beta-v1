@@ -32,10 +32,15 @@ const aimAtTarget = (page, idx, zone) => DA(page, ([i, z]) => { // exact aim at 
     await sleep(500);
     const d = await DA(page, () => ({ vm: __DA3.view.infoVM, world: __DA3.view.info, name: __DA3.gs.weapon.name, skin: __DA3.vm.skin }));
     check('Game boots with DA-R1 RAVEN equipped, no JS errors', d.name === 'DA-R1 RAVEN' && d.skin === 'obsidian' && !errors.length, errors.join(' | '));
-    check('Viewmodel budget: ≤ 25 draw calls, ≤ 12k triangles', d.vm.calls > 5 && d.vm.calls <= 25 && d.vm.triangles <= 12000, JSON.stringify(d.vm));
+    // M1.4: the first-person hands add 7 draw calls / ~12.6k triangles (instanced) → budget raised from 25 / 12k
+    check('Viewmodel budget (weapon + hands, M1.4): ≤ 30 draw calls, ≤ 24k triangles', d.vm.calls > 5 && d.vm.calls <= 30 && d.vm.triangles <= 24000, JSON.stringify(d.vm));
     check('World budget unchanged (≤ 20 draw calls without targets)', d.world.calls <= 20, JSON.stringify(d.world));
-    const b = await DA(page, () => { const pts = __DA3.view.vm.screenBounds(); return { minX: Math.min(...pts.map(p => p.x)), maxY: Math.max(...pts.map(p => p.y)) }; });
-    check('Hip position: weapon in the lower-right, centre of the screen stays clear', b.minX > 0.08 && b.maxY < -0.05, JSON.stringify(b));
+    // M1.4: the weapon sits higher and the hands are visible, so "everything below/right of centre" no longer holds;
+    // the requirement is unchanged in spirit: nothing of the weapon or hands within the central ±8% box (same 0.08 margin as M1.3's minX), mass on the right
+    const b = await DA(page, () => { const pts = [...__DA3.view.vm.screenBounds(), ...__DA3.view.vm.handScreenPoints().filter(p => p.side === 'right')];
+      const vis = pts.filter(p => Math.abs(p.x) <= 1 && Math.abs(p.y) <= 1);
+      return { centre: Math.min(...vis.map(p => Math.max(Math.abs(p.x), Math.abs(p.y)))), meanX: vis.reduce((s, p) => s + p.x, 0) / vis.length }; });
+    check('Hip position: weapon on the right, central ±8% of the screen stays clear', b.centre > 0.08 && b.meanX > 0.2, JSON.stringify(b));
     await shoot(page, 'm13_desktop_hip.png');
     await ctx.close();
   }

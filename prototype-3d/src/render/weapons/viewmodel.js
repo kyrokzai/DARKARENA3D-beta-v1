@@ -6,11 +6,14 @@ import { createRavenModel } from './raven-model.js';
 import { getStudioEnv } from './studio-env.js';
 import { getWeaponTextures } from './weapon-textures.js';
 import { PLAYER_SPEED } from '../../config.js';
+import { createHands } from './hands-model.js';
+import { createHandsController } from './hands-controller.js';
+import { reloadTimeline } from './weapon-anim.js';
 
 const SUB = 1 / 240;
-export const VM_FOV = 54;
+export const VM_FOV = 64;
 // Poses (metres, relative to the viewmodel camera at the eye; -Z forward).
-const HIP = { pos: new THREE.Vector3(0.165, -0.178, -0.375), rot: new THREE.Euler(0.012, -0.03, 0.0) };
+const HIP = { pos: new THREE.Vector3(0.150, -0.136, -0.318), rot: new THREE.Euler(0.03, 0.05, -0.04) };
 const ADS_EYE_DIST = 0.235; // reticle distance from the eye in ADS
 
 /** Critically-damped-ish spring on a scalar; frame-rate independent via fixed sub-steps. */
@@ -38,6 +41,15 @@ export function createViewmodel({ renderer, skin }) {
   const rig = new THREE.Group(); // pose + bob + sway + recoil
   rig.add(model.group);
   camera.add(rig);
+  // ---- hands (M1.4): children of the weapon model → they inherit pose, bob, sway, recoil and ADS ----
+  const hands = createHands();
+  model.group.add(hands.group);
+  const ctl = createHandsController(model, hands), spareMag = ctl.spareMag;
+  // Elbows are fixed relative to the camera (shoulders), so forearms swing naturally with recoil/reload.
+  const ELBOW = { right: new THREE.Vector3(0.30, -0.46, 0.12), left: new THREE.Vector3(-0.34, -0.40, -0.16) };
+  const elbowM = { right: new THREE.Vector3(), left: new THREE.Vector3() };
+  const invModel = new THREE.Matrix4();
+  let triggerPullT = 0, breathT = 0;
   const ads = { pos: new THREE.Vector3(-model.anchors.sight.position.x, -model.anchors.sight.position.y, -ADS_EYE_DIST - model.anchors.sight.position.z), rot: new THREE.Euler(0, 0, 0) };
 
   // ---- muzzle flash (crossed quads + front sprite) and its light ----
@@ -76,7 +88,7 @@ export function createViewmodel({ renderer, skin }) {
     sp.kz.v += 1.05 * k;                                // kick back
     sp.kp.v += (5.5 + Math.random() * 1.5) * k;          // muzzle climb
     sp.kr.v += (Math.random() - 0.5) * 6 * k;            // small roll
-    flashT = 0.05; flash.visible = true; stats.flashes++; stats.shots++;
+    flashT = 0.05; flash.visible = true; stats.flashes++; stats.shots++; triggerPullT = 0.07;
     flash.rotation.z = Math.random() * Math.PI; flash.scale.setScalar(0.8 + Math.random() * 0.45);
     sprayCount++;
     // casing from the ejection port (in viewmodel-scene coordinates)
@@ -128,20 +140,23 @@ export function createViewmodel({ renderer, skin }) {
     rig.position.z += sp.kz.x * 0.06;
     rig.rotation.x += sp.kp.x * 0.012 * (1 - a * 0.4);
     rig.rotation.z += sp.kr.x * 0.01;
-    // reload animation (driven by sim progress)
-    const mag = model.parts.mag, ch = model.parts.charging;
-    mag.position.set(0, 0, 0); mag.visible = true; ch.position.set(0, 0, 0);
-    if (s.reload >= 0) {
-      const r = s.reload;
-      const tilt = smooth(seg(r, 0, 0.15)) * (1 - smooth(seg(r, 0.82, 1)));
-      rig.rotation.z += tilt * 0.42; rig.rotation.x -= tilt * 0.12; rig.position.y -= tilt * 0.035; rig.position.x -= tilt * 0.02;
-      const out = smooth(seg(r, 0.12, 0.34)), back = smooth(seg(r, 0.48, 0.66));
-      mag.position.y = -0.28 * out * (1 - back); mag.position.z = 0.03 * out * (1 - back);
-      mag.visible = !(r > 0.34 && r < 0.48);
-      if (r > 0.66 && r < 0.72) mag.position.y += 0.006 * Math.sin((r - 0.66) / 0.06 * Math.PI); // seat bump
-      const pull = smooth(seg(r, 0.74, 0.84)) * (1 - smooth(seg(r, 0.86, 0.9)));
-      ch.position.z = 0.055 * pull;
-    }
+    // idle breathing (very small; reduced in ADS)
+    breathT += dt;
+    const br = 1 - a * 0.7;
+    rig.position.y += Math.sin(breathT * 1.55) * 0.0016 * br;
+    rig.rotation.x += Math.sin(breathT * 1.55 + 0.9) * 0.0022 * br;
+    // reload: ONE timeline (weapon-anim.js) for weapon tilt, magazines, charging handle and the left hand
+    const rr = api.forceReload ?? s.reload;
+    const tl = reloadTimeline(rr);
+    rig.rotation.x += tl.rig.rx; rig.rotation.y += tl.rig.ry; rig.rotation.z += tl.rig.rz;
+    rig.position.x += tl.rig.px; rig.position.y += tl.rig.py; rig.position.z += tl.rig.pz;
+    // weapon parts + hands from the same timeline (hands-controller.js)
+    camera.updateMatrixWorld(true);
+    invModel.copy(model.group.matrixWorld).invert();
+    elbowM.right.copy(ELBOW.right).applyMatrix4(invModel); elbowM.left.copy(ELBOW.left).applyMatrix4(invModel);
+    const pull = Math.max(0, triggerPullT / 0.07); // sampled before decay so even a slow frame shows the squeeze
+    if (triggerPullT > 0) triggerPullT -= dt;
+    ctl.apply(rr, pull, elbowM);
     // flash
     if (flashT > 0) { if (!api.holdFlash) flashT -= dt; flashLight.intensity = 6; if (flashT <= 0) { flash.visible = false; flashLight.intensity = 0; } }
     // smoke
@@ -172,6 +187,18 @@ export function createViewmodel({ renderer, skin }) {
 
   const api = {
     holdFlash: false, // test/screenshot aid (?debug=1): keep the muzzle flash on screen
+    forceReload: null, // test/screenshot aid (?debug=1): show the reload animation frozen at this progress
+    hands, spareMag,
+    /** Current blended hand poses (model space) — for tests. */
+    get handPoses() { return { right: ctl.rightPose, left: ctl.leftPose, offsets: ctl.offsets }; },
+    dispose() {
+      hands.dispose();
+      // weapon geometry is shared by every RAVEN instance (viewer, viewmodel) and is NOT disposed here
+      casings.geometry.dispose(); casings.material.dispose(); casings.dispose();
+      flashMat.dispose(); fq.dispose(); for (const sm of smoke) sm.material.dispose(); smokeMat.dispose();
+      for (const m of Object.values(model.mats)) m.dispose();
+      scene.clear();
+    },
     scene, camera, rig, model, stats, onShot, update,
     setSkin(id) { model.setSkin(id); },
     get skin() { return model.skin; },
@@ -179,6 +206,16 @@ export function createViewmodel({ renderer, skin }) {
     get smokeActive() { return smoke.filter(s => s.visible).length; },
     /** Project a model-space anchor to normalized screen coords (for tests: ADS alignment, framing). */
     projectAnchor(name) { const v = new THREE.Vector3(); model.anchors[name].getWorldPosition(v); return v.project(camera); },
+    /** Projected points of the hands (finger joints, palm centres) — for tests (ADS reticle clearance, framing). */
+    handScreenPoints() {
+      const out = [], v = new THREE.Vector3();
+      camera.updateMatrixWorld(); model.group.updateMatrixWorld(true);
+      for (const side of ['right', 'left']) {
+        for (const f of Object.values(hands.tips[side])) for (const p of f) { v.copy(p).applyMatrix4(model.group.matrixWorld); if (v.z < -camera.near) out.push({ side, ...v.clone().project(camera) }); }
+        v.copy(hands.palmCenter[side]).applyMatrix4(model.group.matrixWorld); if (v.z < -camera.near) out.push({ side, ...v.clone().project(camera) });
+      }
+      return out;
+    },
     /** Projected sample of the model's real vertices that are in front of the eye (tests: framing). */
     screenBounds() {
       const pts = [], v = new THREE.Vector3();
