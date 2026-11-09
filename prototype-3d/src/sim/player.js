@@ -4,7 +4,7 @@ import { moveEntity } from './collision.js';
 // Conventions (same as BUILD 1.3): yaw 0 faces +X, yaw grows clockwise when seen on the map
 // (towards +Y). forward = (cos yaw, sin yaw), right = (-sin yaw, cos yaw). pitch > 0 looks up.
 export function createPlayer(start) {
-  return { x: start.x, y: start.y, z: 0, vz: 0, onGround: true, jumpBuffer: 0, jumps: 0, landings: 0, yaw: start.yaw || 0, pitch: 0, prevX: start.x, prevY: start.y, prevZ: 0, health: 100 };
+  return { x: start.x, y: start.y, z: 0, vz: 0, onGround: true, jumpBuffer: 0, jumps: 0, landings: 0, yaw: start.yaw || 0, pitch: 0, prevX: start.x, prevY: start.y, prevZ: 0, health: 100, dead: false };
 }
 
 /** Look is applied once per rendered frame (not per sim step) for the lowest input latency. */

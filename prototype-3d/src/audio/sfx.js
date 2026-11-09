@@ -45,11 +45,46 @@ export function createSfx(getSettings) {
     src.connect(f).connect(g).connect(master);
     src.start(t, Math.random() * 0.5); src.stop(t + dur + 0.02);
   }
-  function tone(t, { freq, dur, gain, type = 'sine', freqEnd = null }) {
+  function tone(t, { freq, dur, gain, type = 'sine', freqEnd = null, out = master }) {
     const o = ctx.createOscillator(); o.type = type; o.frequency.setValueAtTime(freq, t);
     if (freqEnd) o.frequency.exponentialRampToValueAtTime(freqEnd, t + dur);
     const g = ctx.createGain(); g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
-    o.connect(g).connect(master); o.start(t); o.stop(t + dur + 0.02);
+    o.connect(g).connect(out); o.start(t); o.stop(t + dur + 0.02);
+  }
+  // Positional voice for infected sounds: distance attenuation + stereo pan (StereoPanner — cheap, no HRTF).
+  // A small pool of output chains is reused (no node build-up on long sessions).
+  const voices = []; let vNext = 0;
+  function voice(pan, dist) {
+    if (!voices.length) for (let i = 0; i < 8; i++) {
+      const g = ctx.createGain(), p = ctx.createStereoPanner ? ctx.createStereoPanner() : null, lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      if (p) g.connect(p).connect(lp).connect(master); else g.connect(lp).connect(master);
+      voices.push({ g, p, lp });
+    }
+    const v = voices[vNext]; vNext = (vNext + 1) % voices.length;
+    const t = ctx.currentTime, att = 1 / (1 + Math.max(0, dist - 2) * 0.18);
+    v.g.gain.setValueAtTime(att, t);
+    if (v.p) v.p.pan.setValueAtTime(pan * 0.85, t);
+    v.lp.frequency.setValueAtTime(Math.max(900, 9000 - dist * 380), t); // far = muffled
+    return v.g;
+  }
+  function noiseTo(out, t, { dur, gain, type = 'lowpass', freq = 3000, q = 0.7, freqEnd = null, rate = 1, attack = 0 }) {
+    const src = ctx.createBufferSource(); src.buffer = noise; src.playbackRate.value = rate;
+    const f = ctx.createBiquadFilter(); f.type = type; f.frequency.setValueAtTime(freq, t); f.Q.value = q;
+    if (freqEnd) f.frequency.exponentialRampToValueAtTime(freqEnd, t + dur);
+    const g = ctx.createGain();
+    if (attack) { g.gain.setValueAtTime(0.0008, t); g.gain.exponentialRampToValueAtTime(gain, t + attack); } else g.gain.setValueAtTime(gain, t);
+    g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+    src.connect(f).connect(g).connect(out);
+    src.start(t, Math.random() * 0.5); src.stop(t + dur + 0.02);
+  }
+  /** Raspy vocal: sawtooth with wobbling pitch through a formant band-pass (original synthesis, no samples). */
+  function rasp(out, t, { f0, f1, dur, gain, formant = 900, wobble = 9 }) {
+    const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    const lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = wobble; lg.gain.value = f0 * 0.08; lfo.connect(lg).connect(o.frequency);
+    const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = formant; f.Q.value = 2.2;
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0008, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.04); g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+    o.connect(f).connect(g).connect(out); o.start(t); lfo.start(t); o.stop(t + dur + 0.02); lfo.stop(t + dur + 0.02);
   }
   const click = (t, freq = 3200, gain = 0.25) => noiseBurst(t, { dur: 0.025, gain, type: 'bandpass', freq, q: 3 });
 
@@ -85,6 +120,21 @@ export function createSfx(getSettings) {
       if (kill) tone(t + 0.04, { freq: 220, freqEnd: 120, dur: 0.18, gain: 0.25, type: 'triangle' });
     },
     impact() { count('impact'); if (!ready()) return; noiseBurst(ctx.currentTime + 0.02, { dur: 0.05, gain: 0.05, type: 'bandpass', freq: 2800 + Math.random() * 1500, q: 2 }); },
+    /** Infected sounds (M1.5), positioned: kind = step | breath | alert | attack | hurt | death. */
+    infected(kind, pan = 0, dist = 5) {
+      count('inf_' + kind); if (!ready()) return;
+      const t = ctx.currentTime, out = voice(pan, dist), r = Math.random();
+      switch (kind) {
+        case 'step': noiseTo(out, t, { dur: 0.09, gain: 0.22, type: 'lowpass', freq: 380 + r * 160 }); noiseTo(out, t + 0.01, { dur: 0.05, gain: 0.05, type: 'bandpass', freq: 1800, q: 1.5 }); break;
+        case 'breath': noiseTo(out, t, { dur: 0.75, gain: 0.07, type: 'bandpass', freq: 650 + r * 250, q: 3, attack: 0.25 }); rasp(out, t + 0.1, { f0: 70 + r * 20, f1: 55, dur: 0.6, gain: 0.05, formant: 520, wobble: 23 }); break;
+        case 'alert': rasp(out, t, { f0: 210 + r * 40, f1: 120, dur: 0.75, gain: 0.32, formant: 1100, wobble: 13 }); rasp(out, t, { f0: 330, f1: 170, dur: 0.6, gain: 0.12, formant: 2300, wobble: 31 }); noiseTo(out, t, { dur: 0.7, gain: 0.12, type: 'bandpass', freq: 1500, q: 1.2 }); break;
+        case 'attack': rasp(out, t, { f0: 160, f1: 95, dur: 0.35, gain: 0.25, formant: 900, wobble: 17 }); noiseTo(out, t + 0.22, { dur: 0.16, gain: 0.18, type: 'bandpass', freq: 2600, q: 0.9, freqEnd: 700 }); break;
+        case 'hurt': rasp(out, t, { f0: 140 + r * 30, f1: 90, dur: 0.22, gain: 0.22, formant: 800, wobble: 21 }); noiseTo(out, t, { dur: 0.06, gain: 0.15, type: 'lowpass', freq: 900 }); break;
+        case 'death': rasp(out, t, { f0: 120, f1: 45, dur: 1.1, gain: 0.28, formant: 650, wobble: 7 }); noiseTo(out, t + 0.75, { dur: 0.25, gain: 0.35, type: 'lowpass', freq: 260 }); break;
+      }
+    },
+    /** The player is struck: dull thud + short high ring. */
+    playerHurt() { count('playerHurt'); if (!ready()) return; const t = ctx.currentTime; noiseBurst(t, { dur: 0.14, gain: 0.4, type: 'lowpass', freq: 500 }); tone(t, { freq: 90, freqEnd: 45, dur: 0.18, gain: 0.35 }); },
     adsIn() { count('ads'); if (!ready()) return; noiseBurst(ctx.currentTime, { dur: 0.06, gain: 0.05, type: 'bandpass', freq: 1500, q: 1 }); },
   };
 }

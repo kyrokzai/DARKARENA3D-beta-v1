@@ -264,3 +264,12 @@ body:not(.playing) #debugPanel { display: none; }
 
 /* M1.3: ПРИЦЕЛ shows its toggle state */
 .hud-aim.toggled { border-color: #ff9aa4; background: radial-gradient(circle at 50% 35%, #8a2333ee, #3a0e16ee); }
+
+/* M1.5: kills counter in the wave panel, death screen */
+.wv-sub { display: flex; justify-content: space-between; gap: 8px; }
+.wv-kills { color: var(--ok, #8fe3a8); font-weight: 800; letter-spacing: 1px; }
+.hud-wave.kill-pulse .wv-kills { animation: killPulse .35s ease-out; }
+@keyframes killPulse { 0% { transform: scale(1.5); color: #fff; } 100% { transform: scale(1); } }
+#dead .panel { border-color: #7d1424; }
+.dead-title { color: #ff4a5a; letter-spacing: 6px; font-size: clamp(26px, 6vmin, 40px); }
+body.is-dead #vignette { opacity: 1; }

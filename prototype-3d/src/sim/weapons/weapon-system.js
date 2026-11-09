@@ -133,7 +133,8 @@ export class WeaponSystem {
       if (!firstHit) firstHit = hit;
       if (hit.type === 'entity') {
         const dmg = hit.zone === 'head' ? def.damage.head : def.damage.body;
-        const r = hit.entity.applyDamage(dmg, hit.zone);
+        const r = hit.entity.applyDamage(dmg, hit.zone, { dir, point: hit.point });
+        if (r.killed && g.onEntityKilled) g.onEntityKilled(hit.entity);
         st.registerHit({ kill: r.killed, headshot: hit.zone === 'head' });
         g.emit('targetHit', { id: hit.entity.id, zone: hit.zone, killed: r.killed, point: hit.point, damage: dmg });
       } else if (hit.type === 'world') {

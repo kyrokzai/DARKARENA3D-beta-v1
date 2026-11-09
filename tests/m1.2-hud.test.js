@@ -135,7 +135,8 @@ const audit = page => DA(page, () => {
     for (let i = 0; i < 7; i++) await dbg(page, 'kill');
     await sleep(100);
     const cl = await DA(page, () => ({ sub: document.querySelector('[data-v=remainingText]').textContent, cleared: document.querySelector('.hud-wave').classList.contains('cleared'), banner: document.getElementById('banner').textContent }));
-    check('All killed → "ЗАЧИЩЕНА" + banner "ВОЛНА 2 ЗАЧИЩЕНА"', cl.sub === 'ЗАЧИЩЕНА' && cl.cleared && cl.banner === 'ВОЛНА 2 ЗАЧИЩЕНА', JSON.stringify(cl));
+    // M1.5: the wave-complete banner text is "WAVE N COMPLETE" by the owner's spec (was "ВОЛНА N ЗАЧИЩЕНА"); panel text unchanged
+    check('All killed → "ЗАЧИЩЕНА" + banner "WAVE 2 COMPLETE"', cl.sub === 'ЗАЧИЩЕНА' && cl.cleared && cl.banner === 'WAVE 2 COMPLETE', JSON.stringify(cl));
     await sleep(2000);
     check('Banner hides by itself', !(await has(page, '#banner', 'show')));
     await DA(page, () => __DA3.gs.setWave({ number: 999, remaining: 999, total: 999, phase: 'active' })); await DA(page, () => __DA3.gs.setAmmo(30, 9999)); await sleep(100);

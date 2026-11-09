@@ -6,6 +6,7 @@ import { buildLevel } from './level.js';
 import { createViewmodel } from './weapons/viewmodel.js';
 import { createImpacts } from './effects/impacts.js';
 import { createTargetsView } from './targets.js';
+import { createInfectedView } from './enemies/infected-view.js';
 
 const FOG_COLOR = 0x07090d;
 
@@ -33,6 +34,7 @@ export function createRenderer({ container, world, getSettings, skin }) {
 
   const level = buildLevel(scene, world);
   const vm = createViewmodel({ renderer, skin });
+  const infected = createInfectedView(scene); // M1.5: pooled HOLLOW instances + hit/death particles
   const impacts = createImpacts(scene);
   const targets = createTargetsView(scene);
 
@@ -70,7 +72,9 @@ export function createRenderer({ container, world, getSettings, skin }) {
   }
 
   return {
-    renderer, scene, camera, level, resize, vm, impacts, targets,
+    renderer, scene, camera, level, resize, vm, impacts, targets, infected,
+    /** Player hurt: short camera jolt away from the attacker (render only). */
+    onHurt() { kick.v -= 0.5; kick.rv += (Math.random() - 0.5) * 0.9; },
     /** Weapon feedback hooks (called from weapon events). */
     onShot(ev) {
       vm.onShot(ev);
@@ -99,7 +103,8 @@ export function createRenderer({ container, world, getSettings, skin }) {
       flashT -= dt; worldFlash.intensity = flashT > 0 ? 9 : 0;
       syncCamera(player, alpha);
       impacts.update(dt);
-      targets.update(w.hittables || [], dt, camera.position);
+      targets.update(w.targets || w.hittables || [], dt, camera.position);
+      if (w.enemies) infected.update(w.enemies, dt, alpha);
       renderer.info.reset();
       renderer.toneMapping = THREE.NoToneMapping;
       renderer.render(scene, camera);

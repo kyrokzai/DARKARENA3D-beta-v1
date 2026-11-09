@@ -1,4 +1,4 @@
-// DARK ARENA — Three.js prototype (M0 … M1.3). Wires: input → simulation (fixed step) → renderer → HUD/UI.
+// DARK ARENA — Three.js prototype (M0 … M1.5). Wires: input → simulation (fixed step) → renderer → HUD/UI.
 import { SIM_HZ } from './config.js';
 import map from './data/maps/training.js';
 import { Game } from './sim/game.js';
@@ -28,12 +28,13 @@ const gameHud = createGameHud({ game, hud });
 
 // ---- screens: menu | play | paused | settings | edit ----
 let state = 'menu', settingsReturn = 'menu', editReturn = 'settings';
-const SCREENS = ['menu', 'paused', 'settings'];
+const SCREENS = ['menu', 'paused', 'settings', 'dead'];
 const portrait = matchMedia('(orientation: portrait) and (max-width: 900px)');
 function show(next) {
   state = next;
   for (const s of SCREENS) $(s).classList.toggle('hidden', s !== next);
   document.body.classList.toggle('playing', next === 'play');
+  document.body.classList.toggle('is-dead', next === 'dead');
   document.body.classList.toggle('editing', next === 'edit');
   // Leaving play (pause, menus, editor, focus loss): stop firing and leave ADS safely.
   if (next !== 'play') { desktop.release(); touch.releaseAll(); input.clear(); game.releaseCombat(); }
@@ -51,8 +52,14 @@ const editor = createHudEditor({
   onExit: () => { show(editReturn); settingsUi.sync(); },
 });
 
+// Waves start with the first PLAY. ?debug=1 keeps the M1.3/M1.4 shooting range (no waves) unless &waves=1.
+const DEBUG = /[?&]debug=1(&|$)/.test(location.search);
+const WAVES_ON = /[?&]waves=1(&|$)/.test(location.search) || (!DEBUG && !/[?&]waves=0(&|$)/.test(location.search));
+let wavesStarted = false;
 function play() {
   if (portrait.matches) return;
+  if (game.player.dead) { show('dead'); return; } // resume after a pause at the moment of death → death screen first
+  if (WAVES_ON && !wavesStarted) { wavesStarted = true; game.startWaves(1); }
   show('play');
   desktop.requestLock();
 }
@@ -64,6 +71,9 @@ $('pauseSettings').onclick = () => { settingsReturn = 'paused'; show('settings')
 $('pauseEditHud').onclick = () => editHud('paused');
 $('settingsBack').onclick = () => show(settingsReturn);
 $('quitBtn').onclick = () => show('menu');
+function restartRun() { stepPhase.clear(); game.restart({ waves: WAVES_ON }); wavesStarted = WAVES_ON; show('play'); desktop.requestLock(); }
+$('restartBtn').onclick = restartRun;
+$('deadMenuBtn').onclick = () => { stepPhase.clear(); game.restart({ waves: WAVES_ON }); wavesStarted = WAVES_ON; show('menu'); };
 $('pauseBtn').addEventListener('click', () => { desktop.exitLock(); show('paused'); });
 // Desktop: clicking the scene while playing without lock re-locks.
 view.renderer.domElement.addEventListener('click', () => { if (state === 'play') desktop.requestLock(); });
@@ -105,13 +115,47 @@ game.on('dryFire', () => sfx.dry());
 game.on('reloadStart', e => sfx.reload(e.time));
 game.on('adsChange', e => { if (e.ads) sfx.adsIn(); });
 game.on('hit', e => sfx.hit(e.headshot, e.kill));
+// ---- infected (M1.5): effects + positional sounds + death screen ----
+const relOut = { pan: 0, dist: 0 };
+const rel = (x, y) => { // pan (−1..1) and distance (m) of a sim point relative to the player's view (scratch object)
+  const p = game.player, dx = x - p.x, dy = y - p.y, d = Math.hypot(dx, dy) * 2;
+  const right = (dx * -Math.sin(p.yaw) + dy * Math.cos(p.yaw)) / (Math.hypot(dx, dy) || 1);
+  relOut.pan = Math.max(-1, Math.min(1, right)); relOut.dist = d; return relOut;
+};
+game.on('shot', e => { if (e.hit.type === 'entity' && e.hit.entity.type) view.infected.onHit(e.hit.point, e.dir, e.hit.zone); });
+game.on('targetHit', e => { const en = game.enemies.find(x => x.id === e.id); if (en && !e.killed) { const r = rel(en.x, en.y); sfx.infected('hurt', r.pan, r.dist); } });
+game.on('infectedAlert', e => { const r = rel(e.x, e.y); sfx.infected('alert', r.pan, r.dist); });
+game.on('infectedAttack', e => { const r = rel(e.x, e.y); sfx.infected('attack', r.pan, r.dist); });
+game.on('infectedKilled', e => { const en = game.enemies.find(x => x.id === e.id); if (en) view.infected.onDeath(en); const r = rel(e.x, e.y); sfx.infected('death', r.pan, r.dist); });
+game.on('playerHurt', () => { view.onHurt(); sfx.playerHurt(); });
+game.on('playerDied', () => {
+  const s = game.state;
+  $('deadStats').textContent = `Волна ${s.wave.number} · убито заражённых: ${s.kills}`;
+  setTimeout(() => { if (game.player.dead && state !== 'dead' && state !== 'settings' && state !== 'edit') { desktop.exitLock(); show('dead'); } }, 700); // also after a pause in between
+});
+// ambient infected sounds: footsteps from the gait, rasping breath now and then (throttled, nearest only)
+let breathT = 1.5;
+const stepPhase = new Map();
+game.on('infectedRemoved', e => { for (const k of stepPhase.keys()) if (k.id === e.id) stepPhase.delete(k); });
+function infectedAmbience(dt) {
+  if (!game.enemies.length) return;
+  breathT -= dt;
+  let near = null, nd = Infinity;
+  for (const e of game.enemies) {
+    if (!e.alive) continue;
+    const r = rel(e.x, e.y); const rd = r.dist; if (rd < nd) { nd = rd; near = e; }
+    const steps = Math.floor(e.dist * 2 / (0.62 + 0.5 * Math.min(1, e.speed * 2 / e.def.runSpeed))); // one step ≈ half a stride
+    if (stepPhase.get(e) !== steps) { if (stepPhase.has(e) && rd < 22) sfx.infected('step', r.pan, rd); stepPhase.set(e, steps); }
+  }
+  if (near && breathT <= 0) { const r = rel(near.x, near.y); if (r.dist < 18) sfx.infected('breath', r.pan, r.dist); breathT = 1.6 + Math.random() * 1.8; }
+}
 
 // ---- loop ----
 let frames = 0, acc = 0, worst = 0;
 const stats = { fps: 0, frameMs: 0, worstMs: 0 };
 startLoop({
   hz: SIM_HZ,
-  update(dt) { if (state === 'play') game.step(input.update(), dt); },
+  update(dt) { if (state === 'play' || state === 'dead') game.step(input.update(), dt); },
   frame(alpha, dt) {
     if (state === 'play') {
       desktop.frame(dt);
@@ -121,9 +165,10 @@ startLoop({
       const k = 1 - game.state.weapon.ads * (1 - game.weapon.def.ads.sensMult);
       game.look(dy * k, dp * k);
     }
+    if (state === 'play') infectedAmbience(dt);
     const t0 = performance.now();
     const w = game.state.weapon;
-    view.render(game.player, state === 'play' ? alpha : 1, { dt, ads: w.ads, fovMult: game.weapon.def.ads.fovMult, reload: w.reloading ? w.reloadProgress : -1, triggerDown: game.weapon.triggerDown, hittables: game.hittables, showWeapon: state !== 'menu' });
+    view.render(game.player, state === 'play' ? alpha : 1, { dt, ads: w.ads, fovMult: game.weapon.def.ads.fovMult, reload: w.reloading ? w.reloadProgress : -1, triggerDown: game.weapon.triggerDown, targets: game.targets, enemies: game.enemies, showWeapon: state !== 'menu' && state !== 'dead' });
     gameHud.frame(view.camera.fov);
     if (state === 'play' || state === 'edit') hud.drawMinimap(game.player);
     const ms = performance.now() - t0;

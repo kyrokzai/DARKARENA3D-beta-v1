@@ -36,12 +36,12 @@
 
 <div id="menu" class="screen"><div class="panel">
   <h1 class="logo">DARK ARENA</h1>
-  <div class="sub">3D PROTOTYPE · M1.3 · THREE.JS r186</div>
-  <p class="lead">Прототип на Three.js: Training Grounds в 3D. Оружие DA-R1 RAVEN: стрельба, прицеливание, перезарядка.</p>
+  <div class="sub">3D PROTOTYPE · M1.5 · THREE.JS r186</div>
+  <p class="lead">Training Grounds. Первая волна заражённых — DA-INF01 THE HOLLOW. Оружие DA-R1 RAVEN.</p>
   <button type="button" class="primary" id="playBtn">ИГРАТЬ</button>
   <button type="button" class="secondary" id="menuSettings">НАСТРОЙКИ</button>
-  <p class="tiny">ПК: клик — захват мыши · WASD · ЛКМ — огонь · ПКМ — прицел · R — перезарядка · Esc/P — пауза.<br>
-  Телефон: горизонтально · слева — движение · справа — обзор · ОГОНЬ / ПРИЦЕЛ / ПЕРЕЗАР.</p>
+  <p class="tiny">ПК: клик — захват мыши · WASD · ЛКМ — огонь · ПКМ — прицел · R — перезарядка · Пробел — прыжок · Esc/P — пауза.<br>
+  Телефон: горизонтально · слева — движение · справа — обзор · ОГОНЬ / ПРИЦЕЛ / ПЕРЕЗАР. / ПРЫЖОК</p>
 </div></div>
 
 <div id="paused" class="screen hidden"><div class="panel">
@@ -50,6 +50,13 @@
   <button type="button" class="secondary" id="pauseEditHud">РАССТАВИТЬ HUD</button>
   <button type="button" class="secondary" id="pauseSettings">НАСТРОЙКИ</button>
   <button type="button" class="secondary" id="quitBtn">ГЛАВНОЕ МЕНЮ</button>
+</div></div>
+
+<div id="dead" class="screen hidden"><div class="panel">
+  <h2 class="dead-title">ВЫ ПОГИБЛИ</h2>
+  <p class="lead" id="deadStats">—</p>
+  <button type="button" class="primary" id="restartBtn">ЗАНОВО</button>
+  <button type="button" class="secondary" id="deadMenuBtn">ГЛАВНОЕ МЕНЮ</button>
 </div></div>
 
 <div id="settings" class="screen hidden"><div class="panel wide-panel">

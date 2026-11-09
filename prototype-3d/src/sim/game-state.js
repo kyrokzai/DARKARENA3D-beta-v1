@@ -6,6 +6,7 @@
 //   'health'  {hp, max, delta}            'ammo'   {mag, reserve, magSize}
 //   'reload'  {active, progress}          'wave'   {number, remaining, total, phase}
 //   'hit'     {kill, headshot}            'waveCleared' {number}
+//   'kills'   {kills}  (M1.5)
 export const DEFAULT_WEAPON = Object.freeze({ magSize: 30, mag: 30, reserve: 120, reloadTime: 1.3 });
 export const CRITICAL_HP = 0.25; // fraction of max HP
 
@@ -15,6 +16,7 @@ export class GameState {
     this.health = { hp: 100, max: 100 };
     this.weapon = { ...DEFAULT_WEAPON, name: '', reloading: false, reloadProgress: 0, spread: 0, ads: 0 };
     this.wave = { number: 1, remaining: 0, total: 0, phase: 'idle' }; // idle | active | cleared
+    this.kills = 0; // infected killed in this run (M1.5)
   }
 
   // ---- health ----
@@ -68,10 +70,18 @@ export class GameState {
     this.setWave({ remaining, phase: remaining === 0 ? 'cleared' : this.wave.phase });
   }
 
+  addKill() { this.kills++; this.emit('kills', { kills: this.kills }); }
+  /** New run (restart after death / from the menu): full health, kills 0. Ammo is reset by the weapon. */
+  resetRun() {
+    this.setHealth(this.health.max);
+    this.kills = 0; this.emit('kills', { kills: 0 });
+    this.setWave({ number: 1, remaining: 0, total: 0, phase: 'idle' });
+  }
+
   // ---- hit confirmation (from hit detection in M1.3) ----
   registerHit({ kill = false, headshot = false } = {}) { this.emit('hit', { kill, headshot }); }
 
-  snapshot() { return { health: { ...this.health }, weapon: { ...this.weapon }, wave: { ...this.wave } }; }
+  snapshot() { return { health: { ...this.health }, weapon: { ...this.weapon }, wave: { ...this.wave }, kills: this.kills }; }
 }
 
 function clampInt(v, a, b) { v = Math.round(Number(v) || 0); return Math.max(a, Math.min(b, v)); }

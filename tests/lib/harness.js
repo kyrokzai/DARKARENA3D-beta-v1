@@ -28,7 +28,7 @@ function makeChecker() {
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-async function open(browser, base, contextOpts, { play = true, init = null, ctx: existing = null } = {}) {
+async function open(browser, base, contextOpts, { play = true, init = null, ctx: existing = null, path = '/prototype-3d/?debug=1' } = {}) {
   const ctx = existing || await browser.newContext(contextOpts);
   if (init) await ctx.addInitScript(init);
   const page = await ctx.newPage();
@@ -36,7 +36,7 @@ async function open(browser, base, contextOpts, { play = true, init = null, ctx:
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   const cdp = await ctx.newCDPSession(page);
-  await page.goto(base + '/prototype-3d/?debug=1');
+  await page.goto(base + path);
   await page.waitForFunction(() => window.__DA3, null, { timeout: 15000 });
   if (play) { await page.evaluate(() => document.getElementById('playBtn').click()); await sleep(150); }
   return { ctx, page, errors, cdp };

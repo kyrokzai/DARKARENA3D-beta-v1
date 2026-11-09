@@ -18,7 +18,12 @@ export function installDebug({ game, input, view, settings, stats, touch, hud, e
     get layout() { return JSON.parse(JSON.stringify(hud.layout)); },
     get screen() { return hud.screen(); },
     get state() { return getState(); },
-    get player() { const p = game.player; return { x: p.x, y: p.y, yaw: p.yaw, pitch: p.pitch }; },
+    get player() { const p = game.player; return { x: p.x, y: p.y, z: p.z, yaw: p.yaw, pitch: p.pitch, dead: p.dead }; },
+    // M1.5 infected
+    get enemies() { return game.enemies.map(e => e.info()); },
+    get kills() { return game.state.kills; },
+    infectedView: view.infected,
+    spawnInfected: (x, y, facing = 0) => game.spawnInfected('hollow', x, y, facing),
     get touch() { return touch.state; },
     get info() { return view.info; },
     get camera() { const c = view.camera; return { x: c.position.x, y: c.position.y, z: c.position.z, aspect: c.aspect, fov: c.fov }; },

@@ -19,6 +19,7 @@ export function installDebugPanel(game, extra = {}) {
       <button data-d="skin:obsidian">OBSIDIAN</button><button data-d="skin:bloodline">BLOODLINE</button><button data-d="skin:neon_ghost">NEON GHOST</button></div>
     <div class="dbg-row"><span>Полигон</span>
       <button data-d="targets">мишени</button><button data-d="targetsOff">убрать</button><button data-d="realReload">перезарядка (R)</button></div>
+      <div class="dbg-row"><span>Заражённые</span><button data-d="infWave">волна 1</button><button data-d="infOne">+1 рядом</button><button data-d="infKill">убить всех</button><button data-d="restart">рестарт</button></div>
     <div class="dbg-row"><span>Попадание</span>
       <button data-d="hit">хит</button><button data-d="head">в голову</button><button data-d="killhit">убийство</button></div>
   </div>`;
@@ -53,7 +54,12 @@ export function installDebugPanel(game, extra = {}) {
     hit: () => st.registerHit({}), head: () => st.registerHit({ headshot: true }), killhit: () => st.registerHit({ kill: true }),
   };
   actions.targets = () => game.spawnTrainingTargets();
-  actions.targetsOff = () => { game.hittables = []; };
+  actions.targetsOff = () => { game.targets = []; game.rebuildHittables(); };
+  // M1.5 infected
+  actions.infWave = () => { game.restart({ waves: true }); };
+  actions.infOne = () => { const p = game.player; const a = p.yaw + Math.PI * 0.75; let x = p.x + Math.cos(a) * 4, y = p.y + Math.sin(a) * 4; const pt = game.waves.validSpawn(x, y) ? { x, y } : game.waves.pickSpawn(); if (pt) game.spawnInfected('hollow', pt.x, pt.y, Math.atan2(p.y - pt.y, p.x - pt.x)); };
+  actions.infKill = () => { for (const e of game.enemies) if (e.alive) { e.applyDamage(e.hp, 'body', { dir: { x: Math.cos(game.player.yaw), y: Math.sin(game.player.yaw), z: 0 } }); game.onInfectedKilled(e); } };
+  actions.restart = () => game.restart();
   actions.realReload = () => game.weapon.startReload();
   for (const id of ['obsidian', 'bloodline', 'neon_ghost']) actions['skin:' + id] = () => extra.setSkin && extra.setSkin(id);
   body.addEventListener('click', e => { const b = e.target.closest('[data-d]'); if (b) actions[b.dataset.d](); });

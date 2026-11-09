@@ -24,7 +24,7 @@ const INFO_HTML = {
     <div class="am-sub"><span class="am-icon">${ICONS.bullet}</span><span class="am-state" data-v="ammoState"></span><span class="am-name" data-v="weaponName"></span></div>
     <div class="am-reload"><div class="am-reload-fill"></div></div>`,
   wave: `<div class="wv-top"><span class="wv-label">ВОЛНА</span><span class="wv-num" data-v="wave">1</span></div>
-    <div class="wv-sub"><span data-v="remainingText">—</span></div>
+    <div class="wv-sub"><span data-v="remainingText">—</span><span class="wv-kills" title="Убито">✕ <b data-v="kills">0</b></span></div>
     <div class="wv-bar"><div class="wv-fill"></div></div>`,
 };
 

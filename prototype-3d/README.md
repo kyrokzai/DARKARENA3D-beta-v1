@@ -83,6 +83,19 @@ insert → palm slap → charging handle → back to the handguard.
 
 Viewer: `tools/weapon-viewer.html?hands=1&r=0.3` (r = reload progress, −1 = holding).
 
+## First infected: DA-INF01 THE HOLLOW (M1.5)
+
+PLAY starts wave 1: three HOLLOW appear one by one (never in front of you, ≥ 9 m away), detect you within 15 m
+with line of sight (walls block), chase round obstacles, swing a claw (15 HP, once per swing, 1.2 s cooldown).
+Head 50 / body 25 (RAVEN unchanged), 100 HP. Kills and remaining infected in the wave panel; "WAVE 1 COMPLETE";
+death screen with ЗАНОВО. `?debug=1` keeps the shooting range without waves; `?debug=1&waves=1` = real waves + hooks.
+
+- `sim/enemies/infected-defs.js` (data), `sim/enemies/infected.js` (FSM IDLE/ALERT/CHASE/ATTACK/RECOVER/DEAD)
+- `sim/nav/grid-nav.js` (line of sight, shared flow field), `sim/waves/` (data + director)
+- `render/enemies/hollow-model.js` (procedural skinned model), `hollow-anim.js` (procedural animation), `infected-view.js` (pool + effects)
+- `tools/infected-viewer.html` — model + animation viewer (`?anim=walk&t=1.2`)
+
+## Structure
 
 ```
 prototype-3d/
@@ -129,4 +142,6 @@ node tests/sim-m1.3.test.mjs        # M1.3 weapon logic (Node)
 node tests/m1.3-weapon.test.js      # M1.3 weapon in the browser
 node tests/m1.4-hands.test.js       # M1.4 hands + weapon animations
 node tests/m1.4.1-jump.test.js      # M1.4.1 jump (sim + desktop + touch)
+node tests/sim-m1.5.test.mjs        # M1.5 infected AI + waves (Node)
+node tests/m1.5-infected.test.js    # M1.5 infected in the browser
 ```

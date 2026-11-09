@@ -1,0 +1,14 @@
+{
+  "msWithout": 1.26,
+  "msWith": 0.87,
+  "world": {
+    "calls": 19,
+    "triangles": 18376,
+    "geometries": 40,
+    "textures": 19
+  },
+  "total": {
+    "calls": 44,
+    "triangles": 37966
+  }
+}

@@ -8,7 +8,7 @@ export function createGameHud({ game, hud }) {
   const q = (id, sel) => hud.els[id].querySelector(sel);
   const hp = { fill: q('health', '.hp-fill'), trail: q('health', '.hp-trail'), num: q('health', '[data-v=hp]') };
   const am = { mag: q('ammo', '[data-v=mag]'), res: q('ammo', '[data-v=reserve]'), state: q('ammo', '[data-v=ammoState]'), bar: q('ammo', '.am-reload-fill') };
-  const wv = { num: q('wave', '[data-v=wave]'), sub: q('wave', '[data-v=remainingText]'), fill: q('wave', '.wv-fill') };
+  const wv = { num: q('wave', '[data-v=wave]'), sub: q('wave', '[data-v=remainingText]'), fill: q('wave', '.wv-fill'), kills: q('wave', '[data-v=kills]') };
   const hit = document.getElementById('hitmark');
   const cross = document.getElementById('cross');
   const wname = q('ammo', '[data-v=weaponName]');
@@ -55,6 +55,7 @@ export function createGameHud({ game, hud }) {
     wv.num.textContent = w.number;
     wv.sub.textContent = w.phase === 'active' ? `ОСТАЛОСЬ ${w.remaining}` : w.phase === 'cleared' ? 'ЗАЧИЩЕНА' : 'ПОДГОТОВКА';
     wv.fill.style.width = (w.total > 0 ? (w.remaining / w.total) * 100 : 0) + '%';
+    if (wv.kills) wv.kills.textContent = st.kills || 0;
     hud.els.wave.classList.toggle('cleared', w.phase === 'cleared');
     if (w.phase === 'active' && w.number !== lastWave) showBanner(`ВОЛНА ${w.number}`, 'wave');
     lastWave = w.number;
@@ -70,11 +71,11 @@ export function createGameHud({ game, hud }) {
   }
 
   let bannerTimer = 0;
-  function showBanner(text, kind) {
+  function showBanner(text, kind, ms = 1800) {
     banner.textContent = text;
     banner.className = 'show ' + kind;
     clearTimeout(bannerTimer);
-    bannerTimer = setTimeout(() => { banner.className = ''; }, 1800);
+    bannerTimer = setTimeout(() => { banner.className = ''; }, ms);
   }
   function pulse(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
 
@@ -82,7 +83,8 @@ export function createGameHud({ game, hud }) {
   game.on('ammo', renderAmmo);
   game.on('reload', renderAmmo);
   game.on('wave', renderWave);
-  game.on('waveCleared', e => showBanner(`ВОЛНА ${e.number} ЗАЧИЩЕНА`, 'cleared'));
+  game.on('waveCleared', e => showBanner(`WAVE ${e.number} COMPLETE`, 'cleared'));
+  game.on('kills', () => { if (wv.kills) { wv.kills.textContent = st.kills; pulse(hud.els.wave, 'kill-pulse'); } });
   game.on('hit', onHit);
   game.on('weapon', renderAmmo);
 
