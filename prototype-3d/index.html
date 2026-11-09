@@ -15,8 +15,11 @@
 
 <div id="game">
   <!-- canvas is inserted here by the renderer; HUD controls are built by src/ui/hud.js -->
+  <div id="vignette" aria-hidden="true"></div>
   <div class="hud">
     <div id="cross" aria-hidden="true"></div>
+    <div id="hitmark" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <div id="banner" role="status" aria-live="polite"></div>
     <div id="fps" class="hidden"></div>
     <button type="button" id="pauseBtn" aria-label="Пауза"><span></span><span></span><span></span></button>
     <div id="hint">WASD — движение · мышь — обзор · Esc — пауза</div>
@@ -33,7 +36,7 @@
 
 <div id="menu" class="screen"><div class="panel">
   <h1 class="logo">DARK ARENA</h1>
-  <div class="sub">3D PROTOTYPE · M1.1 · THREE.JS r186</div>
+  <div class="sub">3D PROTOTYPE · M1.2 · THREE.JS r186</div>
   <p class="lead">Прототип на Three.js: Training Grounds в 3D. Сейчас проверяем движение, обзор и мобильное управление.</p>
   <button type="button" class="primary" id="playBtn">ИГРАТЬ</button>
   <button type="button" class="secondary" id="menuSettings">НАСТРОЙКИ</button>

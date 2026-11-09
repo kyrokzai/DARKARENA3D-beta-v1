@@ -1,0 +1,40 @@
+PASS  Default layout clean on 4 target iPhones × 2 look modes × 3 sizes (24 combos)
+PASS  2 fingers: move + look both active  — ["move","look"]
+PASS  3 fingers: move + look + FIRE (intent emitted)  — {"roles":["move","look","btn:fire"],"fire":true}
+PASS  4 fingers: move + look + FIRE + JUMP all held, look still turns  — {"roles":["move","look","btn:fire","btn:jump"],"dyaw":0.109}
+PASS  5th finger on an occupied control is ignored  — count=4
+PASS  Lifting JUMP finger releases only jump  — {"fire":true,"aim":false,"reload":false,"jump":false}
+PASS  All fingers up: everything released  — {"roles":[],"ids":[],"count":0,"stick":{"x":0,"y":0},"lookStick":{"x":0,"y":0},"actions":{"fire":false,"aim":false,"reload":false,"jump":false}}
+PASS  Drag on FIRE turns camera; option off → no turn  — on Δ=-0.146 off Δ=0.000
+PASS  Blur during 3-finger hold releases all (no stuck fire/move)  — {"roles":[],"ids":[],"count":0,"stick":{"x":0,"y":0},"lookStick":{"x":0,"y":0},"actions":{"fire":false,"aim":false,"reload":false,"jump":false}}
+PASS  Stick mode: right joystick shown
+PASS  Right stick: full deflection turns at ~200°/s, stops on release  — ≈207°/s, after release Δ=0.0000
+PASS  Look dead zone: 20 % deflection ignored at 30 %, active at 5 %  — dz30=0.00 dz5=0.17
+PASS  Move dead zone: 25 % deflection ignored at 30 %, active at 0 %  — dz30=0.00 dz0=0.26
+PASS  Horizontal sensitivity ×2 doubles yaw per swipe  — ratio=2.00
+PASS  Vertical sensitivity 0.8→0.4 halves pitch per swipe (independent of X)  — ratio=0.50
+PASS  Editor opens from pause menu
+PASS  Drag moves element to a free spot  — → (520, 120)
+PASS  Drop onto another control is refused (snaps back, message)  — reload at (631,313) toast="Здесь занято — элемент вернулся"
+PASS  Drag past the edge: element stays fully on screen  — []
+PASS  Resize: + makes the selected element bigger  — 62 → 74 px
+PASS  Resize into a neighbour is refused (no overlaps created)  — fire 92→110 overlaps=
+PASS  Done returns to pause menu
+PASS  Layout persists after page reload (localStorage)  — {"x":0.8660933660933661,"y":0.11185855263157893,"s":1.2}
+PASS  Cancel discards unsaved moves
+PASS  "Стандарт" asks for confirmation, then restores BUILD 1.3 layout  — armed="Точно сбросить?" fire={"x":0.88,"y":0.72,"s":1}
+PASS  Settings persist after reload (look mode, size, opacity, dead zone, minimap)  — {"lookMode":"stick","hudScale":1.2,"hudOpacity":0.5,"moveDeadZone":0.2,"showMinimap":false}
+PASS  Minimap hidden, right stick shown, opacity 50 % applied  — {"mini":false,"look":true,"op":"0.5","fireOp":"0.5"}
+PASS  Global size 120 % applied to buttons  — fire 110.0 px
+PASS  Settings → "Стандартная раскладка" restores defaults  — {"x":0.88,"y":0.72,"s":1}
+PASS  Settings tabs switch pages  — [true,true,true,true]
+PASS  Portrait: game pauses, rotate overlay shown, held finger released  — {"state":"paused","rotate":"flex","count":0}
+PASS  Back to landscape: same layout, all controls clean  — {"oob":[],"overlap":[]}
+PASS  Smaller landscape viewport (toolbars): controls re-fit, no overlap/out of bounds  — {"items":["move","fire","aim","reload","jump","minimap","health","ammo","wave"],"oob":[],"small":[],"overlap":[]}
+PASS  Double tap on 3D view / FIRE / minimap: second tap blocked  — {"v":[false,true],"f":[false,true],"m":[false,true]}
+PASS  Pinch (Safari gesturestart) prevented on game layer
+PASS  touch-action none on game & controls, pan-y in menus; viewport meta locks scale  — {"game":"none","btn":"none","menu":"pan-y","vp":"width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"}
+PASS  Menus keep native taps (double tap not blocked there)  — [false,false]
+PASS  Desktop: touch controls hidden, minimap visible, WASD works, no errors  — {"fire":"none","move":"none","mini":"block","x":"9.05","errors":[]}
+
+38/38 passed

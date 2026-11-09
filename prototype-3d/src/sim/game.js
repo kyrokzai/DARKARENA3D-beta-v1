@@ -3,6 +3,7 @@
 // emitting events (shot, hit, kill, playerDamaged, waveStart…) for render/UI/audio.
 import { World } from './world.js';
 import { createPlayer, stepPlayer, applyLook } from './player.js';
+import { GameState } from './game-state.js';
 
 export class Game {
   constructor(map) {
@@ -10,6 +11,8 @@ export class Game {
     this.player = createPlayer(map.playerStart);
     this.tick = 0;
     this.listeners = new Map();
+    // Health / ammo / wave model read by the HUD; future weapon & enemy systems write into it.
+    this.state = new GameState((type, data) => this.emit(type, data));
   }
   /** Fixed-step update. cmd = InputState snapshot {move:{x,y}} */
   step(cmd, dt) {
@@ -20,5 +23,5 @@ export class Game {
   on(type, fn) { (this.listeners.get(type) || this.listeners.set(type, []).get(type)).push(fn); }
   emit(type, data) { for (const fn of this.listeners.get(type) || []) fn(data); }
   /** Serializable snapshot — basis for save/replay/co-op later. */
-  snapshot() { const p = this.player; return { tick: this.tick, player: { x: p.x, y: p.y, yaw: p.yaw, pitch: p.pitch } }; }
+  snapshot() { const p = this.player; return { tick: this.tick, player: { x: p.x, y: p.y, yaw: p.yaw, pitch: p.pitch }, state: this.state.snapshot() }; }
 }

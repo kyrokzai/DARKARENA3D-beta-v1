@@ -40,6 +40,18 @@ right-stick speed, horizontal and vertical sensitivity, invert Y, fire-look, glo
 and action-button visibility, mouse sensitivity, FOV, render resolution, FPS counter.
 Stored in `localStorage`: `darkarena_proto3d_settings_v1` and `darkarena_proto3d_layout_v1` (separate from the main game).
 
+## Gameplay HUD (M1.2)
+
+Health (bar + trail on damage, amber ≤ 50 %, red pulsing + red vignette ≤ 25 %), ammo `mag / reserve`
+(amber when low, «ПЕРЕЗАРЯДИ» when empty, reload progress), wave number + enemies left + banner, hit marker on the
+crosshair (white hit, gold headshot, red kill), minimap (can be hidden). Info panels are part of the HUD editor
+(move / resize), never take touches during play, and keep ≥ 70 % opacity for readability.
+Separate layouts for touch and desktop (desktop: health bottom-left, ammo bottom-right, wave top-centre).
+
+Values come only from `src/sim/game-state.js` (no fake enemies or shooting). With `?debug=1` a **DBG** button
+(top centre, during play) opens a panel to change HP, ammo, reload, wave and hits; tests use the same actions
+via `window.__DA3.dbg` / `window.__DA3.gs`.
+
 ## Structure
 
 ```
@@ -56,7 +68,10 @@ prototype-3d/
     input/              input.js (device-independent state), desktop.js, touch.js
     render/             renderer.js (camera, resize, context loss), level.js (map → meshes), textures.js
     ui/settings.js      tabbed settings screen + persistence
-    ui/hud-layout.js    HUD layout model (pure): elements, BUILD 1.3 defaults, safe-area rects, overlap checks
+    sim/game-state.js   HP / ammo / reload / wave model + events (what the HUD reads)
+    ui/game-hud.js      binds GameState → health, ammo, wave panels, hit marker, vignette, banner
+    debug-panel.js      ?debug=1 only: buttons that change GameState
+    ui/hud-layout.js    HUD layout model (pure): elements, touch & desktop profiles, safe-area rects, overlap checks
     ui/hud.js           HUD view: controls, minimap, layout application
     ui/hud-editor.js    drag / resize / reset editor
     ui/safe-area.js     reads env(safe-area-inset-*)
@@ -72,4 +87,5 @@ that emit events; `render/`, `ui/` and a future `audio/` subscribe to them.
 node tests/sim-m0.test.mjs          # pure logic, no browser
 node tests/prototype-m0.test.js     # Playwright + Chromium (needs: npm i -D playwright)
 node tests/m1.1-mobile.test.js      # M1.1 mobile controls & HUD editor
+node tests/m1.2-hud.test.js         # M1.2 gameplay HUD (model + browser)
 ```

@@ -1,16 +1,17 @@
 // HUD layout editor: drag controls, resize the selected one, reset to the BUILD 1.3 layout.
 // Rules: an element always stays fully inside the safe area; it may not overlap another element —
 // a drop onto another control snaps back to the last free position; growing into a neighbour is refused.
-import { HUD_ELEMENTS, computeRects, findOverlaps, overlaps, toNormalized, cloneDefaultLayout, SCALE_MIN, SCALE_MAX } from './hud-layout.js';
+import { HUD_ELEMENTS, computeRects, findOverlaps, overlaps, toNormalized, cloneDefaultLayout, activeIds, SCALE_MIN, SCALE_MAX } from './hud-layout.js';
 
 export function createHudEditor({ hud, settings, toolbar, onExit }) {
   const $ = sel => toolbar.querySelector(sel);
   let working = null, snapshot = null, selected = 'move', drag = null, resetArmed = 0, toastTimer = 0;
 
-  const rects = () => computeRects(working, settings, hud.screen());
+  // Element rects of the current profile + immovable obstacles (pause button) for overlap checks.
+  const rects = () => [...computeRects(working, settings, hud.screen(), hud.profile), ...hud.fixedObstacles()];
   function refresh() {
-    hud.state.layout = working;
-    const rs = hud.layoutNow();
+    hud.layout = working;
+    const rs = [...hud.layoutNow(), ...hud.fixedObstacles()];
     const bad = new Set(findOverlaps(rs).flat());
     for (const [id, el] of Object.entries(hud.els)) {
       el.classList.toggle('selected', id === selected);
@@ -20,6 +21,27 @@ export function createHudEditor({ hud, settings, toolbar, onExit }) {
     $('.ed-name').textContent = def.label + (def.future ? ' · скоро' : '');
     $('.ed-size').textContent = Math.round(s * settings.hudScale * 100) + '%';
     $('[data-ed=done]').disabled = bad.size > 0;
+    placeToolbar(rs);
+  }
+  /** Put the toolbar where it covers no HUD element: scan a grid of positions, prefer top-centre. */
+  function placeToolbar(rs) {
+    const sc = hud.screen(), th = (toolbar.offsetHeight || 56) + 26 /* toast below */, tw = toolbar.offsetWidth || 500;
+    const minL = sc.safe.left + 4, maxL = sc.w - sc.safe.right - tw - 4, minT = sc.safe.top + 8, maxT = sc.h - sc.safe.bottom - th - 4;
+    let best = null;
+    for (let top = minT; top <= Math.max(minT, maxT); top += 10) {
+      for (let k = 0; k <= 12; k++) {
+        const left = maxL <= minL ? (sc.w - tw) / 2 : minL + (maxL - minL) * k / 12;
+        let area = 0;
+        for (const r of rs) {
+          const ox = Math.min(left + tw, r.x1) - Math.max(left, r.x0), oy = Math.min(top + th, r.y1) - Math.max(top, r.y0);
+          if (ox > 0 && oy > 0) area += ox * oy;
+        }
+        const cost = area * 1000 + Math.abs(left + tw / 2 - sc.w / 2) + (top - minT) * 2;
+        if (!best || cost < best.cost) best = { cost, top, left };
+      }
+    }
+    toolbar.style.top = Math.round(best.top) + 'px';
+    toolbar.style.left = Math.round(best.left) + 'px';
   }
   function toast(msg) {
     const t = $('.ed-toast'); t.textContent = msg; t.classList.add('show');
@@ -74,7 +96,7 @@ export function createHudEditor({ hud, settings, toolbar, onExit }) {
     else if (act === 'plus') resize(0.1);
     else if (act === 'reset') {
       if (Date.now() - resetArmed > 3000) { resetArmed = Date.now(); a.textContent = 'Точно сбросить?'; setTimeout(() => { a.textContent = 'Стандарт'; }, 3000); return; }
-      working = cloneDefaultLayout(); resetArmed = 0; a.textContent = 'Стандарт'; toast('Раскладка BUILD 1.3 восстановлена'); refresh();
+      working = cloneDefaultLayout(hud.profile); resetArmed = 0; a.textContent = 'Стандарт'; toast(hud.profile === 'touch' ? 'Раскладка BUILD 1.3 восстановлена' : 'Стандартная раскладка восстановлена'); refresh();
     } else if (act === 'cancel') exit(false);
     else if (act === 'done') exit(true);
   });
@@ -86,7 +108,7 @@ export function createHudEditor({ hud, settings, toolbar, onExit }) {
     layer.removeEventListener('pointerup', onUp);
     layer.removeEventListener('pointercancel', onUp);
     hud.setEditing(false);
-    if (save) hud.setLayout(working); else { hud.state.layout = snapshot; hud.layoutNow(); }
+    if (save) hud.setLayout(working); else { hud.layout = snapshot; hud.layoutNow(); }
     for (const el of Object.values(hud.els)) el.classList.remove('selected', 'bad', 'dragging');
     toolbar.classList.add('hidden');
     onExit(save);
@@ -96,6 +118,8 @@ export function createHudEditor({ hud, settings, toolbar, onExit }) {
     enter() {
       snapshot = JSON.parse(JSON.stringify(hud.layout));
       working = JSON.parse(JSON.stringify(hud.layout));
+      const ids = activeIds(settings, hud.profile);
+      if (!ids.includes(selected)) selected = ids[0];
       hud.setEditing(true);
       toolbar.classList.remove('hidden');
       layer.addEventListener('pointerdown', onDown, true);

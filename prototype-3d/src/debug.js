@@ -1,10 +1,14 @@
 // Automated-test hook. Loaded only with ?debug=1; never part of normal play.
 import { canStand } from './sim/collision.js';
 import { PLAYER_RADIUS } from './config.js';
+import { installDebugPanel } from './debug-panel.js';
 
 export function installDebug({ game, input, view, settings, stats, touch, hud, editor, getState, show }) {
+  const panel = installDebugPanel(game);
   window.__DA3 = {
     game, input, settings, stats, hud, editor,
+    gs: game.state,            // gameplay state model read by the HUD
+    dbg: panel.actions,        // debug panel actions (same as its buttons)
     get hudRects() { return hud.state.rects.map(r => ({ ...r })); },
     get layout() { return JSON.parse(JSON.stringify(hud.layout)); },
     get screen() { return hud.screen(); },

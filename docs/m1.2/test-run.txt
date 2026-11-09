@@ -1,0 +1,47 @@
+PASS  Model: damage/heal clamp to 0..max, negative damage ignored
+PASS  Model: critical at ≤ 25 % HP
+PASS  Model: reload moves rounds from reserve (3/10 → 13/0)
+PASS  Model: last kill → phase cleared + one waveCleared event
+PASS  Model: hit event carries kill/headshot
+PASS  Model: snapshot is plain serialisable data
+PASS  Without ?debug=1: no test hook, no debug panel  — {"hook":"undefined","panel":false,"hp":"100","mag":"30","res":"120","wave":"1","sub":"ПОДГОТОВКА"}
+PASS  Initial HUD: 100 HP, 30/120, wave 1 (preparation)  — {"hook":"undefined","panel":false,"hp":"100","mag":"30","res":"120","wave":"1","sub":"ПОДГОТОВКА"}
+PASS  ?debug=1: debug panel present
+PASS  Damage −10 → "90", bar 90 %  — {"fill":89.98650876929996,"trail":89.98650876929996}
+PASS  Smooth decrease: red trail lags behind, then catches up  — right after: fill 90% trail 100%; later: 90%
+PASS  Heal caps at 100
+PASS  50 HP → "low" (amber), not critical
+PASS  Critical at 25 HP (not at 26): red panel + pulsing red vignette  — {"panel":true,"vig":true,"vop":0.9}
+PASS  Back to 100 → critical cleared
+PASS  3 shots → 27 / 120
+PASS  ≤ 30 % of magazine → low (amber)
+PASS  Empty magazine → "ПЕРЕЗАРЯДИ" (red)
+PASS  Reload in progress: "ПЕРЕЗАРЯДКА" + progress bar  — {"state":"ПЕРЕЗАРЯДКА","bar":48.97127329192546,"cls":true}
+PASS  Reload done → 30 / 90, indicator cleared  — {"mag":"30","res":"90","cls":false,"bar":0}
+PASS  No ammo at all → "НЕТ ПАТРОНОВ"
+PASS  Wave 1 active: "ОСТАЛОСЬ 5", bar full  — {"n":"1","sub":"ОСТАЛОСЬ 5","bar":100}
+PASS  2 kills → "ОСТАЛОСЬ 3", bar 60 %  — {"sub":"ОСТАЛОСЬ 3","bar":59.99586092715232}
+PASS  Next wave → number 2, 7 enemies, banner "ВОЛНА 2"  — {"text":"ВОЛНА 2","show":true}
+PASS  All killed → "ЗАЧИЩЕНА" + banner "ВОЛНА 2 ЗАЧИЩЕНА"  — {"sub":"ЗАЧИЩЕНА","cleared":true,"banner":"ВОЛНА 2 ЗАЧИЩЕНА"}
+PASS  Banner hides by itself
+PASS  Longest values (wave 999, 999 left, 9999 reserve) fit inside panels  — []
+PASS  Hit → marker flashes on the crosshair and fades out  — opacity 1.00 → 0.00
+PASS  Headshot → gold marker; kill → red marker (restarts on each hit)  — show head | show kill
+PASS  Desktop: 21 window sizes × scales — no overlap, in bounds, text fits
+PASS  Touch: 24 iPhone combos with info panels — no overlap (incl. pause button), in safe area, text fits
+PASS  Touch on HEALTH panel → movement stick; on WAVE panel → look  — ["move","look"]
+PASS  4 fingers with HUD panels on screen: move + look + fire + jump  — ["move","look","btn:fire","btn:jump"]
+PASS  Touch on AMMO panel → look; on MINIMAP → movement  — ["look","move"]
+PASS  Editor: WAVE panel can be dragged  — {"x":420,"y":160,"w":172,"h":44}
+PASS  Editor toolbar does not cover HUD elements  — []
+PASS  Editor: HEALTH panel resizable  — 196 → 216
+PASS  Dropping a panel onto the pause button is refused  — {"x":453.625,"y":312.96875,"w":148,"h":52}
+PASS  After reload: moved WAVE and bigger HEALTH kept (touch profile)  — {"wave":{"x":0.515970515970516,"y":0.4210690789473684,"s":1},"health":{"x":0.13,"y":0.07,"s":1.1}}
+PASS  Desktop profile untouched by phone editing
+PASS  Minimap hidden setting persists after reload  — {"layouts":{"touch":{"move":{"x":0.12,"y":0.77,"s":1},"fire":{"x":0.88,"y":0.72,"s":1},"reload":{"x":0.74,"y":0.86,"s":1},"jump":{"x":0.91,"y":0.4,"s":1},"aim":{"x":0.75,"y":0.57,"s":1},"look":{"x":0.58,"y":0.6,"s":1},"minimap":{"x":0.09,"y":0.33,"s":1},"health":{"x":0.13,"y":0.07,"s":1.1},"wave":{"x":0.515970515970516,"y":0.4210690789473684,"s":1},"ammo":{"x":0.5572788697788698,"y":0.8236215049342106,"s":1}},"desktop":{"minimap":{"x":0.07,"y":0.14,"s":1},"health":{"x":0.11,"y":0.94,"s":1.1},"wave":{"x":0.5,"y":0.06,"s":1},"ammo":{"x":0.91,"y":0.93,"s":1.1}}},"mini":true,"showMinimap":false}
+PASS  Desktop editor shows only info panels + minimap  — ["ammo","health","minimap","wave"]
+PASS  Desktop: dragged AMMO saved in desktop profile only  — {"d":{"x":0.6756249999999999,"y":0.6522222222222223,"s":1.1},"t":{"x":0.5,"y":0.93,"s":1}}
+PASS  Desktop window resize: panels re-fit, in bounds  — {"items":["minimap","health","ammo","wave","pause"],"oob":[],"overlap":[],"clipped":[]}
+PASS  Opacity 30 %: buttons 0.3, info panels kept at 0.7 for readability  — {"fire":0.3,"hp":0.7}
+
+45/45 passed

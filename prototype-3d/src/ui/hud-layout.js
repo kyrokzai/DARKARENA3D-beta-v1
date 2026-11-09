@@ -1,70 +1,97 @@
 // HUD layout model — pure functions (no DOM), testable in Node.
 // Positions are stored normalized to the SAFE rectangle (0..1 of its width/height), centre of element.
-// Sizes: base size (CSS px) × global hudScale × per-element scale.
+// Size: base width/height (CSS px) × global hudScale × per-element scale `s`.
+// Two profiles: 'touch' (phones/tablets: controls + info) and 'desktop' (mouse/keyboard: info only).
 
-/** Element catalogue. `kind`: stick | button | panel. `action`: input intent (buttons only).
+/** Element catalogue.
+ *  kind: stick | button (touch controls) · map | info (read-only panels, never take touches during play).
  *  `future: true` = the game mechanic does not exist yet; the control only emits its intent. */
 export const HUD_ELEMENTS = {
-  move:    { label: 'Движение',     kind: 'stick',  shape: 'circle', base: 132 },
-  look:    { label: 'Обзор',        kind: 'stick',  shape: 'circle', base: 132 },
-  fire:    { label: 'Огонь',        kind: 'button', shape: 'circle', base: 92, action: 'fire', future: true },
-  aim:     { label: 'Прицел',       kind: 'button', shape: 'circle', base: 62, action: 'aim', future: true },
-  reload:  { label: 'Перезарядка',  kind: 'button', shape: 'circle', base: 60, action: 'reload', future: true },
-  jump:    { label: 'Прыжок',       kind: 'button', shape: 'circle', base: 62, action: 'jump', future: true },
-  minimap: { label: 'Мини-карта',   kind: 'panel',  shape: 'rect',   base: 112 },
+  move:    { label: 'Движение',    kind: 'stick',  shape: 'circle', w: 132, h: 132, touchOnly: true },
+  look:    { label: 'Обзор',       kind: 'stick',  shape: 'circle', w: 132, h: 132, touchOnly: true },
+  fire:    { label: 'Огонь',       kind: 'button', shape: 'circle', w: 92, h: 92, action: 'fire', future: true, touchOnly: true },
+  aim:     { label: 'Прицел',      kind: 'button', shape: 'circle', w: 62, h: 62, action: 'aim', future: true, touchOnly: true },
+  reload:  { label: 'Перезарядка', kind: 'button', shape: 'circle', w: 60, h: 60, action: 'reload', future: true, touchOnly: true },
+  jump:    { label: 'Прыжок',      kind: 'button', shape: 'circle', w: 62, h: 62, action: 'jump', future: true, touchOnly: true },
+  minimap: { label: 'Мини-карта',  kind: 'map',    shape: 'rect',   w: 112, h: 112 },
+  health:  { label: 'Здоровье',    kind: 'info',   shape: 'rect',   w: 196, h: 40 },
+  ammo:    { label: 'Патроны',     kind: 'info',   shape: 'rect',   w: 148, h: 52 },
+  wave:    { label: 'Волна',       kind: 'info',   shape: 'rect',   w: 172, h: 44 },
 };
+export const PROFILES = ['touch', 'desktop'];
 
-// BUILD 1.3 layout (move, fire, reload, jump as in 1.3); aim, look-stick and minimap added around it.
-export const DEFAULT_LAYOUT = Object.freeze({
-  move:    { x: 0.12, y: 0.77, s: 1 },
-  fire:    { x: 0.88, y: 0.72, s: 1 },
-  reload:  { x: 0.74, y: 0.86, s: 1 },
-  jump:    { x: 0.91, y: 0.40, s: 1 },
-  aim:     { x: 0.75, y: 0.57, s: 1 },
-  look:    { x: 0.58, y: 0.76, s: 1 },
-  minimap: { x: 0.09, y: 0.27, s: 1 },
+// Touch: BUILD 1.3 controls (move, fire, reload, jump) + aim, look stick, minimap and info panels around them.
+// Desktop: classic FPS corners — health bottom-left, ammo bottom-right, wave top-centre, minimap top-left.
+export const DEFAULT_LAYOUTS = Object.freeze({
+  touch: Object.freeze({
+    move:    { x: 0.12, y: 0.77, s: 1 },
+    fire:    { x: 0.88, y: 0.72, s: 1 },
+    reload:  { x: 0.74, y: 0.86, s: 1 },
+    jump:    { x: 0.91, y: 0.40, s: 1 },
+    aim:     { x: 0.75, y: 0.57, s: 1 },
+    look:    { x: 0.58, y: 0.60, s: 1 },
+    minimap: { x: 0.09, y: 0.33, s: 1 },
+    health:  { x: 0.13, y: 0.07, s: 1 },
+    wave:    { x: 0.50, y: 0.07, s: 1 },
+    ammo:    { x: 0.50, y: 0.93, s: 1 },
+  }),
+  desktop: Object.freeze({
+    minimap: { x: 0.07, y: 0.14, s: 1 },
+    health:  { x: 0.11, y: 0.94, s: 1.1 },
+    wave:    { x: 0.50, y: 0.06, s: 1 },
+    ammo:    { x: 0.91, y: 0.93, s: 1.1 },
+  }),
 });
+/** @deprecated M1.1 name — the touch profile defaults. */
+export const DEFAULT_LAYOUT = DEFAULT_LAYOUTS.touch;
 
 export const SCALE_MIN = 0.7, SCALE_MAX = 1.6;
-export const MIN_TOUCH = 44; // px, Apple HIG minimum hit target
-const GAP = 6;               // px kept between controls
+export const MIN_TOUCH = 44; // px, Apple HIG minimum hit target (touch controls only)
+const GAP = 6;               // px kept between elements
 
-export function cloneDefaultLayout() { return JSON.parse(JSON.stringify(DEFAULT_LAYOUT)); }
+const clone = o => JSON.parse(JSON.stringify(o));
+export function cloneDefaultLayout(profile = 'touch') { return clone(DEFAULT_LAYOUTS[profile]); }
+export function cloneDefaultLayouts() { return clone(DEFAULT_LAYOUTS); }
+const isControl = id => !!HUD_ELEMENTS[id] && (HUD_ELEMENTS[id].kind === 'stick' || HUD_ELEMENTS[id].kind === 'button');
 
-/** Which elements are shown, from settings. */
-export function activeIds(settings) {
-  const ids = ['move', 'minimap', 'fire', 'aim', 'reload', 'jump', 'look'];
-  return ids.filter(id =>
+/** Which elements are shown for a profile, from settings. */
+export function activeIds(settings, profile = 'touch') {
+  return Object.keys(DEFAULT_LAYOUTS[profile]).filter(id =>
     (id !== 'look' || settings.lookMode === 'stick') &&
     (id !== 'minimap' || settings.showMinimap) &&
     (!HUD_ELEMENTS[id].future || settings.showActionButtons));
 }
 
 export function sizeOf(id, layout, settings) {
-  const e = HUD_ELEMENTS[id], s = (layout[id] && layout[id].s) || 1;
-  return Math.max(MIN_TOUCH, Math.round(e.base * settings.hudScale * s));
+  const e = HUD_ELEMENTS[id], s = (layout[id] && layout[id].s) || 1, k = settings.hudScale * s;
+  let w = Math.round(e.w * k), h = Math.round(e.h * k);
+  if (isControl(id)) { w = Math.max(MIN_TOUCH, w); h = Math.max(MIN_TOUCH, h); }
+  return { w, h };
 }
 
-/** Pixel rects {id, cx, cy, size, x0, y0, x1, y1} for active elements, clamped into the safe rect. */
-export function computeRects(layout, settings, screen) {
-  const { w, h, safe } = screen;
-  const sw = w - safe.left - safe.right, sh = h - safe.top - safe.bottom;
-  return activeIds(settings).map(id => {
-    const p = layout[id] || DEFAULT_LAYOUT[id], size = sizeOf(id, layout, settings);
-    const half = size / 2;
-    let cx = safe.left + p.x * sw, cy = safe.top + p.y * sh;
-    cx = clamp(cx, safe.left + half, w - safe.right - half);
-    cy = clamp(cy, safe.top + half, h - safe.bottom - half);
-    return rectFrom(id, cx, cy, size);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function rectFrom(id, cx, cy, w, h) { return { id, cx, cy, w, h, size: Math.max(w, h), x0: cx - w / 2, y0: cy - h / 2, x1: cx + w / 2, y1: cy + h / 2 }; }
+function placeIn(r, cx, cy, w, h, screen) {
+  const { w: W, h: H, safe } = screen;
+  w = Math.min(w, W - safe.left - safe.right); h = Math.min(h, H - safe.top - safe.bottom);
+  return rectFrom(r.id, clamp(cx, safe.left + w / 2, W - safe.right - w / 2), clamp(cy, safe.top + h / 2, H - safe.bottom - h / 2), w, h);
+}
+
+/** Pixel rects {id, cx, cy, w, h, size, x0, y0, x1, y1} for active elements, clamped into the safe rect. */
+export function computeRects(layout, settings, screen, profile = 'touch') {
+  const { w: W, h: H, safe } = screen;
+  const sw = W - safe.left - safe.right, sh = H - safe.top - safe.bottom;
+  const defs = DEFAULT_LAYOUTS[profile];
+  return activeIds(settings, profile).map(id => {
+    const p = layout[id] || defs[id], { w, h } = sizeOf(id, layout, settings);
+    return placeIn({ id }, safe.left + p.x * sw, safe.top + p.y * sh, w, h, screen);
   });
 }
-const rectFrom = (id, cx, cy, size) => ({ id, cx, cy, size, x0: cx - size / 2, y0: cy - size / 2, x1: cx + size / 2, y1: cy + size / 2 });
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-/** Overlap test with a small gap. Circles use distance; rects (minimap) use boxes. */
+/** Overlap test with a small gap. Circle–circle by distance; anything with a rect by boxes. */
 export function overlaps(a, b, gap = GAP) {
-  const circ = id => HUD_ELEMENTS[id].shape === 'circle';
-  if (circ(a.id) && circ(b.id)) return Math.hypot(a.cx - b.cx, a.cy - b.cy) < a.size / 2 + b.size / 2 + gap;
+  const circ = id => HUD_ELEMENTS[id] && HUD_ELEMENTS[id].shape === 'circle';
+  if (circ(a.id) && circ(b.id)) return Math.hypot(a.cx - b.cx, a.cy - b.cy) < a.w / 2 + b.w / 2 + gap;
   return a.x0 < b.x1 + gap && b.x0 < a.x1 + gap && a.y0 < b.y1 + gap && b.y0 < a.y1 + gap;
 }
 export function findOverlaps(rects) {
@@ -78,37 +105,41 @@ export function inBounds(r, screen) {
 }
 
 /**
- * Display-time resolution: if a saved layout overlaps on this particular screen (e.g. a layout made on a big
- * phone shown on an iPhone SE), push elements apart and shrink them a little if needed. Saved values are not changed.
+ * Display-time resolution: if a saved layout overlaps on this particular screen (e.g. made on a big phone and
+ * shown on a small one), push elements apart and, as a last resort, shrink them. Saved values are not changed.
+ * Panels (map/info) are pinned at first; controls move away from them.
  */
-export function resolveRects(rects, screen) {
-  const out = rects.map(r => ({ ...r }));
-  const { w, h, safe } = screen;
-  for (let iter = 0; iter < 60; iter++) {
+export function resolveRects(rects, screen, fixed = []) {
+  // `fixed` = immovable obstacles (e.g. the pause button): {id, x0, y0, x1, y1, cx, cy, w, h}
+  const out = [...rects.map(r => ({ ...r })), ...fixed.map(r => ({ ...r, fixed: true }))];
+  for (let iter = 0; iter < 80; iter++) {
     let moved = false;
     for (let i = 0; i < out.length; i++) for (let j = i + 1; j < out.length; j++) {
       const a = out[i], b = out[j];
       if (!overlaps(a, b)) continue;
       moved = true;
-      let dx = b.cx - a.cx, dy = b.cy - a.cy, d = Math.hypot(dx, dy);
-      if (d < 1e-3) { dx = 1; dy = 0; d = 1; }
-      const need = (a.size + b.size) / 2 + GAP - d, push = need / 2 + 1;
-      // The minimap is a panel: it does not move; controls move away from it.
-      // (last resort on very small screens: the minimap may move too)
-      const pin = iter < 20;
-      const aw = a.id === 'minimap' && pin ? 0 : 1, bw = b.id === 'minimap' && pin ? 0 : 1;
+      let dx = b.cx - a.cx, dy = b.cy - a.cy;
+      const d = Math.hypot(dx, dy) || 1;
+      if (d < 1e-3) { dx = 1; dy = 0; } else { dx /= d; dy /= d; }
+      // Smallest push that separates the two along the centre line (boxes: per-axis overlap).
+      const need = Math.max(4, Math.min(
+        Math.abs(dx) > 1e-3 ? ((a.w + b.w) / 2 + GAP - Math.abs(b.cx - a.cx)) / Math.abs(dx) : Infinity,
+        Math.abs(dy) > 1e-3 ? ((a.h + b.h) / 2 + GAP - Math.abs(b.cy - a.cy)) / Math.abs(dy) : Infinity)) + 1;
+      const pin = iter < 30;
+      const aw = a.fixed ? 0 : (!isControl(a.id) && pin ? 0 : 1), bw = b.fixed ? 0 : (!isControl(b.id) && pin ? 0 : 1);
+      if (!aw && !bw && (a.fixed || b.fixed)) { const m = a.fixed ? b : a; Object.assign(m, placeIn(m, m.cx + (m === b ? dx : -dx) * need, m.cy + (m === b ? dy : -dy) * need, m.w, m.h, screen)); continue; }
       const k = aw + bw || 1;
-      Object.assign(a, place(a, a.cx - dx / d * push * 2 * aw / k, a.cy - dy / d * push * 2 * aw / k, a.size, screen));
-      Object.assign(b, place(b, b.cx + dx / d * push * 2 * bw / k, b.cy + dy / d * push * 2 * bw / k, b.size, screen));
+      Object.assign(a, placeIn(a, a.cx - dx * need * aw / k, a.cy - dy * need * aw / k, a.w, a.h, screen));
+      Object.assign(b, placeIn(b, b.cx + dx * need * bw / k, b.cy + dy * need * bw / k, b.w, b.h, screen));
     }
     if (!moved) break;
-    if (iter > 30) for (const r of out) if (r.size > MIN_TOUCH + 4 && r.id !== 'minimap') Object.assign(r, place(r, r.cx, r.cy, r.size * 0.95, screen));
+    if (iter > 50) for (const r of out) {
+      if (r.fixed) continue;
+      const minS = isControl(r.id) ? MIN_TOUCH + 2 : 24;
+      if (r.h > minS) Object.assign(r, placeIn(r, r.cx, r.cy, r.w * 0.95, r.h * 0.95, screen));
+    }
   }
-  return out;
-  function place(r, cx, cy, size, s) {
-    const half = size / 2;
-    return rectFrom(r.id, clamp(cx, safe.left + half, w - safe.right - half), clamp(cy, safe.top + half, h - safe.bottom - half), size);
-  }
+  return out.filter(r => !r.fixed);
 }
 
 /** Convert a pixel centre back to normalized safe-rect coordinates (for saving after a drag). */
@@ -118,11 +149,11 @@ export function toNormalized(cx, cy, screen) {
   return { x: clamp((cx - safe.left) / sw, 0, 1), y: clamp((cy - safe.top) / sh, 0, 1) };
 }
 
-/** Validate/merge a stored layout (unknown keys dropped, broken values → defaults). */
-export function sanitizeLayout(raw) {
-  const out = cloneDefaultLayout();
+/** Validate/merge one profile's stored layout (unknown keys dropped, broken values → defaults). */
+export function sanitizeLayout(raw, profile = 'touch') {
+  const out = cloneDefaultLayout(profile);
   if (!raw || typeof raw !== 'object') return out;
-  for (const id of Object.keys(DEFAULT_LAYOUT)) {
+  for (const id of Object.keys(out)) {
     const v = raw[id];
     if (!v) continue;
     if (Number.isFinite(v.x) && v.x >= 0 && v.x <= 1) out[id].x = v.x;
@@ -130,4 +161,9 @@ export function sanitizeLayout(raw) {
     if (Number.isFinite(v.s)) out[id].s = clamp(v.s, SCALE_MIN, SCALE_MAX);
   }
   return out;
+}
+/** Stored format: {touch:{…}, desktop:{…}}. An M1.1 flat layout is migrated into the touch profile. */
+export function sanitizeLayouts(raw) {
+  if (raw && typeof raw === 'object' && !raw.touch && !raw.desktop && raw.move) raw = { touch: raw };
+  return { touch: sanitizeLayout(raw && raw.touch, 'touch'), desktop: sanitizeLayout(raw && raw.desktop, 'desktop') };
 }

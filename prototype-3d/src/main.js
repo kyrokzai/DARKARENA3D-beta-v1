@@ -11,6 +11,7 @@ import { loadSettings, mountSettings } from './ui/settings.js';
 import { createHud } from './ui/hud.js';
 import { createHudEditor } from './ui/hud-editor.js';
 import { cloneDefaultLayout } from './ui/hud-layout.js';
+import { createGameHud } from './ui/game-hud.js';
 
 const $ = id => document.getElementById(id);
 const settings = loadSettings();
@@ -19,6 +20,7 @@ const input = new InputState();
 const gameEl = $('game');
 const view = createRenderer({ container: gameEl, world: game.world, getSettings: () => settings });
 const hud = createHud({ root: gameEl.querySelector('.hud'), settings, world: game.world });
+const gameHud = createGameHud({ game, hud });
 
 // ---- screens: menu | play | paused | settings | edit ----
 let state = 'menu', settingsReturn = 'menu', editReturn = 'settings';
@@ -66,6 +68,9 @@ addEventListener('keydown', e => {
 });
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') show('paused'); });
 
+// Switching to touch (first touch on a hybrid device) changes the layout profile.
+new MutationObserver(() => hud.layoutNow()).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+
 // Rotation / resize: pause in portrait, re-layout HUD from normalized positions, release fingers.
 function onViewportChange() {
   if (portrait.matches && state === 'play') show('paused');
@@ -82,7 +87,7 @@ const settingsUi = mountSettings($('settingsForm'), settings, (s, key) => {
   if (key === 'lookMode' || key === 'moveStickMode') touch.releaseAll();
 }, {
   editHud: () => editHud('settings'),
-  resetLayout: () => hud.setLayout(cloneDefaultLayout()),
+  resetLayout: () => hud.setLayout(cloneDefaultLayout(hud.profile)),
 });
 const fpsEl = $('fps');
 function updateFpsVisibility() { fpsEl.classList.toggle('hidden', !settings.showFps); }
@@ -118,5 +123,5 @@ show('menu');
 
 // ---- test hook (only with ?debug=1) ----
 if (/[?&]debug=1(&|$)/.test(location.search)) {
-  import('./debug.js').then(m => m.installDebug({ game, input, view, settings, stats, touch, hud, editor, getState: () => state, show }));
+  import('./debug.js').then(m => m.installDebug({ game, input, view, settings, stats, touch, hud, editor, gameHud, getState: () => state, show }));
 }
