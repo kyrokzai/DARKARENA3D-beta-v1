@@ -2,9 +2,12 @@
 import { canStand } from './sim/collision.js';
 import { PLAYER_RADIUS } from './config.js';
 
-export function installDebug({ game, input, view, settings, stats, touch, getState, show }) {
+export function installDebug({ game, input, view, settings, stats, touch, hud, editor, getState, show }) {
   window.__DA3 = {
-    game, input, settings, stats,
+    game, input, settings, stats, hud, editor,
+    get hudRects() { return hud.state.rects.map(r => ({ ...r })); },
+    get layout() { return JSON.parse(JSON.stringify(hud.layout)); },
+    get screen() { return hud.screen(); },
     get state() { return getState(); },
     get player() { const p = game.player; return { x: p.x, y: p.y, yaw: p.yaw, pitch: p.pitch }; },
     get touch() { return touch.state; },

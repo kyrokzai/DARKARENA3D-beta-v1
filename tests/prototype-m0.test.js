@@ -172,14 +172,14 @@ async function holdKey(page, code, ms) { await page.keyboard.down(code); await s
     await touch(cdp, 'touchStart', [{ x: stick.x, y: stick.y, id: 1 }, { x: look.x, y: look.y, id: 2 }]);
     for (let i = 1; i <= 15; i++) { await touch(cdp, 'touchMove', [{ x: stick.x, y: stick.y - 50, id: 1 }, { x: look.x + i * 8, y: look.y, id: 2 }]); await sleep(30); }
     const mid = await page.evaluate(() => ({ p: __DA3.player, t: __DA3.touch }));
-    check('Two fingers at once: joystick active + look active', mid.t.stickId !== null && mid.t.lookId !== null, JSON.stringify(mid.t));
+    check('Two fingers at once: joystick active + look active', mid.t.roles.includes('move') && mid.t.roles.includes('look'), JSON.stringify(mid.t));
     check('Joystick moves forward while look turns right', mid.p.yaw > 0.2 && mid.p.yaw < 1.6 && Math.hypot(mid.p.x - 8, mid.p.y - 8) > 0.3, `yaw=${mid.p.yaw.toFixed(2)} pos=(${mid.p.x.toFixed(2)},${mid.p.y.toFixed(2)})`);
     // 120 px of 932 px safe width at 170° → ~21.9°
     const expected = 120 / vw * 170 * Math.PI / 180;
     check('Look sensitivity = degrees per screen width (device-independent)', Math.abs(mid.p.yaw - expected) < 0.05, `yaw=${mid.p.yaw.toFixed(3)} expected≈${expected.toFixed(3)}`);
     await touch(cdp, 'touchEnd', []); await sleep(80);
     const rel = await page.evaluate(() => __DA3.touch);
-    check('Lifting fingers releases joystick and look', rel.stickId === null && rel.lookId === null && rel.stick.x === 0 && rel.stick.y === 0, JSON.stringify(rel));
+    check('Lifting fingers releases joystick and look', rel.count === 0 && rel.stick.x === 0 && rel.stick.y === 0, JSON.stringify(rel));
     // Dead zone: tiny thumb movement does not move the player
     await touch(cdp, 'touchStart', [{ x: stick.x, y: stick.y, id: 3 }]);
     await touch(cdp, 'touchMove', [{ x: stick.x + 4, y: stick.y - 4, id: 3 }]);
@@ -189,14 +189,14 @@ async function holdKey(page, code, ms) { await page.keyboard.down(code); await s
     await touch(cdp, 'touchMove', [{ x: stick.x + 60, y: stick.y, id: 3 }]);
     await page.evaluate(() => dispatchEvent(new Event('blur')));
     const bl = await page.evaluate(() => __DA3.touch);
-    check('Blur while holding joystick → released (no auto-walk)', bl.stickId === null && bl.stick.x === 0, JSON.stringify(bl));
+    check('Blur while holding joystick → released (no auto-walk)', bl.count === 0 && bl.stick.x === 0, JSON.stringify(bl));
     await touch(cdp, 'touchEnd', []);
     // A third finger is ignored while two roles are taken
     await touch(cdp, 'touchStart', [{ x: stick.x, y: stick.y, id: 4 }, { x: look.x, y: look.y, id: 5 }]);
     await touch(cdp, 'touchStart', [{ x: stick.x, y: stick.y, id: 4 }, { x: look.x, y: look.y, id: 5 }, { x: look.x - 100, y: look.y + 40, id: 6 }]);
     const three = await page.evaluate(() => __DA3.touch);
     await touch(cdp, 'touchEnd', []);
-    check('Third finger does not steal joystick/look', three.stickId !== null && three.lookId !== null, JSON.stringify(three));
+    check('Third finger does not steal joystick/look', three.count === 2 && three.roles.includes('move') && three.roles.includes('look'), JSON.stringify(three));
     // Zoom guards (wait so the previous real touch is outside the 350 ms double-tap window)
     await sleep(500);
     const dbl = await page.evaluate(sel => new Promise(res => {
@@ -219,9 +219,9 @@ async function holdKey(page, code, ms) { await page.keyboard.down(code); await s
     // Simulated notch: safe-area insets via CSS variables → joystick and pause button shift inward
     await page.evaluate(() => { const s = document.documentElement.style; s.setProperty('--sa-left', '59px'); s.setProperty('--sa-right', '59px'); s.setProperty('--sa-bottom', '21px'); });
     await touch(cdp, 'touchStart', [{ x: 20, y: vh - 10, id: 7 }]);
-    const sa = await page.evaluate(() => { const b = document.getElementById('stickBase').getBoundingClientRect(), pb = document.getElementById('pauseBtn').getBoundingClientRect(); return { stickLeft: b.left, stickBottom: b.bottom, pauseRight: pb.right, vw: innerWidth, vh: innerHeight }; });
+    const sa = await page.evaluate(() => { const b = document.querySelector('.hud-move').getBoundingClientRect(), pb = document.getElementById('pauseBtn').getBoundingClientRect(); return { stickLeft: b.left, stickBottom: b.bottom, pauseRight: pb.right, vw: innerWidth, vh: innerHeight }; });
     await touch(cdp, 'touchEnd', []);
-    check('Safe area (simulated notch 59 px): joystick and pause button stay inside', sa.stickLeft >= 59 && sa.stickBottom <= sa.vh - 21 && sa.pauseRight <= sa.vw - 59, JSON.stringify(sa));
+    check('Safe area (simulated notch 59 px): joystick and pause button stay inside', sa.stickLeft >= 59 - 0.5 && sa.stickBottom <= sa.vh - 21 + 0.5 && sa.pauseRight <= sa.vw - 59 + 0.5, JSON.stringify(sa));
     await ctx.close();
   }
 

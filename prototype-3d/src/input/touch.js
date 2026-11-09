@@ -1,96 +1,140 @@
 // Touch input for iPhone/Safari and other touch devices (rules: .claude/skills/dark-arena-mobile).
-// - Pointer Events only for gameplay; one pointer per role (joystick / look); extra fingers ignored.
-// - Floating joystick in the left zone (left 40 % of the safe area), dead zone + rescale.
-// - Look on the right: device-independent sensitivity = degrees per full safe-area-width swipe.
-// - Every captured pointer is released on up/cancel/lostpointercapture, blur, pagehide,
-//   visibilitychange and orientation change.
+// Every finger gets exactly one role: move stick, look (touchpad or right stick), or one action button.
+// Roles run concurrently, so 2, 3, 4+ fingers work (e.g. move + look + fire + jump).
+// - Move stick: 'floating' (appears under the thumb anywhere in the left zone) or 'fixed' (must touch the stick).
+// - Look: 'touchpad' — degrees per full safe-area-width swipe; 'stick' — rate-based right joystick.
+// - Dead zones configurable; output rescaled so it starts at 0 right after the dead zone.
+// - Every captured pointer is released on up/cancel/lostpointercapture, blur, pagehide, visibility, rotation.
 // - Zoom/scroll prevention is scoped to the game layer; menus (.screen) keep native behaviour.
-const DEAD_ZONE = 0.12;
-const STICK_RADIUS = 56; // CSS px, max knob travel
-const LEFT_ZONE = 0.4;
+import { HUD_ELEMENTS } from '../ui/hud-layout.js';
+import { readSafeArea } from '../ui/safe-area.js';
 
-export function readSafeArea() {
-  const probe = document.getElementById('safeProbe');
-  const cs = getComputedStyle(probe);
-  return {
-    left: parseFloat(cs.paddingLeft) || 0, right: parseFloat(cs.paddingRight) || 0,
-    top: parseFloat(cs.paddingTop) || 0, bottom: parseFloat(cs.paddingBottom) || 0,
-  };
-}
+export { readSafeArea };
+const LEFT_ZONE = 0.4;     // left 40 % of the safe area belongs to movement
+const FIXED_SLOP = 1.3;    // fixed stick accepts touches up to 30 % outside its ring
 
-export function setupTouchInput({ input, layer, getSettings, isPlaying }) {
-  const base = document.getElementById('stickBase'), knob = document.getElementById('stickKnob');
-  let stickId = null, stickCx = 0, stickCy = 0, lookId = null, lookX = 0, lookY = 0;
+/** Radial dead zone with rescale. Returns magnitude 0..1. */
+export function applyDeadZone(m, dz) { return m <= dz ? 0 : Math.min(1, (m - dz) / (1 - dz)); }
+
+export function setupTouchInput({ input, layer, hud, getSettings, isPlaying }) {
+  const roles = new Map(); // pointerId → role
   let safe = readSafeArea();
+  const lookStick = { x: 0, y: 0 };
 
-  const restStick = () => {
-    base.classList.remove('active');
-    base.style.left = ''; base.style.top = '';
-    knob.style.transform = '';
-  };
-  const releaseStick = () => {
-    if (stickId !== null) { try { layer.releasePointerCapture(stickId); } catch {} }
-    stickId = null; input.stickMove.x = input.stickMove.y = 0; input.update(); restStick();
-  };
-  const releaseLook = () => {
-    if (lookId !== null) { try { layer.releasePointerCapture(lookId); } catch {} }
-    lookId = null;
-  };
-  const releaseAll = () => { releaseStick(); releaseLook(); };
+  // Each role carries a tag: 'move' | 'look' | 'lookStick' | 'btn:<id>'; one finger per tag.
+  const roleTaken = tag => { for (const r of roles.values()) if (r.tag === tag) return true; return false; };
+  const knobOf = id => hud.els[id].querySelector('.knob');
 
-  function updateStick(x, y) {
-    let dx = x - stickCx, dy = y - stickCy;
-    const d = Math.hypot(dx, dy), clamped = Math.min(d, STICK_RADIUS);
-    const kx = d > 0 ? dx / d * clamped : 0, ky = d > 0 ? dy / d * clamped : 0;
-    knob.style.transform = `translate(${kx}px, ${ky}px)`;
-    let m = clamped / STICK_RADIUS;
-    m = m <= DEAD_ZONE ? 0 : (m - DEAD_ZONE) / (1 - DEAD_ZONE);
-    input.stickMove.x = d > 0 ? dx / d * m : 0;
-    input.stickMove.y = d > 0 ? -dy / d * m : 0; // finger up = forward
-    input.update();
+  function stickVector(r, x, y) {
+    const radius = r.radius;
+    let dx = x - r.cx, dy = y - r.cy;
+    const d = Math.hypot(dx, dy), c = Math.min(d, radius);
+    const kx = d > 0 ? dx / d * c : 0, ky = d > 0 ? dy / d * c : 0;
+    knobOf(r.id).style.transform = `translate(${kx}px, ${ky}px)`;
+    const dz = r.id === 'move' ? getSettings().moveDeadZone : getSettings().lookDeadZone;
+    const m = applyDeadZone(c / radius, dz);
+    return { x: d > 0 ? dx / d * m : 0, y: d > 0 ? dy / d * m : 0 };
+  }
+
+  function startStick(e, id, floating) {
+    const rect = hud.rectOf(id), el = hud.els[id];
+    if (!rect) return false;
+    let cx = rect.cx, cy = rect.cy;
+    const radius = rect.size * 0.42;
+    if (floating) {
+      // The stick jumps under the thumb, kept fully inside the left zone of the safe area.
+      const sw = innerWidth - safe.left - safe.right, half = rect.size / 2;
+      cx = Math.max(safe.left + half, Math.min(e.clientX, safe.left + sw * LEFT_ZONE));
+      cy = Math.max(safe.top + half, Math.min(e.clientY, innerHeight - safe.bottom - half));
+      el.style.transform = `translate(${cx - rect.cx}px, ${cy - rect.cy}px)`;
+    }
+    el.classList.add('active');
+    const role = id === 'move' ? 'move' : 'lookStick';
+    const r = { role, tag: role, id, cx, cy, radius };
+    roles.set(e.pointerId, r);
+    applyStick(r, e.clientX, e.clientY);
+    return true;
+  }
+  function applyStick(r, x, y) {
+    const v = stickVector(r, x, y);
+    if (r.role === 'move') { input.stickMove.x = v.x; input.stickMove.y = -v.y; input.update(); }
+    else { lookStick.x = v.x; lookStick.y = v.y; }
+  }
+
+  function release(pointerId) {
+    const r = roles.get(pointerId);
+    if (!r) return;
+    roles.delete(pointerId);
+    try { layer.releasePointerCapture(pointerId); } catch {}
+    if (r.role === 'move' || r.role === 'lookStick') {
+      const el = hud.els[r.id];
+      el.classList.remove('active'); el.style.transform = ''; knobOf(r.id).style.transform = '';
+      if (r.role === 'move') { input.stickMove.x = input.stickMove.y = 0; input.update(); }
+      else { lookStick.x = lookStick.y = 0; }
+    } else if (r.role === 'button') {
+      hud.els[r.id].classList.remove('pressed');
+      input.setAction(HUD_ELEMENTS[r.id].action, false);
+    }
+  }
+  const releaseAll = () => { for (const id of [...roles.keys()]) release(id); };
+
+  function lookDelta(dx, dy) {
+    const s = getSettings(), sw = Math.max(200, innerWidth - safe.left - safe.right);
+    const radPerPx = s.touchDegPerWidth * Math.PI / 180 / sw;
+    input.addLook(dx * radPerPx * s.touchSensX, -dy * radPerPx * s.touchSensY * (s.invertY ? -1 : 1));
   }
 
   layer.addEventListener('pointerdown', e => {
-    if (e.pointerType === 'mouse' || !isPlaying()) return;
-    if (e.target.closest('button')) return;
+    if (e.pointerType === 'mouse' || !isPlaying() || hud.state.editing) return;
+    if (e.target.closest('button')) return; // pause button: normal click
     e.preventDefault();
     document.body.classList.add('touch');
     safe = readSafeArea();
-    const safeW = innerWidth - safe.left - safe.right;
-    const inLeft = e.clientX < safe.left + safeW * LEFT_ZONE;
-    if (inLeft && stickId === null) {
-      stickId = e.pointerId;
-      layer.setPointerCapture(stickId);
-      // Floating base: appears under the thumb, kept fully inside the safe area.
-      const r = STICK_RADIUS + 10;
-      stickCx = Math.max(safe.left + r, Math.min(e.clientX, safe.left + safeW * LEFT_ZONE));
-      stickCy = Math.max(safe.top + r, Math.min(e.clientY, innerHeight - safe.bottom - r));
-      base.classList.add('active');
-      base.style.left = stickCx + 'px'; base.style.top = stickCy + 'px';
-      updateStick(e.clientX, e.clientY);
-    } else if (!inLeft && lookId === null) {
-      lookId = e.pointerId;
-      layer.setPointerCapture(lookId);
-      lookX = e.clientX; lookY = e.clientY;
+    const s = getSettings();
+    const hit = e.target.closest('[data-hud]');
+    const id = hit && hit.dataset.hud;
+    const capture = () => layer.setPointerCapture(e.pointerId);
+
+    if (id && HUD_ELEMENTS[id].kind === 'button') {
+      if (roleTaken('btn:' + id)) return;
+      roles.set(e.pointerId, { role: 'button', tag: 'btn:' + id, id, lastX: e.clientX, lastY: e.clientY });
+      hit.classList.add('pressed');
+      input.setAction(HUD_ELEMENTS[id].action, true);
+      capture();
+      return;
     }
+    if (id === 'look' && !roleTaken('lookStick') && !roleTaken('look')) { if (startStick(e, 'look', false)) capture(); return; }
+    if (id === 'move' && !roleTaken('move')) { if (startStick(e, 'move', s.moveStickMode === 'floating')) capture(); return; }
+
+    const sw = innerWidth - safe.left - safe.right;
+    const inLeft = e.clientX < safe.left + sw * LEFT_ZONE;
+    if (inLeft) {
+      if (roleTaken('move')) return;
+      if (s.moveStickMode === 'floating') { if (startStick(e, 'move', true)) capture(); return; }
+      const r = hud.rectOf('move');
+      if (r && Math.hypot(e.clientX - r.cx, e.clientY - r.cy) <= r.size / 2 * FIXED_SLOP && startStick(e, 'move', false)) capture();
+      return;
+    }
+    if (s.lookMode === 'stick') {
+      const r = hud.rectOf('look');
+      if (r && !roleTaken('lookStick') && Math.hypot(e.clientX - r.cx, e.clientY - r.cy) <= r.size / 2 * FIXED_SLOP && startStick(e, 'look', false)) capture();
+      return;
+    }
+    if (roleTaken('look')) return;
+    roles.set(e.pointerId, { role: 'look', tag: 'look', lastX: e.clientX, lastY: e.clientY });
+    capture();
   }, { passive: false });
 
   layer.addEventListener('pointermove', e => {
-    if (e.pointerId === stickId) { updateStick(e.clientX, e.clientY); return; }
-    if (e.pointerId !== lookId) return;
-    const dx = e.clientX - lookX, dy = e.clientY - lookY;
-    lookX = e.clientX; lookY = e.clientY;
-    const s = getSettings(), safeW = Math.max(200, innerWidth - safe.left - safe.right);
-    const radPerPx = s.touchDegPerWidth * Math.PI / 180 / safeW;
-    input.addLook(dx * radPerPx * s.touchSensX, -dy * radPerPx * s.touchSensY * (s.invertY ? -1 : 1));
+    const r = roles.get(e.pointerId);
+    if (!r) return;
+    if (r.role === 'move' || r.role === 'lookStick') { applyStick(r, e.clientX, e.clientY); return; }
+    const dx = e.clientX - r.lastX, dy = e.clientY - r.lastY;
+    r.lastX = e.clientX; r.lastY = e.clientY;
+    if (r.role === 'look' || (r.role === 'button' && r.id === 'fire' && getSettings().fireLook)) lookDelta(dx, dy);
   });
 
-  for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) {
-    layer.addEventListener(type, e => {
-      if (e.pointerId === stickId) releaseStick();
-      else if (e.pointerId === lookId) releaseLook();
-    });
-  }
+  for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) layer.addEventListener(type, e => release(e.pointerId));
   document.addEventListener('visibilitychange', () => { if (document.hidden) releaseAll(); });
   addEventListener('blur', releaseAll);
   addEventListener('pagehide', releaseAll);
@@ -102,7 +146,17 @@ export function setupTouchInput({ input, layer, getSettings, isPlaying }) {
 
   return {
     releaseAll,
-    get state() { return { stickId, lookId, stick: { ...input.stickMove } }; },
+    /** Per-frame: right stick turns at a rate (deg/s) scaled by sensitivities. */
+    frame(dt) {
+      if (!lookStick.x && !lookStick.y) return;
+      const s = getSettings(), k = s.lookStickSpeed * Math.PI / 180 * dt;
+      // Slight curve for precise small corrections.
+      const cx = Math.sign(lookStick.x) * Math.abs(lookStick.x) ** 1.5, cy = Math.sign(lookStick.y) * Math.abs(lookStick.y) ** 1.5;
+      input.addLook(cx * k * s.touchSensX, -cy * k * s.touchSensY * (s.invertY ? -1 : 1));
+    },
+    get state() {
+      return { roles: [...roles.values()].map(r => r.tag), ids: [...roles].map(([pid, r]) => [pid, r.tag]), count: roles.size, stick: { ...input.stickMove }, lookStick: { ...lookStick }, actions: { ...input.actions } };
+    },
   };
 }
 

@@ -24,13 +24,21 @@ Debug/test hook: add `?debug=1` (exposes `window.__DA3`; never needed for normal
 
 | PC | Phone (landscape) |
 |---|---|
-| Click PLAY → mouse is captured (Pointer Lock) | Left 40 % of the screen: floating joystick |
-| WASD — move, mouse — look, arrows — turn | Right side: drag to look |
-| Esc / P — pause (if capture is refused: hold left button and drag to look) | ☰ — pause |
+| Click PLAY → mouse is captured (Pointer Lock) | Left 40 % of the safe area: movement joystick (floating or fixed) |
+| WASD — move, mouse — look, arrows — turn | Right side: swipe to look, or a right virtual joystick (setting) |
+| Esc / P — pause (if capture is refused: hold left button and drag to look) | ☰ — pause; FIRE / AIM / RELOAD / JUMP buttons emit intents (mechanics come in M1.3+) |
 
-Settings (⚙): mouse sensitivity, touch "degrees per full-width swipe", touch X/Y multipliers, invert Y,
-field of view, render resolution (retro pixels ↔ sharp), FPS counter. Stored in `localStorage`
-(`darkarena_proto3d_settings_v1`, separate from the main game).
+Fingers are independent: move + look + two buttons (4 fingers) work at the same time; a finger that holds FIRE
+can also turn the camera (setting). All fingers are released on app switch, notification, rotation.
+
+**HUD editor** (Pause → «Расставить HUD», or Settings → HUD): drag any control, select it and change its size
+with − / +; a control cannot leave the safe area or overlap another one; «Стандарт» restores the BUILD 1.3 layout
+(asks for confirmation); «Отмена» discards; «Готово» saves.
+
+Settings (tabs СЕНСОР / HUD / ПК / ГРАФИКА): move/look stick modes, dead zones, swipe degrees per screen width,
+right-stick speed, horizontal and vertical sensitivity, invert Y, fire-look, global HUD size and opacity, minimap
+and action-button visibility, mouse sensitivity, FOV, render resolution, FPS counter.
+Stored in `localStorage`: `darkarena_proto3d_settings_v1` and `darkarena_proto3d_layout_v1` (separate from the main game).
 
 ## Structure
 
@@ -47,7 +55,11 @@ prototype-3d/
     sim/                PURE gameplay logic (no DOM, no three.js): world, collision, player, game
     input/              input.js (device-independent state), desktop.js, touch.js
     render/             renderer.js (camera, resize, context loss), level.js (map → meshes), textures.js
-    ui/settings.js      settings form + persistence
+    ui/settings.js      tabbed settings screen + persistence
+    ui/hud-layout.js    HUD layout model (pure): elements, BUILD 1.3 defaults, safe-area rects, overlap checks
+    ui/hud.js           HUD view: controls, minimap, layout application
+    ui/hud-editor.js    drag / resize / reset editor
+    ui/safe-area.js     reads env(safe-area-inset-*)
     debug.js            test hook, loaded only with ?debug=1
 ```
 
@@ -59,4 +71,5 @@ that emit events; `render/`, `ui/` and a future `audio/` subscribe to them.
 ```bash
 node tests/sim-m0.test.mjs          # pure logic, no browser
 node tests/prototype-m0.test.js     # Playwright + Chromium (needs: npm i -D playwright)
+node tests/m1.1-mobile.test.js      # M1.1 mobile controls & HUD editor
 ```

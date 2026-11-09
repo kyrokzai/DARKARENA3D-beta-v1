@@ -7,6 +7,13 @@ export class InputState {
     this.move = { x: 0, y: 0 };      // combined, clamped to the unit circle
     this.lookYaw = 0;                // accumulated radians since last consume
     this.lookPitch = 0;
+    // Action intents (held state + press counters). The sim reads them once mechanics exist (M1.3+).
+    this.actions = { fire: false, aim: false, reload: false, jump: false };
+    this.presses = { fire: 0, aim: 0, reload: 0, jump: 0 };
+  }
+  setAction(name, down) {
+    if (down && !this.actions[name]) this.presses[name]++;
+    this.actions[name] = down;
   }
   addLook(dYaw, dPitch) { this.lookYaw += dYaw; this.lookPitch += dPitch; }
   consumeLook() { const r = [this.lookYaw, this.lookPitch]; this.lookYaw = 0; this.lookPitch = 0; return r; }
@@ -17,5 +24,9 @@ export class InputState {
     this.move.x = x; this.move.y = y;
     return this;
   }
-  clear() { this.keyMove.x = this.keyMove.y = this.stickMove.x = this.stickMove.y = 0; this.consumeLook(); this.update(); }
+  clear() {
+    this.keyMove.x = this.keyMove.y = this.stickMove.x = this.stickMove.y = 0;
+    for (const k in this.actions) this.actions[k] = false;
+    this.consumeLook(); this.update();
+  }
 }

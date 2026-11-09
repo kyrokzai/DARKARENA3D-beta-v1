@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#07090d">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<title>DARK ARENA · 3D Prototype M0</title>
+<title>DARK ARENA · 3D Prototype</title>
 <link rel="stylesheet" href="./style.css">
 <script type="importmap">{ "imports": { "three": "./vendor/three/three.module.js" } }</script>
 </head>
@@ -14,37 +14,44 @@
 <div id="safeProbe" aria-hidden="true"></div>
 
 <div id="game">
-  <!-- canvas is inserted here by the renderer -->
+  <!-- canvas is inserted here by the renderer; HUD controls are built by src/ui/hud.js -->
   <div class="hud">
-    <div id="cross">+</div>
+    <div id="cross" aria-hidden="true"></div>
     <div id="fps" class="hidden"></div>
-    <button type="button" id="pauseBtn" aria-label="Пауза">☰</button>
-    <div id="stickBase"><div id="stickKnob"></div></div>
+    <button type="button" id="pauseBtn" aria-label="Пауза"><span></span><span></span><span></span></button>
     <div id="hint">WASD — движение · мышь — обзор · Esc — пауза</div>
+  </div>
+  <div id="editBar" class="hidden" role="toolbar" aria-label="Редактор HUD">
+    <div class="ed-title"><small>РЕДАКТОР HUD</small><b class="ed-name"></b></div>
+    <div class="ed-sizer"><button type="button" data-ed="minus" aria-label="Меньше">−</button><span class="ed-size"></span><button type="button" data-ed="plus" aria-label="Больше">+</button></div>
+    <button type="button" class="ed-btn" data-ed="reset">Стандарт</button>
+    <button type="button" class="ed-btn" data-ed="cancel">Отмена</button>
+    <button type="button" class="ed-btn ok" data-ed="done">Готово</button>
+    <div class="ed-toast" aria-live="polite"></div>
   </div>
 </div>
 
 <div id="menu" class="screen"><div class="panel">
   <h1 class="logo">DARK ARENA</h1>
-  <div class="sub">3D PROTOTYPE · M0 · THREE.JS r186</div>
-  <p>Технический прототип: карта Training Grounds в настоящем 3D. Врагов и оружия пока нет — проверяем движение, обзор и управление.</p>
+  <div class="sub">3D PROTOTYPE · M1.1 · THREE.JS r186</div>
+  <p class="lead">Прототип на Three.js: Training Grounds в 3D. Сейчас проверяем движение, обзор и мобильное управление.</p>
   <button type="button" class="primary" id="playBtn">ИГРАТЬ</button>
-  <button type="button" class="secondary" id="menuSettings">⚙ НАСТРОЙКИ</button>
-  <p class="tiny">ПК: клик — захват мыши, WASD — движение, стрелки — поворот, Esc/P — пауза.<br>
-  Телефон: горизонтально; левая часть экрана — джойстик, правая — обзор.</p>
+  <button type="button" class="secondary" id="menuSettings">НАСТРОЙКИ</button>
+  <p class="tiny">ПК: клик — захват мыши · WASD · стрелки · Esc/P — пауза.<br>
+  Телефон: горизонтально · слева — движение · справа — обзор.</p>
 </div></div>
 
 <div id="paused" class="screen hidden"><div class="panel">
   <h2>ПАУЗА</h2>
   <button type="button" class="primary" id="resumeBtn">ПРОДОЛЖИТЬ</button>
-  <button type="button" class="secondary" id="pauseSettings">⚙ НАСТРОЙКИ</button>
+  <button type="button" class="secondary" id="pauseEditHud">РАССТАВИТЬ HUD</button>
+  <button type="button" class="secondary" id="pauseSettings">НАСТРОЙКИ</button>
   <button type="button" class="secondary" id="quitBtn">ГЛАВНОЕ МЕНЮ</button>
 </div></div>
 
-<div id="settings" class="screen hidden"><div class="panel">
-  <h2>⚙ НАСТРОЙКИ</h2>
+<div id="settings" class="screen hidden"><div class="panel wide-panel">
+  <div class="panel-head"><h2>НАСТРОЙКИ</h2><button type="button" class="primary small" id="settingsBack">ГОТОВО</button></div>
   <form id="settingsForm" onsubmit="return false"></form>
-  <button type="button" class="primary" id="settingsBack">ГОТОВО</button>
 </div></div>
 
 <div id="rotate" class="rotate"><span>↻</span>Поверни телефон горизонтально</div>

@@ -45,3 +45,15 @@ Test hook: `window.__DA` with `?debug=1`. Tests: `tests/build-1.3.test.js`.
 5. Joystick has no dead zone; look sensitivity is per-pixel (device dependent); no look smoothing
    or acceleration options; no right-joystick option; cannot aim while holding FIRE with one thumb.
 6. Rotate overlay does not pause the game; `blur`/`pagehide` do not release pointers.
+
+## 3D prototype (`prototype-3d/`, M1.1, 2026-11-09)
+
+Reference implementation of this skill's rules — reuse it, do not re-invent:
+- `src/input/touch.js` — finger roles (`move` / `look` / `lookStick` / `btn:<id>`), floating|fixed move stick,
+  touchpad|stick look, dead zones with rescale, degrees-per-width look, fire-look, release on blur/pagehide/visibility/rotation,
+  scoped zoom guards.
+- `src/ui/hud-layout.js` — pure layout model: positions normalized to the safe rect, BUILD 1.3 defaults,
+  min 44 px, overlap/bounds checks, display-time resolver.
+- `src/ui/hud-editor.js` — drag / resize / reset with overlap refusal.
+- Tests: `tests/m1.1-mobile.test.js` (2/3/4 fingers, editor, persistence, rotation, zoom guards).
+Still not verified on a real iPhone.
