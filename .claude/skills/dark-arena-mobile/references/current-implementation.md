@@ -21,7 +21,16 @@ Everything is in one inline `<script>` IIFE; names below are the functions/ids t
 | Orientation | CSS `.rotate` overlay | shown in portrait ≤ 700 px wide; game is not paused by it |
 | Edit mode | `$('editHud').onclick` | reassigns `$('pauseBtn').onclick` back and forth |
 
-## Known defects (verified)
+## Status in BUILD 1.3 (`DARK_ARENA_1_3.html`, 2026-11-09)
+
+Fixed: #1 (yaw), #2 (menu scroll: `touch-action:none` only on `#view, .hud, .hud *, .rotate`; menus `pan-y`),
+#3 (double-tap guard + `dblclick` + `gesturechange/end` on the game layer only; `touchstart`
+preventDefault on canvas/HUD except buttons), #6 (`releaseAll()` registry: blur, pagehide,
+visibilitychange, orientationchange; portrait pauses the game).
+Still open: #4 (safe areas), #5 (dead zone, device-independent sensitivity, right-stick option, aim on FIRE).
+Test hook: `window.__DA` with `?debug=1`. Tests: `tests/build-1.3.test.js`.
+
+## Known defects (verified in BUILD 1.2)
 
 1. **Strafe and wall rays use `player.y` instead of `player.yaw`** (`update()` movement line and the
    wall-ray loop in `render()`). Strafing direction and the wall projection depend on the player's
