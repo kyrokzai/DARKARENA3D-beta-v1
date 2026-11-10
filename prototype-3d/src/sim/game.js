@@ -26,14 +26,19 @@ export class Game {
     // The combined list is rebuilt only when one of them changes (no allocation per shot).
     this.targets = []; this.enemies = []; this.hittables = [];
     this.flow = new FlowField(this.world);       // shared navigation field towards the player (M1.5)
-    this.waves = new WaveDirector(this, { rng: opts.waveRng || Math.random });
+    this.waves = new WaveDirector(this, { rng: opts.waveRng || Math.random, ...(opts.waves ? { waves: opts.waves } : {}), ...(opts.match ? { match: opts.match } : {}) });
+    this.matchOver = false; this.noise = false;
     this.nextEnemyId = 1;
-    this.aiCtx = { world: this.world, player: this.player, playerAlive: true, flow: this.flow, others: this.enemies,
+    this.aiCtx = { world: this.world, player: this.player, playerAlive: true, flow: this.flow, others: this.enemies, rng: opts.aiRng || Math.random,
       onAlert: e => this.emit('infectedAlert', { id: e.id, x: e.x, y: e.y }),
+      onLost: e => this.emit('infectedLost', { id: e.id, x: e.lastSeen.x, y: e.lastSeen.y }),
+      onReacquire: e => this.emit('infectedReacquire', { id: e.id }),
+      onGiveUp: e => this.emit('infectedGiveUp', { id: e.id }),
       onSwing: e => this.emit('infectedAttack', { id: e.id, x: e.x, y: e.y }),
       onBlow: (e, dmg) => this.damagePlayer(dmg, e) };
     this.lastJumpPress = 0; this.jumpResync = true; // first step (and after a pause) adopts the counter
     this.weapon = new WeaponSystem(this, getWeaponDef(opts.weapon), { rng: opts.rng || Math.random });
+    this.on('fire', () => { this.noise = true; }); // gunfire is heard by infected in range (handled in step)
   }
   /** Test mode only: place training targets on the range. */
   spawnTrainingTargets(spots = TRAINING_TARGET_SPOTS) {
@@ -45,8 +50,8 @@ export class Game {
   rebuildHittables() { this.hittables = [...this.targets, ...this.enemies]; }
 
   // ---------------- infected (M1.5) ----------------
-  spawnInfected(type, x, y, facing = 0) {
-    const e = new Infected('inf-' + this.nextEnemyId++, getInfectedDef(type), x, y, facing, (this.nextEnemyId % 5) / 5);
+  spawnInfected(type, x, y, facing = 0, opts = undefined) {
+    const e = new Infected('inf-' + this.nextEnemyId++, getInfectedDef(type), x, y, facing, (this.nextEnemyId % 5) / 5, opts);
     this.enemies.push(e); this.rebuildHittables();
     this.emit('infectedSpawn', { id: e.id, type, x, y, tick: this.tick });
     return e;
@@ -72,6 +77,8 @@ export class Game {
     this.emit('playerHurt', { damage: n, from: from ? { id: from.id, x: from.x, y: from.y } : null, hp: this.state.health.hp });
     if (this.state.health.hp === 0) { p.dead = true; this.weapon.release(); this.emit('playerDied', { tick: this.tick }); }
   }
+  /** Last wave cleared: the match is won (once). */
+  onVictory() { if (this.matchOver) return; this.matchOver = true; this.weapon.release(); this.emit('victory', { kills: this.state.kills, waves: this.waves.waves.length }); }
   /** Start the wave sequence (from PLAY). */
   startWaves(n = 1) { this.waves.start(n); }
   /** Full restart: player, ammo, health, kills, infected, wave 1 (waves = false: shooting range, no wave). */
@@ -82,7 +89,7 @@ export class Game {
     this.state.resetRun();
     this.weapon.equip(this.weapon.def);
     this.flow.tx = this.flow.ty = -1;
-    this.jumpResync = true;
+    this.jumpResync = true; this.matchOver = false; this.noise = false;
     this.waves.reset(); if (waves) this.startWaves(1);
     this.emit('restart', {});
   }
@@ -103,10 +110,12 @@ export class Game {
     if (this.enemies.length) {
       this.flow.setTarget(this.player.x, this.player.y);
       this.aiCtx.playerAlive = alive;
+      if (this.noise && alive) for (const e of this.enemies) e.hear(this.player.x, this.player.y, this.aiCtx);
       for (const e of this.enemies) e.step(dt, this.aiCtx);
       for (const e of this.enemies) if (!e.alive && !e.killCounted) this.onInfectedKilled(e); // safety net
       for (let i = this.enemies.length - 1; i >= 0; i--) if (this.enemies[i].removed) this.removeInfected(this.enemies[i]); // plain loop, no closures per tick
     }
+    this.noise = false;
     this.waves.step(dt);
     this.tick++;
   }

@@ -34,22 +34,27 @@
   </div>
 </div>
 
-<div id="menu" class="screen"><div class="panel">
+<div id="menu" class="screen"><div class="panel menu-panel">
   <h1 class="logo">DARK ARENA</h1>
-  <div class="sub">3D PROTOTYPE · M1.5 · THREE.JS r186</div>
-  <p class="lead">Training Grounds. Первая волна заражённых — DA-INF01 THE HOLLOW. Оружие DA-R1 RAVEN.</p>
-  <button type="button" class="primary" id="playBtn">ИГРАТЬ</button>
-  <button type="button" class="secondary" id="menuSettings">НАСТРОЙКИ</button>
-  <p class="tiny">ПК: клик — захват мыши · WASD · ЛКМ — огонь · ПКМ — прицел · R — перезарядка · Пробел — прыжок · Esc/P — пауза.<br>
-  Телефон: горизонтально · слева — движение · справа — обзор · ОГОНЬ / ПРИЦЕЛ / ПЕРЕЗАР. / ПРЫЖОК</p>
+  <nav class="menu-list" aria-label="Главное меню">
+    <button type="button" class="primary" id="playBtn">ИГРАТЬ</button>
+    <button type="button" class="secondary" id="menuSettings">НАСТРОЙКИ</button>
+    <button type="button" class="secondary" id="aboutBtn">ОБ ИГРЕ</button>
+  </nav>
+</div></div>
+
+<div id="about" class="screen hidden"><div class="panel">
+  <h2>ОБ ИГРЕ</h2>
+  <p class="lead">DARK ARENA — шутер от первого лица на выживание. Арена, винтовка DA-R1 RAVEN и три волны заражённых DA-INF01 THE HOLLOW: переживи все три.</p>
+  <p class="about-ver">Версия <b id="aboutVersion">M1.6</b> · тестовая сборка</p>
+  <button type="button" class="primary" id="aboutBack">НАЗАД</button>
 </div></div>
 
 <div id="paused" class="screen hidden"><div class="panel">
   <h2>ПАУЗА</h2>
   <button type="button" class="primary" id="resumeBtn">ПРОДОЛЖИТЬ</button>
-  <button type="button" class="secondary" id="pauseEditHud">РАССТАВИТЬ HUD</button>
   <button type="button" class="secondary" id="pauseSettings">НАСТРОЙКИ</button>
-  <button type="button" class="secondary" id="quitBtn">ГЛАВНОЕ МЕНЮ</button>
+  <button type="button" class="secondary" id="quitBtn">В ГЛАВНОЕ МЕНЮ</button>
 </div></div>
 
 <div id="dead" class="screen hidden"><div class="panel">
@@ -57,6 +62,13 @@
   <p class="lead" id="deadStats">—</p>
   <button type="button" class="primary" id="restartBtn">ЗАНОВО</button>
   <button type="button" class="secondary" id="deadMenuBtn">ГЛАВНОЕ МЕНЮ</button>
+</div></div>
+
+<div id="victory" class="screen hidden"><div class="panel">
+  <h2 class="win-title">ПОБЕДА</h2>
+  <p class="lead" id="winStats">—</p>
+  <button type="button" class="primary" id="winRestartBtn">ЗАНОВО</button>
+  <button type="button" class="secondary" id="winMenuBtn">ГЛАВНОЕ МЕНЮ</button>
 </div></div>
 
 <div id="settings" class="screen hidden"><div class="panel wide-panel">

@@ -37,7 +37,9 @@ async function open(browser, base, contextOpts, { play = true, throttle = 0, ini
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   const cdp = await ctx.newCDPSession(page);
   if (throttle) await cdp.send('Emulation.setCPUThrottlingRate', { rate: throttle });
-  await page.goto(base + '/prototype-3d/?debug=1');
+  // M1.6: the game ships a 2× arena; the M0 checks are about the original Training Grounds grid (BUILD 1.3 wall count,
+  // the east wall at x = 15), so they keep running on that map through the debug-only switch &map=training.
+  await page.goto(base + '/prototype-3d/?debug=1&map=training');
   await page.waitForFunction(() => window.__DA3, null, { timeout: 15000 });
   if (play) { await page.evaluate(() => document.getElementById('playBtn').click()); await sleep(150); }
   return { ctx, page, errors, cdp };

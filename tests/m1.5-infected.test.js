@@ -17,7 +17,7 @@ const WAVES = '/prototype-3d/?debug=1&waves=1';
 // aim the player exactly at an infected's zone and fire one round through the real input path
 const fireAt = (page, idx, zone) => DA(page, ([i, z]) => {
   const g = __DA3.game, e = g.enemies[i], p = g.player, hb = e.hitboxes(), h = z === 'head' ? hb[0] : hb[1];
-  const tz = z === 'head' ? h.cz : 0.45, d = Math.hypot(h.cx - p.x, h.cy - p.y);
+  const tz = h.cz, d = Math.hypot(h.cx - p.x, h.cy - p.y); // M1.6: aim at the centre of the animated zone (head / chest)
   p.yaw = Math.atan2(h.cy - p.y, h.cx - p.x); p.pitch = Math.atan2(tz - 0.8 - p.z, d); g.weapon.recoilClimb = 0;
   __DA3.input.setAction('fire', true); __DA3.input.setAction('fire', false); // tap shorter than a tick = exactly one round
 }, [idx, zone]).then(() => ticks(page, 8));
@@ -36,9 +36,10 @@ const fireAt = (page, idx, zone) => DA(page, ([i, z]) => {
     await page.goto(base + '/prototype-3d/');
     await page.click('#playBtn'); await sleep(200);
     // no debug hook in normal play: watch the HUD only
-    await page.waitForFunction(() => /ОСТАЛОСЬ 3/.test(document.querySelector('[data-v=remainingText]').textContent), null, { timeout: 30000 }).catch(() => {});
+    await page.waitForFunction(() => /ОСТАЛОСЬ 9/.test(document.querySelector('[data-v=remainingText]').textContent), null, { timeout: 30000 }).catch(() => {});
     const hud = await page.evaluate(() => ({ wave: document.querySelector('[data-v=wave]').textContent, sub: document.querySelector('[data-v=remainingText]').textContent, kills: document.querySelector('[data-v=kills]').textContent, hook: typeof window.__DA3 }));
-    check('Normal start: PLAY → wave 1 starts, HUD "ОСТАЛОСЬ 3", kills 0, no debug hook, no JS errors', hud.wave === '1' && hud.sub === 'ОСТАЛОСЬ 3' && hud.kills === '0' && hud.hook === 'undefined' && !errors.length, JSON.stringify({ hud, errors }));
+    // M1.6: a wave has 9 infected (was 3) — the HUD counts all of them, including those still to appear
+    check('Normal start: PLAY → wave 1 starts, HUD "ОСТАЛОСЬ 9", kills 0, no debug hook, no JS errors', hud.wave === '1' && hud.sub === 'ОСТАЛОСЬ 9' && hud.kills === '0' && hud.hook === 'undefined' && !errors.length, JSON.stringify({ hud, errors }));
     await ctx.close();
   }
 
@@ -143,8 +144,10 @@ const fireAt = (page, idx, zone) => DA(page, ([i, z]) => {
     check('Wave 1: 3 infected spawned on free floor, ≥ 9 m away', sp.every(s => s.ok && s.d >= 9 - 1e-6), JSON.stringify(sp));
     await shoot(page, 'm15_wave_spawned.png');
     for (let i = 0; i < 3; i++) { for (let k = 0; k < 8 && await DA(page, i => __DA3.game.enemies[i].alive, i); k++) await fireAt(page, i, 'head'); }
+    // M1.6: wave 1 has 9 infected (max 5 alive): the first 3 are shot for real, the rest are removed with the debug kill as they appear
+    await DA(page, () => new Promise(r => { const f = () => { if (__DA3.gs.wave.phase !== 'active') return r(); __DA3.gs.setHealth(100); __DA3.dbg.infKill(); setTimeout(f, 200); }; f(); }));
     const w = await DA(page, () => ({ kills: __DA3.gs.kills, phase: __DA3.gs.wave.phase, banner: document.getElementById('banner').textContent, show: document.getElementById('banner').classList.contains('show'), sub: document.querySelector('[data-v=remainingText]').textContent }));
-    check('All 3 killed → "WAVE 1 COMPLETE", HUD "ЗАЧИЩЕНА", kills 3', w.kills === 3 && w.phase === 'cleared' && w.banner === 'WAVE 1 COMPLETE' && w.show && w.sub === 'ЗАЧИЩЕНА', JSON.stringify(w));
+    check('Wave 1 killed (9) → "WAVE 1 COMPLETE", HUD shows the pause before wave 2, kills 9', w.kills === 9 && w.phase === 'cleared' && w.banner === 'WAVE 1 COMPLETE' && w.show && /^(ВОЛНА 2 ЧЕРЕЗ \d+|ЗАЧИЩЕНА)$/.test(w.sub), JSON.stringify(w));
     await shoot(page, 'm15_wave_complete.png');
     check('No JS errors (wave)', !errors.length, errors.join(' | '));
     // memory: repeated waves + restarts (5 cycles): pool does not grow, JS heap stable
@@ -158,7 +161,7 @@ const fireAt = (page, idx, zone) => DA(page, ([i, z]) => {
       if (window.gc) window.gc();
       return { created0: c0, created: __DA3.infectedView.stats.created, pool: __DA3.infectedView.poolSize, heapMB: +((heap() - h0) / 1048576).toFixed(2), hittables: g.hittables.length };
     });
-    check('Repeated waves + restarts: no new instances (pool reused), no leftover hittables', mem.created === mem.created0 && mem.pool <= 4 && mem.hittables === 0, JSON.stringify(mem));
+    check('Repeated waves + restarts: no new instances (pool reused), no leftover hittables', mem.created === mem.created0 && mem.pool <= 9 /* M1.6: up to 5 alive + bodies */ && mem.hittables === 0, JSON.stringify(mem));
     check('JS heap growth over 4 extra waves < 3 MB', mem.heapMB < 3, mem.heapMB + ' MB');
     await ctx.close();
   }
@@ -166,7 +169,7 @@ const fireAt = (page, idx, zone) => DA(page, ([i, z]) => {
   // ---------- 6. Phone (emulated landscape): controls, fire kills, HUD, hands, jump ----------
   {
     const { ctx, page, cdp, errors } = await open(browser, base, iphone, { path: WAVES });
-    await DA(page, () => { const g = __DA3.game; g.waves.reset(); __DA3.setPlayer(3, 8, 0); g.spawnInfected('hollow', 9, 8, Math.PI); });
+    await DA(page, () => { const g = __DA3.game; g.waves.reset(); __DA3.setPlayer(3, 8, 0); g.spawnInfected('hollow', 9, 8, Math.PI).senseT = 1e9; /* stands still: M1.6 hit zones follow the animated head */ });
     await frames(page, 3);
     const fire = await DA(page, () => { const r = document.querySelector('.hud-fire').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
     await DA(page, () => { const e = __DA3.game.enemies[0], p = __DA3.game.player, hb = e.hitboxes()[0]; p.yaw = Math.atan2(hb.cy - p.y, hb.cx - p.x); p.pitch = Math.atan2(hb.cz - 0.8, Math.hypot(hb.cx - p.x, hb.cy - p.y)); });

@@ -1,6 +1,7 @@
-// DARK ARENA — Three.js prototype (M0 … M1.5). Wires: input → simulation (fixed step) → renderer → HUD/UI.
+// DARK ARENA — Three.js prototype (M0 … M1.6). Wires: input → simulation (fixed step) → renderer → HUD/UI.
 import { SIM_HZ } from './config.js';
-import map from './data/maps/training.js';
+import arena from './data/maps/arena-m16.js';
+import training from './data/maps/training.js';
 import { Game } from './sim/game.js';
 import { startLoop } from './core/loop.js';
 import { InputState } from './input/input.js';
@@ -17,6 +18,9 @@ import { SKINS } from './render/weapons/raven-skins.js';
 
 const $ = id => document.getElementById(id);
 const settings = loadSettings();
+// ?debug=1&map=training keeps the original 16×16 Training Grounds for comparisons; the game uses the M1.6 arena.
+const map = /[?&]debug=1(&|$)/.test(location.search) && /[?&]map=training(&|$)/.test(location.search) ? training : arena;
+const VERSION = 'M1.6';
 const game = new Game(map);
 const input = new InputState();
 const gameEl = $('game');
@@ -28,13 +32,24 @@ const gameHud = createGameHud({ game, hud });
 
 // ---- screens: menu | play | paused | settings | edit ----
 let state = 'menu', settingsReturn = 'menu', editReturn = 'settings';
-const SCREENS = ['menu', 'paused', 'settings', 'dead'];
+const SCREENS = ['menu', 'about', 'paused', 'settings', 'dead', 'victory'];
 const portrait = matchMedia('(orientation: portrait) and (max-width: 900px)');
+const coarse = matchMedia('(pointer: coarse)');
+let focusTimer = 0;
 function show(next) {
   state = next;
   for (const s of SCREENS) $(s).classList.toggle('hidden', s !== next);
   document.body.classList.toggle('playing', next === 'play');
   document.body.classList.toggle('is-dead', next === 'dead');
+  // keyboard: every screen starts with its first button focused; nothing stays focused while playing
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  // (after death / victory / pause the focus comes a moment later, so a key still held from the fight — Space! —
+  //  cannot press ЗАНОВО or ПРОДОЛЖИТЬ by accident)
+  clearTimeout(focusTimer);
+  if (SCREENS.includes(next) && !coarse.matches) {
+    const focus = () => { if (state === next) { const b = $(next).querySelector('button'); if (b) b.focus({ preventScroll: true }); } };
+    if (next === 'menu' || next === 'about' || next === 'settings') focus(); else focusTimer = setTimeout(focus, 450);
+  }
   document.body.classList.toggle('editing', next === 'edit');
   // Leaving play (pause, menus, editor, focus loss): stop firing and leave ADS safely.
   if (next !== 'play') { desktop.release(); touch.releaseAll(); input.clear(); game.releaseCombat(); }
@@ -52,34 +67,57 @@ const editor = createHudEditor({
   onExit: () => { show(editReturn); settingsUi.sync(); },
 });
 
-// Waves start with the first PLAY. ?debug=1 keeps the M1.3/M1.4 shooting range (no waves) unless &waves=1.
+// ИГРАТЬ always starts a NEW match from wave 1; ПРОДОЛЖИТЬ resumes the current one.
+// ?debug=1 keeps the M1.3/M1.4 shooting range (no waves) unless &waves=1.
 const DEBUG = /[?&]debug=1(&|$)/.test(location.search);
 const WAVES_ON = /[?&]waves=1(&|$)/.test(location.search) || (!DEBUG && !/[?&]waves=0(&|$)/.test(location.search));
-let wavesStarted = false;
-function play() {
+function newMatch() {
   if (portrait.matches) return;
-  if (game.player.dead) { show('dead'); return; } // resume after a pause at the moment of death → death screen first
-  if (WAVES_ON && !wavesStarted) { wavesStarted = true; game.startWaves(1); }
-  show('play');
-  desktop.requestLock();
+  stepPhase.clear(); game.restart({ waves: WAVES_ON });
+  show('play'); desktop.requestLock();
 }
+function resume() {
+  if (portrait.matches) return;
+  if (game.player.dead) { show('dead'); return; }      // paused at the moment of death → death screen first
+  if (game.matchOver) { show('victory'); return; }
+  show('play'); desktop.requestLock();
+}
+function toMenu() { stepPhase.clear(); game.restart({ waves: false }); show('menu'); } // the abandoned match is cleared
 function editHud(from) { editReturn = from; desktop.exitLock(); show('edit'); editor.enter(); }
-$('playBtn').onclick = play;
-$('resumeBtn').onclick = play;
+$('playBtn').onclick = newMatch;
+$('resumeBtn').onclick = resume;
 $('menuSettings').onclick = () => { settingsReturn = 'menu'; show('settings'); };
+$('aboutBtn').onclick = () => show('about');
+$('aboutBack').onclick = () => show('menu');
+$('aboutVersion').textContent = VERSION;
 $('pauseSettings').onclick = () => { settingsReturn = 'paused'; show('settings'); };
-$('pauseEditHud').onclick = () => editHud('paused');
 $('settingsBack').onclick = () => show(settingsReturn);
-$('quitBtn').onclick = () => show('menu');
-function restartRun() { stepPhase.clear(); game.restart({ waves: WAVES_ON }); wavesStarted = WAVES_ON; show('play'); desktop.requestLock(); }
-$('restartBtn').onclick = restartRun;
-$('deadMenuBtn').onclick = () => { stepPhase.clear(); game.restart({ waves: WAVES_ON }); wavesStarted = WAVES_ON; show('menu'); };
-$('pauseBtn').addEventListener('click', () => { desktop.exitLock(); show('paused'); });
+$('quitBtn').onclick = toMenu;
+$('restartBtn').onclick = newMatch;
+$('deadMenuBtn').onclick = toMenu;
+$('winRestartBtn').onclick = newMatch;
+$('winMenuBtn').onclick = toMenu;
+// Keyboard navigation in menus: ↑/↓ (or W/S) move between buttons, Enter/Space activate (native), Esc goes back.
+addEventListener('keydown', e => {
+  if (!SCREENS.includes(state)) return;
+  if (e.repeat) { if (e.code === 'Space' || e.code === 'Enter') e.preventDefault(); return; } // held keys never drive menus
+  const btns = [...$(state).querySelectorAll('button:not([disabled])')].filter(b => b.offsetParent !== null);
+  const i = btns.indexOf(document.activeElement), n = btns.length;
+  const inForm = document.activeElement && /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName);
+  if ((e.code === 'ArrowDown' || (e.code === 'KeyS' && !inForm)) && state !== 'settings' && n) { e.preventDefault(); btns[i < 0 ? 0 : (i + 1) % n].focus(); }
+  else if ((e.code === 'ArrowUp' || (e.code === 'KeyW' && !inForm)) && state !== 'settings' && n) { e.preventDefault(); btns[i < 0 ? n - 1 : (i - 1 + n) % n].focus(); }
+  else if (e.code === 'Escape') {
+    if (state === 'about') show('menu'); else if (state === 'settings') show(settingsReturn);
+    else if (state === 'paused' && performance.now() - pausedAt > 300) { e.stopImmediatePropagation(); resume(); } // the pause listener below must not see this Esc
+  }
+});
+let pausedAt = 0;
+$('pauseBtn').addEventListener('click', () => { desktop.exitLock(); pausedAt = performance.now(); show('paused'); });
 // Desktop: clicking the scene while playing without lock re-locks.
 view.renderer.domElement.addEventListener('click', () => { if (state === 'play') desktop.requestLock(); });
 // Esc / P pause. (Most browsers consume Esc to exit Pointer Lock — then pointerlockchange pauses.)
 addEventListener('keydown', e => {
-  if (state === 'play' && (e.code === 'KeyP' || e.code === 'Escape')) { desktop.exitLock(); show('paused'); }
+  if (state === 'play' && (e.code === 'KeyP' || e.code === 'Escape')) { desktop.exitLock(); pausedAt = performance.now(); show('paused'); }
 });
 document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') show('paused'); });
 
@@ -128,6 +166,10 @@ game.on('infectedAlert', e => { const r = rel(e.x, e.y); sfx.infected('alert', r
 game.on('infectedAttack', e => { const r = rel(e.x, e.y); sfx.infected('attack', r.pan, r.dist); });
 game.on('infectedKilled', e => { const en = game.enemies.find(x => x.id === e.id); if (en) view.infected.onDeath(en); const r = rel(e.x, e.y); sfx.infected('death', r.pan, r.dist); });
 game.on('playerHurt', () => { view.onHurt(); sfx.playerHurt(); });
+game.on('victory', e => {
+  $('winStats').textContent = `Все ${e.waves} волны пройдены · убито заражённых: ${e.kills}`;
+  setTimeout(() => { if (game.matchOver && state !== 'victory' && state !== 'settings' && state !== 'edit') { desktop.exitLock(); show('victory'); } }, 1600);
+});
 game.on('playerDied', () => {
   const s = game.state;
   $('deadStats').textContent = `Волна ${s.wave.number} · убито заражённых: ${s.kills}`;
@@ -155,7 +197,7 @@ let frames = 0, acc = 0, worst = 0;
 const stats = { fps: 0, frameMs: 0, worstMs: 0 };
 startLoop({
   hz: SIM_HZ,
-  update(dt) { if (state === 'play' || state === 'dead') game.step(input.update(), dt); },
+  update(dt) { if (state === 'play' || state === 'dead' || state === 'victory') game.step(input.update(), dt); },
   frame(alpha, dt) {
     if (state === 'play') {
       desktop.frame(dt);
@@ -168,7 +210,7 @@ startLoop({
     if (state === 'play') infectedAmbience(dt);
     const t0 = performance.now();
     const w = game.state.weapon;
-    view.render(game.player, state === 'play' ? alpha : 1, { dt, ads: w.ads, fovMult: game.weapon.def.ads.fovMult, reload: w.reloading ? w.reloadProgress : -1, triggerDown: game.weapon.triggerDown, targets: game.targets, enemies: game.enemies, showWeapon: state !== 'menu' && state !== 'dead' });
+    view.render(game.player, state === 'play' ? alpha : 1, { dt, ads: w.ads, fovMult: game.weapon.def.ads.fovMult, reload: w.reloading ? w.reloadProgress : -1, triggerDown: game.weapon.triggerDown, targets: game.targets, enemies: game.enemies, enemyDt: (state === 'play' || state === 'dead' || state === 'victory') ? dt : 0, showWeapon: state !== 'menu' && state !== 'about' && state !== 'dead' && state !== 'victory' });
     gameHud.frame(view.camera.fov);
     if (state === 'play' || state === 'edit') hud.drawMinimap(game.player);
     const ms = performance.now() - t0;
@@ -185,5 +227,5 @@ show('menu');
 
 // ---- test hook (only with ?debug=1) ----
 if (/[?&]debug=1(&|$)/.test(location.search)) {
-  import('./debug.js').then(m => m.installDebug({ game, input, view, settings, stats, touch, hud, editor, gameHud, sfx, getState: () => state, show }));
+  import('./debug.js').then(m => m.installDebug({ game, input, view, settings, stats, touch, hud, editor, gameHud, sfx, getState: () => state, show, editHud }));
 }

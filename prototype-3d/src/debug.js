@@ -3,7 +3,13 @@ import { canStand } from './sim/collision.js';
 import { PLAYER_RADIUS } from './config.js';
 import { installDebugPanel } from './debug-panel.js';
 
-export function installDebug({ game, input, view, settings, stats, touch, hud, editor, gameHud, sfx, getState, show }) {
+export function installDebug({ game, input, view, settings, stats, touch, hud, editor, gameHud, sfx, getState, show, editHud }) {
+  // Test shortcut (debug only): the pause menu no longer has "РАССТАВИТЬ HUD" (M1.6 — it lives in НАСТРОЙКИ → HUD);
+  // automated tests of the editor still open it straight from the pause screen through this hidden button.
+  if (editHud && !document.getElementById('pauseEditHud')) {
+    const b = document.createElement('button'); b.type = 'button'; b.id = 'pauseEditHud'; b.hidden = true; b.tabIndex = -1;
+    b.onclick = () => editHud('paused'); document.getElementById('paused').querySelector('.panel').appendChild(b);
+  }
   // Skin switch is test-mode only in M1.3 (cosmetic, stored so it survives a reload).
   const setSkin = id => { view.setSkin(id); settings.weaponSkin = id; try { localStorage.setItem('darkarena_proto3d_settings_v1', JSON.stringify(settings)); } catch {} };
   const panel = installDebugPanel(game, { setSkin });

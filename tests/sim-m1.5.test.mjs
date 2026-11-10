@@ -3,7 +3,12 @@ import map from '../prototype-3d/src/data/maps/training.js';
 import { Game } from '../prototype-3d/src/sim/game.js';
 import { InputState } from '../prototype-3d/src/input/input.js';
 import { INFECTED_TYPES } from '../prototype-3d/src/sim/enemies/infected-defs.js';
-import { WAVES, SPAWN_RULES } from '../prototype-3d/src/sim/waves/wave-defs.js';
+import { SPAWN_RULES } from '../prototype-3d/src/sim/waves/wave-defs.js';
+// M1.6 changed the shipped match to 3 waves × 9 (tests/sim-m1.6.test.mjs). These M1.5 checks keep their purpose —
+// the director mechanics — by running the original M1.5 wave (3 HOLLOW, one wave) as an explicit data config.
+const WAVES = [{ number: 1, enemies: [{ type: 'hollow', count: 3 }] }];
+const M15_MATCH = { maxActive: 5, startDelay: 2.5, spawnInterval: 1.6, intermission: 6, resupplyReserve: false, healBetweenWaves: 0 };
+WAVES[0].startDelay = M15_MATCH.startDelay; WAVES[0].spawnInterval = M15_MATCH.spawnInterval;
 import { lineOfSight, FlowField } from '../prototype-3d/src/sim/nav/grid-nav.js';
 import { canStand } from '../prototype-3d/src/sim/collision.js';
 
@@ -13,7 +18,7 @@ const H = INFECTED_TYPES.hollow, M = 0.5;
 let seed = 1; const rng = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
 function setup({ px = 8, py = 8, yaw = 0, waves = false } = {}) {
   seed = 7;
-  const g = new Game(map, { rng: () => 0, waveRng: rng });
+  const g = new Game(map, { rng: () => 0, waveRng: rng, aiRng: rng, waves: WAVES, match: M15_MATCH });
   Object.assign(g.player, { x: px, y: py, prevX: px, prevY: py, yaw });
   const inp = new InputState();
   const ev = []; for (const t of ['infectedSpawn', 'infectedAlert', 'infectedAttack', 'playerHurt', 'playerDied', 'infectedKilled', 'kills', 'waveCleared', 'wave', 'hit']) g.on(t, d => ev.push([t, d, g.tick]));
@@ -155,7 +160,8 @@ check('Wave 1 config: 3 HOLLOW', WAVES[0].enemies[0].type === 'hollow' && WAVES[
   // kill all three
   for (const e of [...g.enemies]) e.applyDamage(100, 'head', null) && g.onInfectedKilled(e);
   run(0.1);
-  check('All killed → wave cleared (waveCleared once), kills 3', g.state.wave.phase === 'cleared' && count('waveCleared') === 1 && g.state.kills === 3 && g.waves.phase === 'cleared');
+  // M1.6: after the LAST wave the phase is 'victory' (was 'cleared'); waveCleared still fires exactly once
+  check('All killed → wave cleared (waveCleared once), kills 3', count('waveCleared') === 1 && g.state.kills === 3 && g.waves.phase === 'victory' && g.state.wave.phase === 'victory');
   // restart
   g.restart();
   check('Restart: player HP 100, ammo full, kills 0, no infected, wave 1 counting down again', g.state.health.hp === 100 && g.state.weapon.mag === 30 && g.state.kills === 0 && g.enemies.length === 0 && g.waves.phase === 'countdown' && !g.player.dead);

@@ -104,7 +104,8 @@ export function createRenderer({ container, world, getSettings, skin }) {
       syncCamera(player, alpha);
       impacts.update(dt);
       targets.update(w.targets || w.hittables || [], dt, camera.position);
-      if (w.enemies) infected.update(w.enemies, dt, alpha);
+      if (w.enemies) infected.update(w.enemies, w.enemyDt ?? dt, alpha); // enemyDt = 0 while paused → animation frozen
+      level.update(camera.position, dt);
       renderer.info.reset();
       renderer.toneMapping = THREE.NoToneMapping;
       renderer.render(scene, camera);

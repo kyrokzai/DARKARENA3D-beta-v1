@@ -95,6 +95,18 @@ death screen with ЗАНОВО. `?debug=1` keeps the shooting range without wave
 - `render/enemies/hollow-model.js` (procedural skinned model), `hollow-anim.js` (procedural animation), `infected-view.js` (pool + effects)
 - `tools/infected-viewer.html` — model + animation viewer (`?anim=walk&t=1.2`)
 
+## M1.6: arena ×2, three waves, AI 2.0, HOLLOW rebuild
+
+- Arena `data/maps/arena-m16.js`: 28 × 14 cells interior (2× M1.5), old hall unchanged + a second hall; 9 lamp
+  fixtures, 4 pooled lights. Match = 3 waves × 9 infected, max 5 alive, intermission, victory screen (`sim/waves/`).
+- AI (`sim/enemies/infected.js`): IDLE / ALERT / CHASE / SEARCH / PATROL / ATTACK / RECOVER / DEAD — line of sight,
+  1.2 s memory, last known position, search, re-detection, hearing gunfire; own distance field per search goal.
+- `sim/enemies/hollow-rig.js`: skeleton data + pose maths shared by sim (animated hit zones) and renderer (bones).
+- Model: lofted skins (no tube/ball joints), normal-mapped skin and rags; animation: IK-planted feet, turn lead,
+  attack, hit reactions, three death falls chosen by the sim so the body never ends inside a wall.
+- Menu: ИГРАТЬ / НАСТРОЙКИ / ОБ ИГРЕ, keyboard (↑ ↓ Enter Esc), pause, death and victory screens.
+- Viewer: `tools/infected-viewer.html?anim=run&hb=1` (hb = show sim hit zones).
+
 ## Structure
 
 ```
@@ -144,4 +156,6 @@ node tests/m1.4-hands.test.js       # M1.4 hands + weapon animations
 node tests/m1.4.1-jump.test.js      # M1.4.1 jump (sim + desktop + touch)
 node tests/sim-m1.5.test.mjs        # M1.5 infected AI + waves (Node)
 node tests/m1.5-infected.test.js    # M1.5 infected in the browser
+node tests/sim-m1.6.test.mjs        # M1.6 arena, waves, AI 2.0, hit zones, death falls (Node)
+node tests/m1.6-evolution.test.js   # M1.6 menus, full match, animation ↔ hit zones, phone
 ```

@@ -23,7 +23,7 @@ const INFO_HTML = {
   ammo: `<div class="am-main"><span class="am-mag" data-v="mag">30</span><span class="am-sep">/</span><span class="am-res" data-v="reserve">120</span></div>
     <div class="am-sub"><span class="am-icon">${ICONS.bullet}</span><span class="am-state" data-v="ammoState"></span><span class="am-name" data-v="weaponName"></span></div>
     <div class="am-reload"><div class="am-reload-fill"></div></div>`,
-  wave: `<div class="wv-top"><span class="wv-label">ВОЛНА</span><span class="wv-num" data-v="wave">1</span></div>
+  wave: `<div class="wv-top"><span class="wv-label">ВОЛНА</span><span class="wv-num" data-v="wave">1</span><span class="wv-of" data-v="waveOf"></span></div>
     <div class="wv-sub"><span data-v="remainingText">—</span><span class="wv-kills" title="Убито">✕ <b data-v="kills">0</b></span></div>
     <div class="wv-bar"><div class="wv-fill"></div></div>`,
 };
@@ -90,9 +90,12 @@ export function createHud({ root, settings, world }) {
   let miniTick = 0;
   function drawMinimap(player) {
     if (!settings.showMinimap || (++miniTick & 1)) return;
-    const n = world.width, u = 128 / n;
+    // non-square arenas are letter-boxed (same scale on both axes, centred)
+    const n = world.width, u = 128 / Math.max(n, world.height);
+    mini.setTransform(1, 0, 0, 1, 0, 0);
     mini.clearRect(0, 0, 128, 128);
     mini.fillStyle = 'rgba(8,11,18,0.85)'; mini.fillRect(0, 0, 128, 128);
+    mini.translate((128 - n * u) / 2, (128 - world.height * u) / 2);
     for (let y = 0; y < world.height; y++) for (let x = 0; x < n; x++) {
       const t = world.tile(x, y);
       if (t !== '0') { mini.fillStyle = t === '2' ? '#b4505f' : t === '3' ? '#5fa58c' : '#5d6578'; mini.fillRect(x * u, y * u, u, u); }

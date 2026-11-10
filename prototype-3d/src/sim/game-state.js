@@ -15,7 +15,9 @@ export class GameState {
     this.emit = emit;
     this.health = { hp: 100, max: 100 };
     this.weapon = { ...DEFAULT_WEAPON, name: '', reloading: false, reloadProgress: 0, spread: 0, ads: 0 };
-    this.wave = { number: 1, remaining: 0, total: 0, phase: 'idle' }; // idle | active | cleared
+    // phase: idle (before the wave) | active | cleared (intermission) | victory. `of` = waves in the match,
+    // `countdown` = whole seconds until the wave starts (0 = none), `remaining` includes infected not spawned yet.
+    this.wave = { number: 1, of: 1, remaining: 0, total: 0, phase: 'idle', countdown: 0 };
     this.kills = 0; // infected killed in this run (M1.5)
   }
 
@@ -58,9 +60,9 @@ export class GameState {
   }
 
   // ---- waves ----
-  setWave({ number = this.wave.number, remaining = this.wave.remaining, total = this.wave.total, phase = this.wave.phase } = {}) {
+  setWave({ number = this.wave.number, remaining = this.wave.remaining, total = this.wave.total, phase = this.wave.phase, of = this.wave.of, countdown = this.wave.countdown } = {}) {
     const prev = this.wave.phase;
-    Object.assign(this.wave, { number: clampInt(number, 1, 999), total: clampInt(total, 0, 999), remaining: clampInt(remaining, 0, 999), phase });
+    Object.assign(this.wave, { number: clampInt(number, 1, 999), of: clampInt(of, 1, 999), total: clampInt(total, 0, 999), remaining: clampInt(remaining, 0, 999), phase, countdown: clampInt(countdown, 0, 999) });
     this.emit('wave', { ...this.wave });
     if (phase === 'cleared' && prev !== 'cleared') this.emit('waveCleared', { number: this.wave.number });
   }
@@ -75,7 +77,7 @@ export class GameState {
   resetRun() {
     this.setHealth(this.health.max);
     this.kills = 0; this.emit('kills', { kills: 0 });
-    this.setWave({ number: 1, remaining: 0, total: 0, phase: 'idle' });
+    this.setWave({ number: 1, remaining: 0, total: 0, phase: 'idle', countdown: 0 });
   }
 
   // ---- hit confirmation (from hit detection in M1.3) ----

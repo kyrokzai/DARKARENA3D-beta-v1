@@ -1,0 +1,38 @@
+{
+ "note": "Chromium + SwiftShader (software WebGL) on the dev container; NOT iPhone/Safari numbers. Same scene: player (3,8) looking east, 3 idle infected at (6,8),(7,6.6),(7.2,9.6).",
+ "m1.5": {
+  "worldDrawCalls": 19,
+  "worldTriangles": 18376,
+  "frameDrawCalls": 44,
+  "frameTriangles": 37966,
+  "trianglesPerInfected": 5848,
+  "geometries": 40,
+  "textures": 19,
+  "heapMB": 10.7,
+  "frameMsEmpty": 218.7,
+  "frameMs3Infected": 251.0,
+  "animMsPerFrame3": 0.0102,
+  "aiUsPerTick3": 5.03,
+  "aiUsPerTick5": 5.53,
+  "lights": 4
+ },
+ "m1.6": {
+  "worldDrawCalls": 17,
+  "worldTriangles": 18850,
+  "frameDrawCalls": 42,
+  "frameTriangles": 38440,
+  "trianglesPerInfected": 5794,
+  "geometries": 40,
+  "textures": 21,
+  "heapMB": 11.3,
+  "frameMsEmpty": 208.6,
+  "frameMs3Infected": 268.1,
+  "animMsPerFrame3": 0.0127,
+  "aiUsPerTick3": 5.18,
+  "aiUsPerTick5": 7.83,
+  "aiUsPerTick5_arena": 8.24,
+  "lights": 4,
+  "lampFixtures": 9,
+  "normalMapCostMs": "not measurable (207.1 with vs 209.0 without)"
+ }
+}

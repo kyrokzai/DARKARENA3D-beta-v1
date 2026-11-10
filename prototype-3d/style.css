@@ -273,3 +273,13 @@ body:not(.playing) #debugPanel { display: none; }
 #dead .panel { border-color: #7d1424; }
 .dead-title { color: #ff4a5a; letter-spacing: 6px; font-size: clamp(26px, 6vmin, 40px); }
 body.is-dead #vignette { opacity: 1; }
+
+/* M1.6: clean main menu, about, victory */
+.menu-panel { text-align: center; }
+.menu-panel .logo { margin-bottom: 18px; }
+.menu-list { display: flex; flex-direction: column; gap: 10px; }
+.screen button:focus-visible { outline: 2px solid #ff6170; outline-offset: 2px; }
+.about-ver { margin: 4px 0 14px; color: #9aa2b4; letter-spacing: 1px; font-size: 13px; }
+#victory .panel { border-color: var(--ok, #8fe3a8); }
+.win-title { color: var(--ok, #8fe3a8); letter-spacing: 6px; font-size: clamp(26px, 6vmin, 40px); }
+.wv-of { font-size: 0.55em; opacity: 0.6; margin-left: 2px; }

@@ -6,14 +6,27 @@ export const INFECTED_TYPES = Object.freeze({
     name: 'DA-INF01 THE HOLLOW',
     hp: 100,
     height: 1.9,             // standing height (hunched head top ≈ 1.8 m)
-    radius: 0.3,             // collision radius vs walls / other infected
-    walkSpeed: 1.1,          // m/s (alerted, closing in slowly)
+    radius: 0.3,             // collision radius vs walls / other infected (unchanged since M1.5)
+    walkSpeed: 1.1,          // m/s
     runSpeed: 4.2,           // m/s (player runs 5.5 m/s → can be outrun)
     accel: 7,                // m/s² towards the wanted speed
     turnRate: 5.5,           // rad/s
+    // ---- senses & memory (AI 2.0, M1.6) ----
     detectRange: 15,         // m, needs line of sight (walls block)
     senseInterval: 0.2,      // s between line-of-sight checks (staggered per infected)
     alertTime: 0.55,         // s: notices the player (scream), then chases
+    memoryTime: 1.2,         // s after losing sight during which it still tracks the player (sound, momentum)
+    hearRange: 24,           // m: gunfire inside this radius reveals where the shooter stood
+    searchSpeed: 3.2,        // m/s while running to the last known position
+    searchLook: 1.0,         // s looking around at each search point
+    searchRadius: 6,         // m around the last known position for the follow-up points
+    searchPoints: 3,         // follow-up points before giving up
+    searchTime: 10,          // s hard limit for one search
+    patrolSpeed: 1.6,        // m/s when roaming after a failed search
+    patrolPause: 0.8,        // s stop at each patrol point
+    patrolScatter: 12,       // m: wave hunters roam inside this radius of the area where the player is (not his exact spot)
+    stuckTime: 1.2,          // s without progress → new route
+    // ---- attack ----
     attackRange: 1.5,        // m between centres: starts the swing
     attackReach: 1.75,       // m: the blow lands only if the player is still this close…
     attackArcDeg: 75,        // …and within this angle in front of the infected
@@ -23,9 +36,12 @@ export const INFECTED_TYPES = Object.freeze({
     attackCooldown: 1.2,     // s from one blow to the next possible swing
     recoverTime: 0.3,        // s after the swing before chasing again
     hitStun: 0.22,           // s of slowed movement after being shot
-    corpseTime: 5.0,         // s the body stays before removal
-    // hit zones (relative to the feet, facing direction): head sphere slightly forward (hunched), body cylinder
-    hitboxes: Object.freeze({ head: Object.freeze({ z: 1.6, fwd: 0.17, r: 0.15 }), body: Object.freeze({ z0: 0.05, z1: 1.43, r: 0.25 }) }),
+    // ---- death ----
+    corpseTime: 4.0,         // s the body stays before removal
+    fallLength: 1.9,         // m of free floor the falling body needs (else it turns or crumples in place)
+    fallHalfWidth: 0.42,     // m
+    // hit zones follow the animated pose (hollow-rig.js): radii in metres
+    hitboxes: Object.freeze({ headR: 0.15, chestR: 0.21, bellyR: 0.19, legsR: 0.2, legsZ0: 0.05 }),
   }),
 });
 

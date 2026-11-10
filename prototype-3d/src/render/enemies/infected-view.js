@@ -11,7 +11,7 @@ const MAX_PARTICLES = 160;
 export function createInfectedView(scene) {
   const pool = [], active = new Map(); // id → slot
   let seed = 0;
-  const stats = { instances: 0, created: 0, active: 0, bursts: 0 };
+  const stats = { instances: 0, created: 0, active: 0, bursts: 0, headBursts: 0, bodyBursts: 0 };
 
   function acquire() {
     let slot = pool.pop();
@@ -40,6 +40,7 @@ export function createInfectedView(scene) {
       vel[k * 3] = dx * sp + (Math.random() - 0.5) * 1.4; vel[k * 3 + 1] = dy * sp + Math.random() * (kind === 'dust' ? 0.5 : 1.2); vel[k * 3 + 2] = dz * sp + (Math.random() - 0.5) * 1.4;
       life[k] = kind === 'dust' ? 0.9 : 0.45 + Math.random() * 0.3;
       if (kind === 'dust') { col[k * 3] = 0.22; col[k * 3 + 1] = 0.2; col[k * 3 + 2] = 0.18; }
+      else if (kind === 'head' && i % 3 === 0) { col[k * 3] = 0.62; col[k * 3 + 1] = 0.58; col[k * 3 + 2] = 0.5; life[k] *= 1.3; vel[k * 3 + 1] += 1.2; } // pale chips: a headshot reads differently
       else { const v = 0.25 + Math.random() * 0.2; col[k * 3] = v; col[k * 3 + 1] = 0.02; col[k * 3 + 2] = 0.03; }
     }
     pActive = MAX_PARTICLES;
@@ -81,7 +82,8 @@ export function createInfectedView(scene) {
       stats.active = active.size; stats.instances = active.size + pool.length;
     },
     /** Hit effect at a sim point (cells), dir = shot direction (sim). */
-    onHit(point, dir, zone) { burst(point.x * S, point.z * S, point.y * S, dir.x, dir.z, dir.y, zone === 'head' ? 14 : 8, 'blood'); },
+    /** Local hit effect at the impact point: body = short dark spray along the shot; head = bigger burst with pale chips. */
+    onHit(point, dir, zone) { stats[zone === 'head' ? 'headBursts' : 'bodyBursts']++; burst(point.x * S, point.z * S, point.y * S, dir.x, dir.z, dir.y, zone === 'head' ? 15 : 7, zone === 'head' ? 'head' : 'blood'); },
     onDeath(e) { burst(e.x * S, 0.15, e.y * S, 0, 0.2, 0, 14, 'dust'); },
     /** World position of a bone (for tests / screenshots). */
     boneWorld(e, name, out) { const slot = active.get(e); if (!slot) return null; slot.inst.group.updateMatrixWorld(true); return slot.inst.bones[name].getWorldPosition(out); },

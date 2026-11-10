@@ -8,7 +8,7 @@ export function createGameHud({ game, hud }) {
   const q = (id, sel) => hud.els[id].querySelector(sel);
   const hp = { fill: q('health', '.hp-fill'), trail: q('health', '.hp-trail'), num: q('health', '[data-v=hp]') };
   const am = { mag: q('ammo', '[data-v=mag]'), res: q('ammo', '[data-v=reserve]'), state: q('ammo', '[data-v=ammoState]'), bar: q('ammo', '.am-reload-fill') };
-  const wv = { num: q('wave', '[data-v=wave]'), sub: q('wave', '[data-v=remainingText]'), fill: q('wave', '.wv-fill'), kills: q('wave', '[data-v=kills]') };
+  const wv = { num: q('wave', '[data-v=wave]'), sub: q('wave', '[data-v=remainingText]'), fill: q('wave', '.wv-fill'), kills: q('wave', '[data-v=kills]'), of: q('wave', '[data-v=waveOf]') };
   const hit = document.getElementById('hitmark');
   const cross = document.getElementById('cross');
   const wname = q('ammo', '[data-v=weaponName]');
@@ -49,16 +49,21 @@ export function createGameHud({ game, hud }) {
   }
 
   // ---- wave ----
-  let lastWave = st.wave.number;
+  let lastWave = st.wave.number, lastPhase = st.wave.phase;
   function renderWave() {
     const w = st.wave;
     wv.num.textContent = w.number;
-    wv.sub.textContent = w.phase === 'active' ? `ОСТАЛОСЬ ${w.remaining}` : w.phase === 'cleared' ? 'ЗАЧИЩЕНА' : 'ПОДГОТОВКА';
+    if (wv.of) wv.of.textContent = w.of > 1 ? '/' + w.of : '';
+    // `remaining` counts every infected of the wave that is not dead yet — including those still to appear
+    wv.sub.textContent = w.phase === 'active' ? `ОСТАЛОСЬ ${w.remaining}`
+      : w.phase === 'victory' ? 'ПОБЕДА'
+      : w.phase === 'cleared' ? (w.countdown > 0 && w.number < w.of ? `ВОЛНА ${w.number + 1} ЧЕРЕЗ ${w.countdown}` : 'ЗАЧИЩЕНА')
+      : 'ПОДГОТОВКА';
     wv.fill.style.width = (w.total > 0 ? (w.remaining / w.total) * 100 : 0) + '%';
     if (wv.kills) wv.kills.textContent = st.kills || 0;
-    hud.els.wave.classList.toggle('cleared', w.phase === 'cleared');
-    if (w.phase === 'active' && w.number !== lastWave) showBanner(`ВОЛНА ${w.number}`, 'wave');
-    lastWave = w.number;
+    hud.els.wave.classList.toggle('cleared', w.phase === 'cleared' || w.phase === 'victory');
+    if (w.phase === 'active' && (w.number !== lastWave || (lastPhase !== 'active' && w.of > 1))) showBanner(w.of > 1 ? `ВОЛНА ${w.number} / ${w.of}` : `ВОЛНА ${w.number}`, 'wave');
+    lastWave = w.number; lastPhase = w.phase;
   }
 
   // ---- hit confirmation on the crosshair ----
