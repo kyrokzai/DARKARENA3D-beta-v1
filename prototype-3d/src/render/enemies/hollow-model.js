@@ -34,15 +34,24 @@ const gauss = (dx, dy, s) => Math.exp(-(dx * dx + dy * dy) / (s * s));
 // neck / hands: extra infection there, veins: vein strength, tone: skin tint, socket: eye-socket depth, eyeZ: eyes
 // pushed back into the skull (m), eyeScale.
 export const LOOKS = {
-  hollow: { id: 'hollow', torso: [1, 1], arm: 1, leg: 1, infect: 0, neck: 0, hands: 0, veins: 1, tone: [1, 1, 1], socket: 0.2, eyeZ: 0, eyeScale: 1 },
-  guard: { id: 'guard', torso: [1.05, 1.06], arm: 1.06, leg: 1.03, infect: 0.02, neck: 0.3, hands: 0.2, veins: 1, tone: [0.97, 0.96, 0.95], socket: 0.2, eyeZ: 0, eyeScale: 1 },
-  technician: { id: 'technician', torso: [0.9, 0.93], arm: 0.88, leg: 0.92, infect: 0.0, neck: 1.0, hands: 1.0, veins: 1.3, tone: [1.0, 1.0, 1.02], socket: 0.27, eyeZ: -0.008, eyeScale: 0.8 },
-  worker: { id: 'worker', torso: [1.08, 1.08], arm: 1.17, leg: 1.1, infect: 0.1, neck: 0.5, hands: 0.6, veins: 1.6, tone: [0.9, 0.88, 0.84], socket: 0.21, eyeZ: 0, eyeScale: 1.1 },
+  hollow: { id: 'hollow', get head() { return HEADS.hollow; }, torso: [1, 1], arm: 1, leg: 1, infect: 0, neck: 0, hands: 0, veins: 1, tone: [1, 1, 1], socket: 0.2, eyeZ: 0, eyeScale: 1 },
+  guard: { id: 'guard', get head() { return HEADS.guard; }, shoulder: 0.022, hand: 1.0, torso: [1.05, 1.06], arm: 1.06, leg: 1.03, infect: 0.02, neck: 0.3, hands: 0.2, veins: 1, tone: [0.97, 0.96, 0.95], socket: 0.2, eyeZ: 0, eyeScale: 1 },
+  technician: { id: 'technician', get head() { return HEADS.technician; }, shoulder: -0.014, hand: 0.95, torso: [0.9, 0.93], arm: 0.88, leg: 0.92, infect: 0.0, neck: 1.0, hands: 1.0, veins: 1.3, tone: [1.0, 1.0, 1.02], socket: 0.27, eyeZ: -0.008, eyeScale: 0.8 },
+  worker: { id: 'worker', get head() { return HEADS.worker; }, shoulder: 0.012, hand: 1.2, torso: [1.08, 1.08], arm: 1.17, leg: 1.1, infect: 0.1, neck: 0.5, hands: 0.6, veins: 1.6, tone: [0.9, 0.88, 0.84], socket: 0.21, eyeZ: 0, eyeScale: 1.1 },
+};
+// M1.8 head shapes (unit-sphere sculpt parameters). w/h/d: skull scale, jaw: lower-face width, brow / cheek / hollow /
+// temple / socket: feature strengths, nose / noseTip / noseBend: bridge, tip, broken-nose offset, crown: top flattening,
+// back: occiput, ear: ear size, hair / stubble: hair density on scalp / jaw, scar: surgical scar.
+export const HEADS = {
+  hollow: { w: 1, h: 1, d: 1, jaw: 1, brow: 1, cheek: 1, hollow: 1.1, temple: 0.8, socket: 0.2, nose: 0.35, noseTip: 0.2, noseBend: 0, crown: 0.86, back: 1, ear: 0.8, hair: 0.15, stubble: 0.1, scar: 0, tornEar: 1, seed: 1 },
+  guard: { w: 1.08, h: 0.97, d: 1.0, jaw: 1.32, brow: 1.4, cheek: 1.0, hollow: 0.8, temple: 0.6, socket: 0.19, nose: 1.0, noseTip: 0.9, noseBend: 0.05, crown: 0.8, back: 1.0, ear: 1.0, hair: 0.8, stubble: 0.7, scar: 0, tornEar: 1, seed: 11 },
+  technician: { w: 0.9, h: 1.09, d: 1.04, jaw: 0.8, brow: 0.8, cheek: 1.25, hollow: 1.6, temple: 1.5, socket: 0.27, nose: 1.2, noseTip: 0.6, noseBend: 0, crown: 0.95, back: 1.05, ear: 0.95, hair: 0.25, stubble: 0.25, scar: 1, tornEar: 0, seed: 23 },
+  worker: { w: 1.12, h: 0.95, d: 1.04, jaw: 1.35, brow: 1.7, cheek: 0.9, hollow: 0.6, temple: 0.5, socket: 0.21, nose: 0.6, noseTip: 1.8, noseBend: -0.03, crown: 0.84, back: 1.0, ear: 1.15, hair: 0.3, stubble: 1.0, scar: 0, tornEar: 0, seed: 37 },
 };
 let LK = LOOKS.hollow; // look being built (the builders are synchronous)
 
 // ---------------------------------------------------------------- colours (authored in sRGB, stored linear)
-const SKIN = [0.74, 0.72, 0.67], SKIN_COLD = [0.62, 0.66, 0.69], BRUISE = [0.17, 0.11, 0.15], VEIN = [0.27, 0.07, 0.1], ROT = [0.1, 0.09, 0.08];
+const SKIN = [0.64, 0.61, 0.56], SKIN_COLD = [0.55, 0.58, 0.6], BRUISE = [0.17, 0.11, 0.15], VEIN = [0.27, 0.07, 0.1], ROT = [0.1, 0.09, 0.08];
 /** Infected skin: pale grey with cold areas, dark necrotic patches (denser on neck, left shoulder, forearms, shins), veins. */
 function skinColor(p) {
   const n = fbm(p.x * 4.3 + 3, p.y * 4.3, p.z * 4.3);
@@ -82,11 +91,59 @@ function clothFn(base, base2 = base, { splitY = -1, dirt = 0.6, blood = 0.5, blo
   };
 }
 
-// ---------------------------------------------------------------- builder: skinned, coloured, UV-mapped geometry
+let SURF = null; // default surface functions per material kind (skin / rags / eyes)
+// ---------------------------------------------------------------- surface detail for the baked maps (M1.8)
+// height(p, n, loc, chart) → metres along the normal (only its gradient matters: it becomes the normal map);
+// rough(...) → 0..1. Evaluated per texel by the offline bake, never at runtime.
+function infectionField(p) { // same field as skinColor's necrotic patches (0 healthy … 1 rotten)
+  const n = fbm(p.x * 4.3 + 3, p.y * 4.3, p.z * 4.3);
+  let region = Math.max(gauss(p.x - 0.16, p.y - 1.5, 0.2), gauss(p.x + 0.02, p.y - 1.66, 0.12) * 0.9, sstep(1.18, 1.02, 0.86) * (Math.abs(p.x) > 0.15 ? 1 : 0), sstep(0.42, 0.2, 0.02) * 0.8, gauss(p.x + 0.1, p.y - 1.2, 0.13) * 0.7);
+  if (LK.neck) region += LK.neck * (p.y > 1.56 && p.y < 1.78 && Math.abs(p.x) < 0.08 ? 1 : 0);
+  if (LK.hands) region += LK.hands * (p.y < 1.02 && p.y > 0.72 && Math.abs(p.x) > 0.13 ? 1 : 0);
+  return n + region * 0.16 + LK.infect;
+}
+function skinHeight(p) {
+  const f = infectionField(p);
+  const pores = (vnoise(p.x * 700, p.y * 700, p.z * 700) - 0.5) * 0.00012;
+  const fine = (fbm(p.x * 90, p.y * 90, p.z * 90) - 0.5) * 0.0005;                       // fine creases / dry skin
+  const wr = Math.sin(p.y * 260 + fbm(p.x * 20, p.y * 6, p.z * 20) * 7) * 0.00018;        // horizontal wrinkle lines
+  const crater = -0.0022 * sstep(f, 0.66, 0.74) + 0.0012 * sstep(f, 0.6, 0.65) * (1 - sstep(f, 0.66, 0.7)); // sore: raised rim, sunken centre
+  const v = Math.abs(Math.sin(p.y * 38 + p.x * 11 + fbm(p.x * 8, p.y * 3, p.z * 8) * 9)); const vein = v < 0.06 ? (0.06 - v) / 0.06 * 0.0005 * LK.veins : 0;
+  const blister = Math.max(0, vnoise(p.x * 160 + 7, p.y * 160, p.z * 160) - 0.82) * 0.004 * sstep(f, 0.5, 0.62);
+  return pores + fine + wr + crater + vein + blister;
+}
+function skinRough(p) { const f = infectionField(p); return Math.min(0.95, 0.66 + (vnoise(p.x * 40, p.y * 40, p.z * 40) - 0.5) * 0.18 - sstep(f, 0.64, 0.74) * 0.3 + (p.y < 0.2 ? 0.15 : 0)); }
+/** Woven fabric seen through the chart's metric UVs (loc × chart size): twill + folds + side seam. */
+function clothHeight(p, n, loc, ch) {
+  const U = loc[0] * ch.w, V = loc[1] * ch.h;
+  const twill = Math.sin((U + V) * 2 * Math.PI / 0.004) * 0.00012 + Math.sin((U - V * 0.5) * 2 * Math.PI / 0.011) * 0.00006;
+  const folds = (fbm(p.x * 9, p.y * 9, p.z * 9) - 0.5) * 0.006 + Math.sin(V * 2 * Math.PI / 0.09 + fbm(p.x * 4, p.y * 4, p.z * 4) * 4) * 0.0012;
+  const seam = (Math.min(loc[0], 1 - loc[0]) * ch.w < 0.006 ? 0.0006 : 0) + (Math.abs(((V + 0.02) % 0.25) - 0.125) < 0.002 ? 0.0003 : 0);
+  return twill + folds + seam;
+}
+function clothRough(p) { return 0.82 + (vnoise(p.x * 30, p.y * 30, p.z * 30) - 0.5) * 0.14; }
+SURF = {
+  skin: { color: (p, n) => skinColor(p), height: skinHeight, rough: skinRough },
+  rags: { color: (p, n) => clothColor(p), height: clothHeight, rough: clothRough },
+  eyes: { color: () => [0.75, 0.7, 0.6], height: () => 0, rough: () => 0.25 },
+};
+
+// ---------------------------------------------------------------- builder: skinned, coloured, UV-ATLASED geometry
+// M1.8: every loft / added part is a CHART: a rectangle of the texture atlas sized to the part's real surface
+// (circumference × length), so baked PBR maps (render/enemies/infected-maps.js, tools/bake-infected) have an even
+// texel density. Closed lofts get a duplicated seam column (no UV wrap) whose normals are averaged → no lighting seam.
+// The packing depends only on the charts' metric sizes, never on the tessellation → LOD meshes share the atlas.
+// Each chart keeps its surface functions { color(p, n, loc) → sRGB, height(p, n, loc) → metres, rough(p, n, loc) }
+// for the offline bake; at runtime only the vertex colours (fallback until the maps load) use them.
 class Builder {
-  constructor() { this.pos = []; this.col = []; this.uv = []; this.si = []; this.sw = []; this.idx = []; }
-  vert(p, color, uv, weights) {
-    this.pos.push(p.x, p.y, p.z); this.col.push(color[0] ** 2.2, color[1] ** 2.2, color[2] ** 2.2); this.uv.push(uv[0], uv[1]);
+  constructor(kind = 'skin') { this.kind = kind; this.pos = []; this.col = []; this.uv = []; this.si = []; this.sw = []; this.idx = []; this.loc = []; this.cid = []; this.charts = []; this.pairs = []; this.chart = -1; }
+  newChart(w, h, fns = {}, density = 1, name = '') {
+    this.charts.push({ w: Math.max(0.004, w), h: Math.max(0.004, h), density, name, fns: { ...(SURF && SURF[this.kind]), ...fns } });
+    return (this.chart = this.charts.length - 1);
+  }
+  vert(p, color, loc, weights) {
+    this.pos.push(p.x, p.y, p.z); this.col.push(color[0] ** 2.2, color[1] ** 2.2, color[2] ** 2.2); this.uv.push(0, 0);
+    this.loc.push(loc[0], loc[1]); this.cid.push(this.chart);
     const ii = [0, 0, 0, 0], ww = [0, 0, 0, 0]; let sum = 0;
     for (let k = 0; k < Math.min(4, weights.length); k++) { ii[k] = BONE_INDEX[weights[k][0]]; ww[k] = weights[k][1]; sum += weights[k][1]; }
     for (let k = 0; k < 4; k++) ww[k] /= sum || 1;
@@ -96,11 +153,22 @@ class Builder {
   /**
    * Loft: rings = [{c:[x,y,z], ru, rv, w:[[bone, weight]…]}], swept in order. Cross-section axes: u = `hint` made
    * perpendicular to the path, v = path × u. opts: seg, color(p), displace(p, d, ring, a) → along the radial dir,
-   * capStart / capEnd, skip(ring, seg) → hole, arc [a0, a1] (partial shell), uvRep [u, v], jag(seg) → y offset of ring 0.
+   * capStart / capEnd, skip(ring, seg) → hole, arc [a0, a1] (partial shell), jag(seg) → y offset of ring 0,
+   * fns {color, height, rough} for the bake, density (texel density multiplier), name.
    */
-  loft(rings, { seg = 12, hint = [1, 0, 0], color = skinColor, displace = null, capStart = true, capEnd = true, skip = null, arc = null, uvRep = [3, 6], jag = null } = {}) {
+  loft(rings, { seg = 12, hint = [1, 0, 0], color = null, displace = null, capStart = true, capEnd = true, skip = null, arc = null, jag = null, fns = {}, density = 1, name = '' } = {}) {
+    seg = Math.max(3, Math.round(seg * LOD_SEG));
     const n = rings.length, H = new THREE.Vector3(...hint), t = new THREE.Vector3(), u = new THREE.Vector3(), v = new THREE.Vector3(), c = new THREE.Vector3(), p = new THREE.Vector3(), d = new THREE.Vector3();
-    const a0 = arc ? arc[0] : 0, a1 = arc ? arc[1] : Math.PI * 2, closed = !arc, cols = closed ? seg : seg + 1;
+    const a0 = arc ? arc[0] : 0, a1 = arc ? arc[1] : Math.PI * 2, closed = !arc, cols = seg + 1;
+    // metric chart size: mean perimeter (of the swept arc) × path length — independent of `seg`
+    let L = 0, rr = 0; for (let r = 0; r < n; r++) { const R = rings[r]; rr += Math.sqrt((R.ru * R.ru + R.rv * R.rv) / 2); if (r) L += Math.hypot(R.c[0] - rings[r - 1].c[0], R.c[1] - rings[r - 1].c[1], R.c[2] - rings[r - 1].c[2]); }
+    // per-part colour functions may use the ring index (3rd arg); the bake knows only the position along the chart (loc v)
+    const cum = [0]; for (let r = 1; r < n; r++) cum.push(cum[r - 1] + Math.hypot(rings[r].c[0] - rings[r - 1].c[0], rings[r].c[1] - rings[r - 1].c[1], rings[r].c[2] - rings[r - 1].c[2]));
+    const ringAt = (v) => { const x = v * L; let best = 0; for (let r = 1; r < n; r++) if (Math.abs(cum[r] - x) < Math.abs(cum[best] - x)) best = r; return best; };
+    const bakeColor = color ? (q, nn, loc, ch) => color(q, nn, ringAt(loc[1]), loc, ch) : undefined;
+    if (color && color.height) fns = { height: color.height, rough: color.rough, ...fns }; // garment: colour + height + roughness
+    this.newChart((a1 - a0) * rr / n, L, bakeColor ? { color: bakeColor, ...fns } : fns, density, name);
+    const colorFn = color || this.charts[this.chart].fns.color || (() => [0.5, 0.5, 0.5]);
     const first = this.pos.length / 3; let len = 0;
     for (let r = 0; r < n; r++) {
       const R = rings[r], prev = rings[Math.max(0, r - 1)].c, next = rings[Math.min(n - 1, r + 1)].c;
@@ -109,15 +177,16 @@ class Builder {
       c.set(...R.c);
       if (r > 0) len += Math.hypot(R.c[0] - rings[r - 1].c[0], R.c[1] - rings[r - 1].c[1], R.c[2] - rings[r - 1].c[2]);
       for (let s = 0; s < cols; s++) {
-        const a = a0 + (a1 - a0) * s / seg;
+        const a = a0 + (a1 - a0) * (closed && s === seg ? 0 : s / seg); // closed: the last column duplicates the first
         d.copy(u).multiplyScalar(Math.cos(a) * R.ru).addScaledVector(v, Math.sin(a) * R.rv);
         p.copy(c).add(d);
         if (displace) { const k = displace(p, d, r, a); const l = d.length() || 1; p.addScaledVector(d, k / l); }
-        if (jag && r === 0) p.y += jag(s);
-        this.vert(p, color(p, d, r), [s / seg * uvRep[0], len * uvRep[1]], R.w);
+        if (jag && r === 0) p.y += jag(s % seg);
+        this.vert(p, colorFn(p, d, r), [s / seg, L > 0 ? len / L : 0], R.w);
       }
+      if (closed) this.pairs.push([first + r * cols, first + r * cols + seg]);
     }
-    const at = (r, s) => first + r * cols + (closed ? s % seg : s);
+    const at = (r, s) => first + r * cols + s;
     const tri0 = this.idx.length;
     for (let r = 0; r < n - 1; r++) for (let s = 0; s < seg; s++) {
       const k = skip ? skip(r, s) : 0; // true/1 = whole cell missing, 2 / 3 = one triangle missing (diagonal torn edge)
@@ -128,7 +197,7 @@ class Builder {
     if (closed) for (const [flag, r] of [[capStart, 0], [capEnd, n - 1]]) {
       if (!flag) continue;
       const R = rings[r]; c.set(...R.c);
-      const ci = this.vert(c, color(c, d.set(0, 0, 0), r), [0.5, r ? len * uvRep[1] : 0], R.w);
+      const ci = this.vert(c, colorFn(c, d.set(0, 0, 0), r), [0.5, r ? 1 : 0], R.w);
       for (let s = 0; s < seg; s++) r === 0 ? this.idx.push(ci, at(0, s + 1), at(0, s)) : this.idx.push(ci, at(r, s), at(r, s + 1));
     }
     // make the surface face outwards whatever the sweep direction / hint handedness
@@ -139,21 +208,55 @@ class Builder {
       if (nrm.dot(mid.sub(cen)) < 0) for (let i = tri0; i < this.idx.length; i += 3) { const x = this.idx[i + 1]; this.idx[i + 1] = this.idx[i + 2]; this.idx[i + 2] = x; }
     }
   }
-  /** Any placed BufferGeometry, rigid or with a weight function. */
-  add(geo, { weights, color, displace = null, uvRep = 1 }) {
+  /** Any placed BufferGeometry, rigid or with a weight function. Its own UVs become a chart (aspect = u/v metric ratio). */
+  add(geo, { weights, color = null, displace = null, fns = {}, density = 1, aspect = 1, name = '' }) {
     geo.computeVertexNormals();
     const P = geo.getAttribute('position'), N = geo.getAttribute('normal'), U = geo.getAttribute('uv'), base = this.pos.length / 3;
     const p = new THREE.Vector3(), n = new THREE.Vector3();
+    // metric size from the (undisplaced) surface area
+    let area = 0; { const a = new THREE.Vector3(), b = new THREE.Vector3(), cc = new THREE.Vector3(), ix = geo.index ? i => geo.index.getX(i) : i => i, cnt = geo.index ? geo.index.count : P.count;
+      for (let i = 0; i < cnt; i += 3) { a.fromBufferAttribute(P, ix(i)); b.fromBufferAttribute(P, ix(i + 1)); cc.fromBufferAttribute(P, ix(i + 2)); area += b.sub(a).cross(cc.sub(a)).length() / 2; } }
+    if (color && color.height) fns = { height: color.height, rough: color.rough, ...fns };
+    this.newChart(Math.sqrt(area * aspect), Math.sqrt(area / aspect), color ? { color: (q, nn, loc, ch) => color(q, nn, undefined, loc, ch), ...fns } : fns, density, name);
+    const colorFn = color || this.charts[this.chart].fns.color || (() => [0.5, 0.5, 0.5]);
+    const seen = new Map();
     for (let i = 0; i < P.count; i++) {
       p.fromBufferAttribute(P, i); n.fromBufferAttribute(N, i);
+      const key = `${p.x.toFixed(5)},${p.y.toFixed(5)},${p.z.toFixed(5)}`; // seam duplicates of this part (sphere u = 0 / 1)
       if (displace) p.addScaledVector(n, displace(p, n));
-      this.vert(p, color(p, n), U ? [U.getX(i) * uvRep, U.getY(i) * uvRep] : [0, 0], typeof weights === 'function' ? weights(p) : weights);
+      const vi = this.vert(p, colorFn(p, n), U ? [U.getX(i), U.getY(i)] : [0.5, 0.5], typeof weights === 'function' ? weights(p) : weights);
+      if (seen.has(key)) this.pairs.push([seen.get(key), vi]); else seen.set(key, vi);
     }
     if (geo.index) for (let i = 0; i < geo.index.count; i++) this.idx.push(base + geo.index.getX(i));
     else for (let i = 0; i < P.count; i++) this.idx.push(base + i);
     geo.dispose();
   }
-  build() {
+  /** Pack the charts into a size×size atlas (shelf packing, `pad` texels around each chart). */
+  pack(size = 1024, pad = 4) {
+    const C = this.charts, order = C.map((c, i) => i).sort((a, b) => C[b].h * C[b].density - C[a].h * C[a].density);
+    const tryK = (k) => {
+      let x = 0, y = 0, shelf = 0; const out = [];
+      for (const i of order) {
+        const w = Math.ceil(C[i].w * C[i].density * k) + pad * 2, h = Math.ceil(C[i].h * C[i].density * k) + pad * 2;
+        if (w > size) return null;
+        if (x + w > size) { x = 0; y += shelf; shelf = 0; }
+        if (y + h > size) return null;
+        out[i] = { x: x + pad, y: y + pad, w: w - pad * 2, h: h - pad * 2 }; x += w; shelf = Math.max(shelf, h);
+      }
+      return out;
+    };
+    let lo = 1, hi = size * 40, best = tryK(lo);
+    for (let it = 0; it < 30; it++) { const mid = (lo + hi) / 2, r = tryK(mid); if (r) { lo = mid; best = r; } else hi = mid; }
+    this.atlas = { size, pad, k: lo, rects: best }; // k = texels per metre at density 1
+    return this.atlas;
+  }
+  build(size = 1024) {
+    const A = this.pack(size);
+    for (let i = 0; i < this.cid.length; i++) {
+      const r = A.rects[this.cid[i]];
+      this.uv[i * 2] = (r.x + this.loc[i * 2] * r.w) / size;
+      this.uv[i * 2 + 1] = 1 - (r.y + this.loc[i * 2 + 1] * r.h) / size; // image row 0 = top (flipY)
+    }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(this.pos, 3));
     g.setAttribute('color', new THREE.Float32BufferAttribute(this.col, 3));
@@ -162,10 +265,16 @@ class Builder {
     g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(this.sw, 4));
     g.setIndex(this.idx);
     g.computeVertexNormals();
+    // seams: the duplicated vertices share one (averaged) normal → no lighting crease along the UV cut
+    const N = g.getAttribute('normal');
+    for (const [a, b] of this.pairs) { const x = N.getX(a) + N.getX(b), y = N.getY(a) + N.getY(b), z = N.getZ(a) + N.getZ(b), l = Math.hypot(x, y, z) || 1; N.setXYZ(a, x / l, y / l, z / l); N.setXYZ(b, x / l, y / l, z / l); }
     g.computeBoundingSphere();
+    g.userData.bake = { kind: this.kind, charts: this.charts, cid: this.cid, loc: this.loc, atlas: A };
     return g;
   }
 }
+export const ATLAS = { skin: 1024, rags: 1024, eyes: 64 };
+let LOD_SEG = 1; // tessellation multiplier of the LOD being built (1 = LOD0)
 const organic = (amp, f = 9) => (p) => (fbm(p.x * f, p.y * f, p.z * f) - 0.5) * amp;
 
 // ---------------------------------------------------------------- procedural detail normal maps (tiling, tiny)
@@ -198,27 +307,77 @@ function makeDetailMaps() {
 // All pieces are shells lofted over the SAME body rings (so they deform with the same bones) and go into the one
 // 'rags' geometry → still 3 draw calls per infected. Pieces never extend further than ~4 cm past the body, so the
 // silhouette stays inside the sim hit zones.
+/**
+ * Garment surface (M1.8): returns a colour function (p, n, ring, loc, chart) → sRGB with .height / .rough attached, so
+ * one object drives the vertex colours, the baked base colour, normal relief and roughness.
+ * weave: 'ripstop' | 'canvas' | 'twill' | 'knit' | 'leather' | 'rubber' | 'cordura'; bands: [{ y0, y1, color, rough }]
+ * (bind-pose heights, e.g. hi-vis stripes); tears: painted rips (dark, frayed rim) instead of holes in the mesh.
+ */
+const WEAVE = {
+  ripstop: { h: (U, V) => Math.max(Math.abs(Math.sin(U * Math.PI / 0.006)), Math.abs(Math.sin(V * Math.PI / 0.006))) > 0.97 ? 0.00025 : (vnoise(U * 900, V * 900, 1) - 0.5) * 0.00008, c: 0.05, r: 0.86 },
+  canvas: { h: (U, V) => (vnoise(U * 260, V * 260, 2) - 0.5) * 0.00022 + Math.sin(U * Math.PI / 0.004) * Math.sin(V * Math.PI / 0.004) * 0.00006, c: 0.08, r: 0.9 },
+  twill: { h: (U, V) => Math.sin((U + V) * Math.PI / 0.005) * 0.00014, c: 0.05, r: 0.88 },
+  knit: { h: (U, V) => Math.abs(Math.sin(U * Math.PI / 0.005)) * 0.0004 + (vnoise(U * 400, V * 400, 3) - 0.5) * 0.0001, c: 0.12, r: 0.95 },
+  cordura: { h: (U, V) => (vnoise(U * 500, V * 500, 4) - 0.5) * 0.00018 + (Math.abs(((V + 0.5) % 0.03) - 0.015) < 0.0045 ? 0.0006 : 0), c: 0.06, r: 0.8 },
+  leather: { h: (U, V) => (fbm(U * 120, V * 120, 5) - 0.5) * 0.0004, c: 0.1, r: 0.6 },
+  rubber: { h: (U, V) => (Math.abs(((U + V) % 0.012) - 0.006) < 0.002 ? 0.0006 : 0), c: 0.03, r: 0.75 },
+};
+function garment(base, { weave = 'canvas', dirt = 0.6, blood = 0.4, bloodT = 0.62, wear = 0.3, bands = [], tears = 0.25, grime = 0.5, seams = true } = {}) {
+  const W = WEAVE[weave];
+  const metric = (loc, ch) => (loc && ch ? [loc[0] * ch.w, loc[1] * ch.h] : [0, 0]);
+  const tearF = (p) => tears ? sstep(vnoise(p.x * 22 + 3, p.y * 22, p.z * 22) * 0.7 + vnoise(p.x * 70, p.y * 70, p.z * 70) * 0.3, 1 - tears * 0.25, 1 - tears * 0.25 + 0.03) : 0;
+  const band = (p) => { for (const b of bands) if (p.y >= b.y0 && p.y <= b.y1 && (!b.side || Math.sign(p.z || 1) === b.side)) return b; return null; };
+  const color = (p, n, r, loc, ch) => {
+    if (Array.isArray(r)) { ch = loc; loc = r; } // called by the bake as (p, n, loc, chart)
+    const [U, V] = metric(loc, ch);
+    const b = band(p);
+    let c = (b ? b.color : base).slice();
+    const mott = 0.88 + fbm(p.x * 7, p.y * 7, p.z * 7) * 0.24 + (loc ? (W.h(U, V) / 0.0004) * W.c : 0);
+    const low = sstep(0.6 - p.y, 0, 0.6) * grime;                                              // grime towards the ground
+    const dd = 1 - dirt * 0.45 * sstep(fbm(p.x * 5 + 1, p.y * 5, p.z * 5), 0.45, 0.7) - low * 0.35;
+    const wr = wear * sstep(fbm(p.x * 14 + 2, p.y * 14, p.z * 14), 0.6, 0.75);                 // rubbed / faded
+    const bl = blood * sstep(fbm(p.x * 3 + 5, p.y * 3, p.z * 3), bloodT, bloodT + 0.08);
+    const seam = seams && loc && ch && Math.min(loc[0], 1 - loc[0]) * ch.w < 0.004 ? 0.75 : 1; // side seam
+    const stitch = seams && loc && ch && Math.abs(Math.min(loc[0], 1 - loc[0]) * ch.w - 0.007) < 0.0012 && Math.sin(V * Math.PI / 0.003) > 0 ? 0.8 : 1;
+    const t = tearF(p), rim = tears ? sstep(vnoise(p.x * 22 + 3, p.y * 22, p.z * 22) * 0.7 + vnoise(p.x * 70, p.y * 70, p.z * 70) * 0.3, 1 - tears * 0.25 - 0.03, 1 - tears * 0.25) * (1 - t) : 0;
+    return c.map((v, i) => {
+      let x = v * mott * dd * seam * stitch; x = x + (0.62 - x) * wr * 0.6 + rim * 0.12;
+      x = x * (1 - bl) + [0.17, 0.03, 0.03][i] * bl;
+      return x * (1 - t * 0.85);
+    });
+  };
+  color.height = (p, n, loc, ch) => {
+    const [U, V] = metric(loc, ch);
+    const folds = (fbm(p.x * 9, p.y * 9, p.z * 9) - 0.5) * 0.005 + Math.sin(V * 2 * Math.PI / 0.08 + fbm(p.x * 4, p.y * 4, p.z * 4) * 5) * 0.0009;
+    const seam = seams && loc && ch && Math.min(loc[0], 1 - loc[0]) * ch.w < 0.004 ? 0.0005 : 0;
+    const b = band(p) ? 0.0003 : 0;
+    return W.h(U, V) + folds + seam + b - tearF(p) * 0.0015;
+  };
+  color.rough = (p) => { const b = band(p); const bl = blood * sstep(fbm(p.x * 3 + 5, p.y * 3, p.z * 3), bloodT, bloodT + 0.08); return Math.max(0.25, (b && b.rough ? b.rough : W.r) - bl * 0.4 + (vnoise(p.x * 30, p.y * 30, p.z * 30) - 0.5) * 0.06); };
+  return color;
+}
 const OUTFITS = {
-  guard: { // dark uniform, heavy plate vest with pouches, combat boots — a dense upper body
-    shirt: clothFn([0.12, 0.13, 0.15], [0.12, 0.13, 0.15], { dirt: 0.5, blood: 0.45 }), sleeveTo: 10, shirtPad: 0.008,
-    trousers: clothFn([0.13, 0.135, 0.15], [0.13, 0.135, 0.15], { dirt: 0.55, blood: 0.3 }), trouserTo: 11,
-    boots: clothFn([0.05, 0.05, 0.055], [0.05, 0.05, 0.055], { dirt: 0.4, blood: 0 }),
-    vest: clothFn([0.19, 0.2, 0.17], [0.19, 0.2, 0.17], { dirt: 0.5, blood: 0.35, bloodT: 0.66 }),
-    tear: 0.985, cap: { theta: 1.25, scale: 1.1, tall: 0.8, dy: 0.008, brim: true, lumpy: 0.002, color: clothFn([0.1, 0.11, 0.13], [0.1, 0.11, 0.13], { dirt: 0.4, blood: 0.2 }) },
+  guard: { // damaged dark tactical uniform (ripstop), plate carrier with webbing, patrol cap, worn combat boots
+    shirt: garment([0.13, 0.145, 0.17], { weave: 'ripstop', dirt: 0.5, blood: 0.45, wear: 0.35, tears: 0.3 }), sleeveTo: 10, shirtPad: 0.01,
+    trousers: garment([0.14, 0.15, 0.17], { weave: 'ripstop', dirt: 0.6, blood: 0.3, wear: 0.4, tears: 0.3, grime: 0.8 }), trouserTo: 11,
+    boots: garment([0.07, 0.065, 0.06], { weave: 'leather', dirt: 0.6, blood: 0.1, wear: 0.55, tears: 0, seams: false }),
+    vest: garment([0.2, 0.21, 0.18], { weave: 'cordura', dirt: 0.5, blood: 0.35, bloodT: 0.66, wear: 0.3, tears: 0.15 }),
+    tear: 1, shoulder: 0.02,
+    cap: { theta: 1.25, scale: 1.1, tall: 0.8, dy: 0.008, brim: true, lumpy: 0.002, color: garment([0.11, 0.12, 0.14], { weave: 'twill', dirt: 0.4, blood: 0.15, tears: 0, seams: false }) },
   },
-  technician: { // light-grey coveralls, open collar (infected neck), cuffs at the wrist (infected hands), worn shoes
-    shirt: clothFn([0.47, 0.48, 0.47], [0.47, 0.48, 0.47], { dirt: 0.8, blood: 0.55, bloodT: 0.6, wear: 0 }), sleeveTo: 10, shirtPad: 0.006, openCollar: true,
-    trousers: clothFn([0.44, 0.45, 0.44], [0.44, 0.45, 0.44], { dirt: 0.85, blood: 0.4 }), trouserTo: 11,
-    shoes: clothFn([0.25, 0.21, 0.16], [0.25, 0.21, 0.16], { dirt: 0.6, blood: 0, wear: 0.4 }),
-    stripe: [0.6, 0.42, 0.1], tear: 0.975,
+  technician: { // light-grey coveralls (canvas): seams, zip, chest pocket, reflective band; painted rips; worn shoes
+    shirt: garment([0.5, 0.51, 0.5], { weave: 'canvas', dirt: 0.85, blood: 0.55, bloodT: 0.6, wear: 0.15, tears: 0.45, bands: [{ y0: 1.335, y1: 1.375, color: [0.72, 0.74, 0.74], rough: 0.4 }] }), sleeveTo: 10, shirtPad: 0.006, openCollar: true,
+    trousers: garment([0.47, 0.48, 0.47], { weave: 'canvas', dirt: 0.9, blood: 0.4, tears: 0.4, grime: 1, bands: [{ y0: 0.3, y1: 0.33, color: [0.72, 0.74, 0.74], rough: 0.4 }] }), trouserTo: 11,
+    shoes: garment([0.27, 0.22, 0.17], { weave: 'leather', dirt: 0.7, blood: 0, wear: 0.7, tears: 0, seams: false }),
+    tear: 1, shoulder: -0.014, zip: true,
   },
-  worker: { // olive work jacket (thick), work trousers with knee pads, boots, torn gloves
-    shirt: clothFn([0.27, 0.29, 0.17], [0.27, 0.29, 0.17], { dirt: 0.65, blood: 0.5 }), sleeveTo: 9, shirtPad: 0.014, jacket: true,
-    trousers: clothFn([0.2, 0.19, 0.16], [0.2, 0.19, 0.16], { dirt: 0.6, blood: 0.35 }), trouserTo: 11,
-    boots: clothFn([0.12, 0.09, 0.07], [0.12, 0.09, 0.07], { dirt: 0.5, blood: 0, wear: 0.2 }),
-    gloves: clothFn([0.16, 0.12, 0.08], [0.16, 0.12, 0.08], { dirt: 0.4, blood: 0.6, bloodT: 0.55 }),
-    pads: [0.09, 0.09, 0.08], tear: 0.97,
-    cap: { theta: 1.32, scale: 1.12, tall: 0.9, dy: 0.0, brim: false, lumpy: 0.006, color: clothFn([0.17, 0.14, 0.11], [0.17, 0.14, 0.11], { dirt: 0.7, blood: 0.3 }) },
+  worker: { // olive work jacket + trousers (canvas), muted orange hi-vis bands, knee pads, boots, beanie, torn gloves
+    shirt: garment([0.27, 0.29, 0.17], { weave: 'canvas', dirt: 0.65, blood: 0.5, wear: 0.3, tears: 0.3, bands: [{ y0: 1.2, y1: 1.245, color: [0.62, 0.32, 0.08], rough: 0.55 }, { y0: 1.37, y1: 1.41, color: [0.62, 0.32, 0.08], rough: 0.55 }, { y0: 1.1, y1: 1.13, color: [0.62, 0.32, 0.08], rough: 0.55 }] }), sleeveTo: 9, shirtPad: 0.014, jacket: true,
+    trousers: garment([0.22, 0.21, 0.17], { weave: 'twill', dirt: 0.65, blood: 0.35, tears: 0.3, grime: 1, bands: [{ y0: 0.25, y1: 0.285, color: [0.6, 0.31, 0.08], rough: 0.55 }] }), trouserTo: 11,
+    boots: garment([0.13, 0.095, 0.07], { weave: 'leather', dirt: 0.6, blood: 0, wear: 0.4, tears: 0, seams: false }),
+    gloves: garment([0.17, 0.13, 0.09], { weave: 'leather', dirt: 0.5, blood: 0.6, bloodT: 0.55, wear: 0.5, tears: 0.2, seams: false }),
+    pads: [0.09, 0.09, 0.08], tear: 1, shoulder: 0.012, hand: 1.18,
+    cap: { theta: 1.32, scale: 1.12, tall: 0.9, dy: 0.0, brim: false, lumpy: 0.004, color: garment([0.19, 0.15, 0.11], { weave: 'knit', dirt: 0.6, blood: 0.2, tears: 0, seams: false }) },
   },
 };
 function buildOutfit(id, rags, { torsoRings, armRings, legRings, hole, W, hc, HR }) {
@@ -280,13 +439,14 @@ function buildOutfit(id, rags, { torsoRings, armRings, legRings, hole, W, hc, HR
     const patch = new THREE.PlaneGeometry(0.07, 0.035); patch.translate(-0.075, 1.43, torsoRings[8].rv + 0.04); // pale ID patch
     rags.add(patch, { weights: W(['chest', 1]), color: plain([0.42, 0.42, 0.38]) });
   }
-  if (O.stripe) { // technician: reflective / hazard band across the chest and back
-    const B = torsoRings.slice(7, 9).map(R => ({ c: [...R.c], ru: R.ru * 1.06 + pad + 0.004, rv: R.rv * 1.08 + pad + 0.006, w: R.w }));
-    rags.loft(B, { seg: 22, color: (p) => O.stripe.map(c => c * (0.7 + fbm(p.x * 9, p.y * 9, p.z * 9) * 0.5)), uvRep: [8, 2], capStart: false, capEnd: false, skip: (r, s) => hole(r, s, 3, 0.8) });
-    for (const sx of [1, -1]) { // name tag + pen pocket
-      const t = new THREE.PlaneGeometry(0.06, 0.022); t.translate(sx * 0.07, 1.4, torsoRings[8].rv * 1.08 + pad + 0.009);
-      if (sx > 0) rags.add(t, { weights: W(['chest', 1]), color: plain([0.85, 0.85, 0.8]) });
-    }
+  if (O.zip) { // technician coverall: front zip, chest pocket with a name tag (the reflective band is in the fabric texture)
+    const zf = torsoRings[7].rv * 1.08 + pad + 0.004;
+    const zip = new THREE.BoxGeometry(0.01, 0.46, 0.006); zip.translate(0, 1.2, zf);
+    rags.add(zip, { weights: (p) => (p.y > 1.25 ? W(['chest', 1]) : W(['spine', 1])), color: garment([0.2, 0.2, 0.21], { weave: 'rubber', dirt: 0.3, blood: 0.2, tears: 0, seams: false }) });
+    const pk = new THREE.BoxGeometry(0.07, 0.08, 0.012); pk.translate(0.075, 1.42, torsoRings[8].rv * 1.08 + pad + 0.004);
+    rags.add(pk, { weights: W(['chest', 1]), color: O.shirt });
+    const t = new THREE.PlaneGeometry(0.06, 0.02); t.translate(0.075, 1.475, torsoRings[8].rv * 1.08 + pad + 0.011);
+    rags.add(t, { weights: W(['chest', 1]), color: plain([0.82, 0.82, 0.78]) });
   }
   if (O.jacket) { // collar, front zip and chest pockets of the work jacket
     const zip = new THREE.BoxGeometry(0.012, 0.42, 0.008); zip.translate(0, 1.22, torsoRings[7].rv * 1.08 + pad + 0.006);
@@ -334,12 +494,47 @@ function getCommon() {
   const mats = {
     skin: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.74, metalness: 0.0, normalMap: maps.skin, normalScale: new THREE.Vector2(0.75, 0.75) }),
     rags: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.96, metalness: 0.0, side: THREE.DoubleSide, normalMap: maps.cloth, normalScale: new THREE.Vector2(0.5, 0.5) }),
-    eyes: new THREE.MeshStandardMaterial({ color: 0x1a0404, emissive: 0xff2210, emissiveIntensity: 0.26, roughness: 0.4 }),
+    eyes: new THREE.MeshStandardMaterial({ vertexColors: true, color: 0xffffff, emissive: 0xff2a14, emissiveIntensity: 0.05, roughness: 0.22 }), // wet eyeballs / teeth / gums, faint red glow
   };
   common = { maps, mats };
   return common;
 }
 export const VARIANT_IDS = Object.keys(LOOKS);
+
+// ---------------------------------------------------------------- baked PBR maps (M1.8)
+// assets/infected/<variant>_<part>_color.jpg (sRGB base colour) + _nr.jpg (tangent-space normal XY in RG, roughness in B;
+// normal Z is reconstructed in the shader) — baked offline by tools/bake-infected (scripts/bake-infected.js).
+// Until they are loaded (or if loading fails) the material shows the vertex colours: the model is never invisible.
+export const BAKED_VARIANTS = ['guard', 'technician', 'worker'];
+const MAP_URL = new URL('../../../assets/infected/', import.meta.url);
+let loader = null;
+const mapStats = { requested: 0, loaded: 0, failed: 0 };
+export function getMapStats() { return { ...mapStats }; }
+function patchPackedNR(mat) {
+  mat.onBeforeCompile = (sh) => {
+    sh.fragmentShader = sh.fragmentShader
+      .replace('vec3 mapN = texture2D( normalMap, vNormalMapUv ).xyz * 2.0 - 1.0;',
+        'vec4 nrS = texture2D( normalMap, vNormalMapUv ); vec3 mapN = vec3( nrS.xy * 2.0 - 1.0, 0.0 ); mapN.z = sqrt( max( 0.0, 1.0 - dot( mapN.xy, mapN.xy ) ) );')
+      .replace('float roughnessFactor = roughness;', 'float roughnessFactor = roughness;\n#ifdef USE_NORMALMAP\n\troughnessFactor *= texture2D( normalMap, vNormalMapUv ).b;\n#endif');
+  };
+  mat.customProgramCacheKey = () => 'da-infected-nr';
+}
+function bakedMaterial(variant, part, opts) {
+  const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0, ...opts });
+  if (!BAKED_VARIANTS.includes(variant) || typeof document === 'undefined') return m;
+  loader = loader || new THREE.TextureLoader();
+  const load = (suffix, srgb) => new Promise((res) => {
+    mapStats.requested++;
+    loader.load(new URL(`${variant}_${part}_${suffix}.jpg`, MAP_URL).href, (t) => { mapStats.loaded++; t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace; t.anisotropy = 4; t.flipY = true; res(t); }, undefined, () => { mapStats.failed++; res(null); });
+  });
+  m.userData.ready = Promise.all([load('color', true), load('nr', false)]).then(([c, nr]) => {
+    if (!c || !nr) return false;
+    m.map = c; m.normalMap = nr; m.vertexColors = false; m.roughness = 1; m.normalScale.set(1, 1);
+    patchPackedNR(m); m.needsUpdate = true; m.userData.baked = true;
+    return true;
+  });
+  return m;
+}
 /** Build the shared geometries of one variant once (materials are common to all variants). */
 export function getHollowAssets(variant = 'hollow') {
   if (sets[variant]) return sets[variant];
@@ -348,7 +543,7 @@ export function getHollowAssets(variant = 'hollow') {
   try { return (sets[variant] = buildVariant()); } finally { LK = prevLook; }
 }
 function buildVariant() {
-  const skin = new Builder(), rags = new Builder(), eyes = new Builder();
+  const skin = new Builder('skin'), rags = new Builder('rags'), eyes = new Builder('eyes');
   const W = (...w) => w; // [[bone, weight], …]
 
   // ============ TORSO + NECK (one continuous loft, bottom → top). ru = half-width (X), rv = half-depth (Z)
@@ -413,7 +608,9 @@ function buildVariant() {
     ];
   };
   const armRings0 = armRings, armG = (r) => (r.c[1] > 0.97 ? LK.arm : 1 + (LK.arm - 1) * 0.5); // hands thicken less
-  armRings = (sx) => armRings0(sx).map(r => ({ ...r, ru: r.ru * armG(r), rv: r.rv * armG(r) }));
+  // M1.8 silhouette: shoulders wider / narrower (deltoid region moved along x, fading out by the elbow), hand size
+  const shoulderOff = (r) => (LK.shoulder || 0) * sstep(r.c[1], 1.22, 1.45) * (Math.abs(r.c[0]) > 0.15 ? 1 : 0.4);
+  armRings = (sx) => armRings0(sx).map(r => { const hand = r.c[1] < 0.97 ? (LK.hand || 1) : 1; return { ...r, c: [r.c[0] + sx * shoulderOff(r), r.c[1], r.c[2]], ru: r.ru * armG(r) * hand, rv: r.rv * armG(r) * hand }; });
   for (const sx of [1, -1]) {
     const s = sx > 0 ? 'L' : 'R', R = armRings(sx);
     skin.loft(R, {
@@ -429,14 +626,15 @@ function buildVariant() {
     });
     // fingers: long, bony, three joints, curled into claws (towards −Z = the palm side), dark claw tips
     const fingers = [[-0.031, 0.118, 0.85], [-0.011, 0.14, 1], [0.01, 0.132, 1.05], [0.03, 0.105, 1.2]]; // x offset, length, curl
-    fingers.forEach(([fx, L, curl], k) => {
+    fingers.forEach(([fx, L0, curl], k) => {
+      const L = L0 * (LK.hand || 1), fr = LK.hand || 1;
       const rings = []; let y = 0.85, z = 0.008, ang = -0.12; // ang: 0 = straight down, negative z = curl
       const segs = [[0.0, 0.0105], [0.4, 0.0088], [0.42, 0.0098], [0.72, 0.0074], [0.74, 0.0084], [1.0, 0.0056], [1.14, 0.0035], [1.3, 0.0008]];
       let last = 0;
       for (const [t, r] of segs) {
         const dl = (t - last) * L; last = t;
         y -= Math.cos(ang) * dl; z -= Math.sin(-ang) * dl * 1; // step, then bend at the joints
-        rings.push({ c: [sx * (0.19 + fx * (1 + t * 0.25)), y, z], ru: r, rv: r * 1.05, w: W(['hand' + s, 1]), t });
+        rings.push({ c: [sx * (0.19 + fx * fr * (1 + t * 0.25)), y, z], ru: r * fr, rv: r * 1.05 * fr, w: W(['hand' + s, 1]), t });
         if (t === 0.4 || t === 0.72 || t === 1.0) ang -= 0.5 * curl; else if (t === 0.0) ang -= 0.28 * curl;
       }
       skin.loft(rings, { seg: 6, hint: [0, 0, 1], uvRep: [1, 9], capStart: false, color: (p, d, r) => (rings[r].t > 1.0 ? [0.1, 0.085, 0.075] : skinColor(p).map(c => c * (rings[r].t > 0.7 ? 0.62 : 0.85))) });
@@ -496,66 +694,116 @@ function buildVariant() {
     ], { seg: 10, uvRep: [2, 8], color: (p) => skinColor(p).map(c => c * 0.7), displace: (p, d) => (p.z > 0.12 ? Math.max(0, Math.sin(p.x * 130)) * 0.003 : 0) });
   }
 
-  // ============ HEAD: sculpted skull-like face (deep sockets, no nose, sharp cheekbones), mandible, teeth, ears
-  const hc = [BIND.head[0], BIND.head[1] + 0.085, BIND.head[2] + 0.015], HR = [0.083, 0.112, 0.1];
+  // ============ HEAD (M1.8): anatomical procedural head — per-variant skull, orbits with lids, nose, cheekbones, lips,
+  // eyeballs. Same pivot and size class as M1.7 (the sim head zone is unchanged); detail below the mesh step comes from
+  // the baked maps (faceColor / faceHeight).
+  const HD = LK.head || HEADS.hollow;
+  const hc = [BIND.head[0], BIND.head[1] + 0.085, BIND.head[2] + 0.015], HR = [0.083 * HD.w, 0.112 * HD.h, 0.1 * HD.d];
+  const fx = (x, y, ax, ay, sx, sy) => Math.exp(-((x - ax) * (x - ax)) / (sx * sx) - ((y - ay) * (y - ay)) / (sy * sy));
+  const local = (p) => [(p.x - hc[0]) / HR[0], (p.y - hc[1]) / HR[1], (p.z - hc[2]) / HR[2]];
+  /** Sculpt of the unit head: returns the radial offset factor k at unit-sphere point (x, y, z). */
+  const sculpt = (x, y, z) => {
+    const ax = Math.abs(x), front = sstep(z, 0.05, 0.4), side = x > 0 ? 1 : -1;
+    let k = 0;
+    k += HD.brow * 0.075 * fx(ax, y, 0.36, 0.3, 0.2, 0.07) * front + HD.brow * 0.05 * fx(x, y, 0, 0.27, 0.12, 0.08) * front; // brow ridge + glabella
+    k -= HD.socket * fx(ax, y, 0.37, 0.07, 0.17, 0.13) * front * (1 - 0.45 * fx(ax, y, 0.41, 0.05, 0.1, 0.07));    // orbits (the eyeball fills the centre)
+    k += 0.035 * fx(ax, y, 0.37, 0.16, 0.15, 0.035) * front;                                          // upper eyelid fold
+    k += 0.022 * fx(ax, y, 0.37, -0.03, 0.13, 0.03) * front;                                          // lower lid / tear trough edge
+    k -= 0.03 * fx(ax, y, 0.37, -0.1, 0.18, 0.05) * front;                                            // sunken under-eye
+    k += HD.nose * 0.075 * fx(x, y, 0, 0.06, 0.06, 0.2) * front;                                      // nose bridge
+    k += HD.noseTip * 0.08 * fx(x + HD.noseBend, y, 0, -0.17, 0.08, 0.07) * front;                    // nose tip (bent / broken)
+    k += 0.04 * fx(ax, y, 0.11, -0.24, 0.055, 0.045) * front * (side > 0 ? 1 : 0.35);                // nostril wings (one rotted away)
+    k -= 0.05 * fx(ax, y, 0.07, -0.27, 0.035, 0.03) * front;                                          // nostrils
+    k += HD.cheek * 0.07 * fx(ax, y, 0.6, -0.08, 0.17, 0.11);                                          // cheekbones
+    k += 0.035 * fx(ax, y, 0.82, 0.0, 0.12, 0.05);                                                     // zygomatic arch
+    k -= HD.hollow * 0.09 * fx(ax, y, 0.52, -0.42, 0.17, 0.16) * sstep(z, -0.2, 0.2);                 // hollow cheeks
+    k += 0.022 * fx(ax, y, 0.22, -0.36, 0.05, 0.09) * front;                                          // nasolabial folds
+    k += 0.04 * fx(x, y, 0, -0.47, 0.26, 0.05) * front;                                               // thin upper lip pulled back
+    k -= HD.temple * 0.07 * fx(ax, y, 0.9, 0.18, 0.18, 0.2);                                           // temples
+    k += HD.jaw * 0.05 * fx(ax, y, 0.72, -0.55, 0.16, 0.14);                                           // jaw angle (width of the lower face)
+    k += (vnoise(x * 4 + HD.seed, y * 4, z * 4) - 0.5) * 0.045 * (y > 0.25 ? 1.6 : 0.5);              // lumpy cranium
+    k += HD.scar ? -0.012 * Math.exp(-Math.pow((x - 0.25 * Math.sin(y * 3)) / 0.025, 2)) * sstep(y, 0.3, 0.5) : 0; // surgical scar
+    return k;
+  };
   {
-    const g = new THREE.SphereGeometry(1, 26, 20);
+    const g = new THREE.SphereGeometry(1, Math.round(52 * LOD_SEG), Math.round(40 * LOD_SEG));
     const P = g.getAttribute('position');
     for (let i = 0; i < P.count; i++) {
       let x = P.getX(i), y = P.getY(i), z = P.getZ(i);
-      // unit-sphere sculpt
-      if (z < 0) z *= 1.16 - 0.1 * Math.max(0, -y);                 // elongated back of the skull
-      if (y > 0.55) y = 0.55 + (y - 0.55) * 0.86;                    // slightly flattened crown
-      if (y < -0.15) { const t = Math.min(1, (-0.15 - y) / 0.7); x *= 1 - 0.34 * t; if (z > 0) z *= 1 - 0.1 * t; } // face narrows towards the mouth
-      if (y < -0.66) y = -0.66 - (y + 0.66) * 0.18;                  // flat underside: the mandible sits below
-      const front = z > 0.25 ? 1 : 0;
-      let k = 0;
-      k -= LK.socket * gauss(Math.abs(x) - 0.4, y - 0.06, 0.2) * front; // eye sockets (deep)
-      k += 0.085 * gauss(Math.abs(x) - 0.38, y - 0.27, 0.16) * front + 0.05 * gauss(x, y - 0.24, 0.12) * front; // brow ridge
-      k -= 0.1 * gauss(x, y + 0.2, 0.085) * front;                    // nasal cavity
-      k += 0.05 * gauss(x, y + 0.02, 0.07) * front;                   // remains of the nose bridge
-      k += 0.07 * gauss(Math.abs(x) - 0.6, y + 0.14, 0.14);           // cheekbones
-      k -= 0.1 * gauss(Math.abs(x) - 0.5, y + 0.42, 0.17) * (z > 0 ? 1 : 0.4); // hollow cheeks
-      k -= 0.05 * gauss(Math.abs(x) - 0.9, y - 0.12, 0.2);            // temples
-      k += (vnoise(x * 4 + 2, y * 4, z * 4) - 0.5) * 0.05 * (y > 0.25 ? 1.6 : 0.6); // lumpy cranium
-      const l = Math.hypot(x, y, z) || 1, s = 1 + k;
-      P.setXYZ(i, hc[0] + x / l * l * s * HR[0], hc[1] + y * s * HR[1], hc[2] + z * s * HR[2]);
+      if (z < 0) z *= 1.16 * HD.back - 0.1 * Math.max(0, -y);                 // occiput
+      if (y > 0.55) y = 0.55 + (y - 0.55) * HD.crown;                         // crown (flat under a cap, domed when bald)
+      { const t = sstep(-y, 0.05, 0.85); x *= 1 - (0.34 - 0.12 * (HD.jaw - 1)) * t; if (z > 0) z *= 1 - 0.1 * t; } // lower face narrows (smooth: no crease)
+      if (y < -0.66) y = -0.66 - (y + 0.66) * 0.18;                            // flat underside: the mandible sits below
+      const k = sculpt(x, y, z);
+      P.setXYZ(i, hc[0] + x * (1 + k) * HR[0], hc[1] + y * (1 + k) * HR[1], hc[2] + z * (1 + k) * HR[2]);
     }
-    skin.add(g, {
-      weights: W(['head', 1]), uvRep: 1.5,
-      color: (p) => {
-        const lx = (p.x - hc[0]) / HR[0], ly = (p.y - hc[1]) / HR[1], lz = (p.z - hc[2]) / HR[2];
-        const c = skinColor(p);
-        const sock = lz > 0.2 ? 1 - 0.9 * gauss(Math.abs(lx) - 0.4, ly - 0.06, 0.2) : 1;
-        const nose = lz > 0.2 ? 1 - 0.8 * gauss(lx, ly + 0.2, 0.09) : 1;
-        const mouth = lz > 0.1 && ly < -0.5 ? 0.5 : 1;
-        return c.map(v => v * sock * nose * mouth);
-      },
-    });
-    // mandible: narrow jaw with a jutting chin, hangs open (animated), darker
-    const jw = new THREE.SphereGeometry(1, 16, 10), J = jw.getAttribute('position'), jc = [hc[0], hc[1] - 0.086, hc[2] + 0.026];
+    skin.add(g, { weights: W(['head', 1]), aspect: 2, density: 3.6, name: 'head', fns: { color: faceColor, height: faceHeight, rough: faceRough } });
+    // mandible: jaw with chin and angle (width per variant), lower lip line; hangs open (animated by the jaw bone)
+    const jw = new THREE.SphereGeometry(1, Math.round(26 * LOD_SEG), Math.round(16 * LOD_SEG)), J = jw.getAttribute('position'), jc = [hc[0], hc[1] - 0.086, hc[2] + 0.026];
     for (let i = 0; i < J.count; i++) {
       let x = J.getX(i), y = J.getY(i), z = J.getZ(i);
       if (y > 0.1) y = 0.1 + (y - 0.1) * 0.25;                       // flat top (tooth line)
-      if (z > 0) x *= 1 - 0.42 * z;                                  // tapers to the chin
-      if (z > 0.5 && y < 0) y *= 1.25;                               // chin drops
-      J.setXYZ(i, jc[0] + x * 0.056, jc[1] + y * 0.03, jc[2] + z * 0.07);
+      if (z > 0) x *= 1 - (0.42 - 0.15 * (HD.jaw - 1)) * z;            // tapers to the chin
+      if (z > 0.5 && y < 0) y *= 1.25 + 0.2 * (HD.jaw - 1);            // chin drops
+      x *= 1 + 0.1 * (HD.jaw - 1) * (1 - Math.abs(z));                 // angle of the jaw
+      J.setXYZ(i, jc[0] + x * 0.056 * HD.w, jc[1] + y * 0.03, jc[2] + z * 0.07);
     }
-    skin.add(jw, { weights: W(['jaw', 1]), color: (p) => skinColor(p).map(c => c * 0.78), displace: organic(0.004, 22), uvRep: 1 });
+    skin.add(jw, { weights: W(['jaw', 1]), displace: organic(0.003, 22), aspect: 2, density: 3.0, name: 'jaw', fns: { color: faceColor, height: faceHeight, rough: faceRough } });
     // dark mouth cavity so the open mouth never shows through
-    const cav = new THREE.SphereGeometry(1, 10, 8); cav.scale(0.043, 0.026, 0.05); cav.translate(hc[0], hc[1] - 0.074, hc[2] + 0.03);
-    skin.add(cav, { weights: W(['head', 0.5], ['jaw', 0.5]), color: () => [0.05, 0.015, 0.02] });
-    // teeth: irregular pale stumps along both arches
-    for (let i = 0; i < 9; i++) {
-      const a = (i - 4) / 4 * 1.05, tx = Math.sin(a) * 0.036, tz = hc[2] + 0.052 + Math.cos(a) * 0.046, h = 0.006 + hash(i, 3, 1) * 0.006;
-      if (hash(i, 7, 2) > 0.2) { const t = new THREE.BoxGeometry(0.0055, h, 0.005); t.rotateZ((hash(i, 2, 2) - 0.5) * 0.3); t.rotateY(a); t.translate(hc[0] + tx, hc[1] - 0.07 - h / 2, tz); skin.add(t, { weights: W(['head', 1]), color: () => [0.52, 0.47, 0.34] }); }
-      if (hash(i, 5, 9) > 0.25) { const h2 = 0.007 + hash(i, 1, 4) * 0.006, t = new THREE.BoxGeometry(0.005, h2, 0.005); t.rotateZ((hash(i, 4, 6) - 0.5) * 0.3); t.rotateY(a); t.translate(hc[0] + tx * 0.92, hc[1] - 0.083 + h2 / 2, tz - 0.004); skin.add(t, { weights: W(['jaw', 1]), color: () => [0.46, 0.41, 0.3] }); }
+    const cav = new THREE.SphereGeometry(1, 10, 8); cav.scale(0.043 * HD.w, 0.026, 0.05); cav.translate(hc[0], hc[1] - 0.074, hc[2] + 0.03);
+    skin.add(cav, { weights: W(['head', 0.5], ['jaw', 0.5]), color: () => [0.09, 0.025, 0.03], fns: { height: () => 0, rough: () => 0.3 }, name: 'mouth' });
+    // gums + teeth: irregular, stained, some missing (one chart each, dense enough to survive mip-mapping)
+    const toothC = (p) => { const n = fbm(p.x * 300, p.y * 300, p.z * 300), root = sstep(Math.abs(p.y - (hc[1] - 0.077)), 0.004, 0.0); return [0.62 + 0.2 * n - 0.3 * root, 0.56 + 0.18 * n - 0.32 * root, 0.4 + 0.12 * n - 0.25 * root]; };
+    for (const [yy, bone, zoff] of [[-0.066, 'head', 0], [-0.084, 'jaw', -0.004]]) { // gum ridges
+      const gum = new THREE.TorusGeometry(0.042 * HD.w, 0.003, 6, Math.round(14 * LOD_SEG), Math.PI * 1.1); gum.rotateX(Math.PI / 2); gum.rotateY(-Math.PI * 0.05); gum.scale(1, 1, 1.05); gum.translate(hc[0], hc[1] + yy, hc[2] + 0.012 + zoff);
+      eyes.add(gum, { weights: W([bone, 1]), color: () => [0.2, 0.05, 0.05], name: 'gum' });
     }
-    // ears: small, pressed to the skull, one torn
-    for (const sx of [1, -1]) { const e = new THREE.SphereGeometry(1, 8, 6); e.scale(0.007, sx > 0 ? 0.024 : 0.016, 0.014); e.translate(hc[0] + sx * 0.082, hc[1] - 0.012, hc[2] - 0.012); skin.add(e, { weights: W(['head', 1]), color: (p) => skinColor(p).map(c => c * 0.75) }); }
-    // eyes: tiny, deep in the sockets — a faint red glow from the material's emission only (no light source)
-    for (const sx of [-1, 1]) { const e = new THREE.SphereGeometry(1, 8, 6); e.scale(0.007 * LK.eyeScale, 0.0055 * LK.eyeScale, 0.005); e.translate(hc[0] + sx * 0.034, hc[1] + 0.008, hc[2] + 0.079 + LK.eyeZ); eyes.add(e, { weights: W(['head', 1]), color: () => [1, 1, 1] }); }
+    for (let i = 0; i < 9; i++) {
+      const a = (i - 4) / 4 * 1.05, tx = Math.sin(a) * 0.036 * HD.w, tz = hc[2] + 0.052 + Math.cos(a) * 0.046, h = 0.006 + hash(i, 3, HD.seed) * 0.006;
+      if (hash(i, 7, HD.seed) > 0.22) { const t = new THREE.BoxGeometry(0.0055, h, 0.005, 1, 2, 1); t.rotateZ((hash(i, 2, 2) - 0.5) * 0.3); t.rotateY(a); t.translate(hc[0] + tx, hc[1] - 0.07 - h / 2, tz); eyes.add(t, { weights: W(['head', 1]), color: toothC, name: 'tooth' }); }
+      if (hash(i, 5, HD.seed + 3) > 0.27) { const h2 = 0.007 + hash(i, 1, 4) * 0.006, t = new THREE.BoxGeometry(0.005, h2, 0.005, 1, 2, 1); t.rotateZ((hash(i, 4, 6) - 0.5) * 0.3); t.rotateY(a); t.translate(hc[0] + tx * 0.92, hc[1] - 0.083 + h2 / 2, tz - 0.004); eyes.add(t, { weights: W(['jaw', 1]), color: toothC, name: 'tooth' }); }
+    }
+    // ears: shell with a rolled rim (helix) and a lobe; the left one torn on the GUARD
+    for (const sx of [1, -1]) {
+      const e = new THREE.SphereGeometry(1, Math.round(12 * LOD_SEG), Math.round(10 * LOD_SEG)), E = e.getAttribute('position'), size = HD.ear * (sx < 0 && HD.tornEar ? 0.7 : 1);
+      for (let i = 0; i < E.count; i++) { let x = E.getX(i), y = E.getY(i), z = E.getZ(i); const rim = 1 + 0.25 * sstep(Math.hypot(y, z), 0.7, 0.95); x *= 0.35 * (1 - 0.5 * sstep(-x * sx, 0, 0.8)) * rim; E.setXYZ(i, x, y, z); }
+      e.scale(0.018, 0.026 * size, 0.015 * size); e.rotateY(sx * 0.2); e.translate(hc[0] + sx * HR[0] * 0.93, hc[1] - 0.008, hc[2] - 0.012);
+      skin.add(e, { weights: W(['head', 1]), fns: { color: faceColor, height: faceHeight, rough: faceRough }, density: 3, name: 'ear' });
+    }
+    // eyeballs: sclera (yellowed, bloodshot) + clouded iris with a dark ring; faint red emission from the material
+    for (const sx of [-1, 1]) {
+      const r = 0.0125 * LK.eyeScale, e = new THREE.SphereGeometry(1, 16, 12);
+      e.scale(r, r * 0.92, r); e.translate(hc[0] + sx * 0.034 * HD.w, hc[1] + 0.006, hc[2] + 0.077 + LK.eyeZ * 0.5 - HD.socket * 0.02);
+      eyes.add(e, { weights: W(['head', 1]), color: (p, n) => { const f = n.z; return f > 0.93 ? [0.08, 0.03, 0.03] : f > 0.8 ? [0.5, 0.55, 0.56] : f > 0.72 ? [0.3, 0.07, 0.06] : [0.6, 0.57, 0.5]; } });
+    }
   }
+  /** Face colour: pallor with cold patches, bruised sockets, raw lips / gum line, dried blood streaks, veins, stubble. */
+  function faceColor(p) {
+    const [x, y, z] = local(p), ax = Math.abs(x), front = sstep(z, 0.0, 0.35);
+    let c = skinColor(p);
+    const sock = fx(ax, y, 0.37, 0.05, 0.2, 0.17) * front;                        // dark bruised orbits
+    c = c.map((v, i) => v * (1 - 0.72 * sock) + [0.12, 0.05, 0.08][i] * 0.72 * sock);
+    const lips = fx(x, y, 0, -0.49, 0.26, 0.04) * front;                           // cracked raw lips
+    c = c.map((v, i) => v * (1 - 0.6 * lips) + [0.3, 0.1, 0.1][i] * 0.6 * lips);
+    // dried blood running down from the eyes, nose and mouth (gravity streaks)
+    const stx = Math.sin(x * 40 + HD.seed) * 0.5 + 0.5, streak = sstep(stx, 0.8, 0.95) * (fx(ax, y, 0.37, -0.25, 0.1, 0.35) + fx(x, y, 0.02, -0.55, 0.12, 0.4)) * front * sstep(fbm(p.x * 30, p.y * 8, p.z * 30), 0.45, 0.6);
+    c = c.map((v, i) => v * (1 - 0.55 * streak) + [0.2, 0.04, 0.04][i] * 0.55 * streak);
+    // stubble / hair on the scalp and jaw (by variant)
+    const hairZone = HD.hair * sstep(y, 0.35, 0.55) + HD.stubble * sstep(-y, 0.35, 0.55) * sstep(ax, 0.2, 0.5);
+    const dots = sstep(vnoise(p.x * 900, p.y * 900, p.z * 900), 0.55, 0.7) * Math.min(1, hairZone);
+    c = c.map((v, i) => v * (1 - 0.65 * dots) + [0.06, 0.05, 0.045][i] * 0.65 * dots);
+    return c;
+  }
+  function faceHeight(p) {
+    const [x, y, z] = local(p), ax = Math.abs(x), front = sstep(z, 0.0, 0.35);
+    let h = skinHeight(p) * 0.8;
+    h += Math.sin(y * 420 + fbm(p.x * 40, p.y * 10, p.z * 40) * 5) * 0.00022 * fx(x, y, 0, 0.45, 0.6, 0.15) * front;                // forehead furrows
+    h += Math.sin(Math.atan2(y - 0.05, ax - 0.37) * 9) * 0.00025 * sstep(0.32, 0.22, Math.hypot(ax - 0.37, y - 0.05)) * front;    // crow's feet
+    h += Math.sin(x * 260) * 0.00025 * fx(x, y, 0, -0.5, 0.32, 0.08) * front;                                                      // vertical lip cracks
+    h += (vnoise(p.x * 1500, p.y * 1500, p.z * 1500) - 0.5) * 0.00012 * Math.min(1, HD.hair * sstep(y, 0.35, 0.55) + HD.stubble * sstep(-y, 0.35, 0.55)); // stubble
+    return h;
+  }
+  function faceRough(p) { const [x, y, z] = local(p); return Math.max(0.3, skinRough(p) - 0.25 * fx(x, y, 0, -0.5, 0.3, 0.07) - 0.2 * fx(Math.abs(x), y, 0.37, 0.05, 0.12, 0.1)); }
 
   // ============ RAGS: shells lofted over the body rings with torn hems and holes (double-sided)
   const hole = (r, s, salt, th) => (hash(r * 1.7 + salt, s * 2.3, salt) > th ? 2 + (hash(s, r, salt) > 0.5 ? 1 : 0) : 0); // small triangular rips
@@ -601,8 +849,14 @@ function buildVariant() {
     rags.loft(R, { seg: 10, hint: [0, 0, 1], color: clothColor, uvRep: [4, 12], capStart: false, capEnd: false, jag: (s) => 0.06 * hash(s, 1, 1), displace: (p) => (fbm(p.x * 12, p.y * 12, p.z * 12) - 0.5) * 0.016, skip: (r, s) => (r === 0 && hash(s, 2, 2) > 0.5 ? 2 : 0) || hole(r, s, 2, 0.93) });
   }
 
-  const geo = { skin: skin.build(), rags: rags.build(), eyes: eyes.build() };
-  const { maps, mats } = getCommon();
+  const geo = { skin: skin.build(ATLAS.skin), rags: rags.build(ATLAS.rags), eyes: eyes.build(ATLAS.eyes) };
+  const { maps, mats: shared } = getCommon();
+  // M1.8: the outpost variants have their own baked maps → own skin / outfit materials (same shader program)
+  const mats = BAKED_VARIANTS.includes(LK.id) ? {
+    skin: bakedMaterial(LK.id, 'skin', { roughness: 0.74 }),
+    rags: bakedMaterial(LK.id, 'rags', { roughness: 0.96, side: THREE.DoubleSide }),
+    eyes: shared.eyes,
+  } : shared;
   const tris = Object.values(geo).reduce((s, g) => s + g.index.count / 3, 0);
   return { variant: LK.id, geo, mats, maps, tris, headCentre: hc };
 }
@@ -629,7 +883,11 @@ export function createHollowInstance(variant = 'hollow') {
 }
 
 export function disposeHollowAssets() {
-  for (const k of Object.keys(sets)) { for (const g of Object.values(sets[k].geo)) g.dispose(); delete sets[k]; }
+  for (const k of Object.keys(sets)) {
+    for (const g of Object.values(sets[k].geo)) g.dispose();
+    for (const part of ['skin', 'rags']) { const m = sets[k].mats[part]; if (common && m === common.mats[part]) continue; if (m.map) m.map.dispose(); if (m.normalMap && m.userData.baked) m.normalMap.dispose(); m.dispose(); }
+    delete sets[k];
+  }
   if (!common) return;
   for (const m of Object.values(common.mats)) m.dispose();
   for (const t of Object.values(common.maps)) t.dispose();
