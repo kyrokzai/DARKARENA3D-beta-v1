@@ -47,7 +47,14 @@ async function open(browser, base, contextOpts, { play = true, throttle = 0, ini
 const P = page => page.evaluate(() => window.__DA3.player);
 const setP = (page, x, y, yaw = 0, pitch = 0) => page.evaluate(a => window.__DA3.setPlayer(...a), [x, y, yaw, pitch]);
 const touch = (cdp, type, pts) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts });
-async function holdKey(page, code, ms) { await page.keyboard.down(code); await sleep(ms); await page.keyboard.up(code); await sleep(60); }
+// Hold a key for `ms` of SIMULATED time (ms × 60 Hz ticks). The loop caps catch-up at 8 steps per frame, so on a slow
+// software-rendered headless browser wall-clock holds gave the player less movement than the assertions expect.
+async function holdKey(page, code, ms) {
+  const t0 = await page.evaluate(() => window.__DA3.game.tick);
+  await page.keyboard.down(code);
+  await page.waitForFunction(([t0, n]) => window.__DA3.game.tick - t0 >= n, [t0, Math.round(ms * 60 / 1000)], { timeout: Math.max(10000, ms * 20), polling: 'raf' });
+  await page.keyboard.up(code); await sleep(60);
+}
 
 (async () => {
   const srv = await serve();
