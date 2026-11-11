@@ -27,7 +27,7 @@ export function computePixelRatio(cssW, cssH, dpr, profileId, userScale = 1, aut
   const budgetLimited = ratio > cap;
   if (budgetLimited) ratio = cap;
   ratio = Math.max(MIN_PIXEL_RATIO, ratio);
-  const width = Math.round(cssW * ratio), height = Math.round(cssH * ratio);
+  const width = Math.floor(cssW * ratio), height = Math.floor(cssH * ratio); // three.js floors the canvas size the same way
   return { ratio, width, height, pixels: width * height, budgetLimited };
 }
 

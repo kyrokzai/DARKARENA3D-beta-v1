@@ -177,4 +177,7 @@ node tests/sim-m1.6.test.mjs        # M1.6 arena, waves, AI 2.0, hit zones, deat
 node tests/m1.6-evolution.test.js   # M1.6 menus, full match, animation ↔ hit zones, phone
 node tests/sim-m1.7.test.mjs        # M1.7 outpost data, variants, alarm timeline, balance (Node)
 node tests/m1.7-outpost.test.js     # M1.7 environment, variants, alarm, sound, gameplay pass (browser)
+node tests/sim-m1.8.test.mjs        # M1.8 graphics profiles, pixel budget, adaptive resolution (Node)
+node tests/m1.8-visual.test.js      # M1.8 drawing buffer, MSAA, baked maps, LOD, animation ↔ hit zones (browser)
+node scripts/bake-infected.js       # dev: re-bake the infected PBR maps (assets/infected/*.jpg)
 ```
