@@ -91,8 +91,9 @@ $('resumeBtn').onclick = resume;
 $('menuSettings').onclick = () => { settingsReturn = 'menu'; show('settings'); };
 $('aboutBtn').onclick = () => show('about');
 $('aboutBack').onclick = () => show('menu');
-// M1.7: build every variant's shared geometry and compile the shaders while the menu shows (no stall mid-wave)
-setTimeout(() => { for (const v of VARIANT_IDS) getHollowAssets(v); view.renderer.compile(view.scene, view.camera); }, 50);
+// M1.7: build the variants' shared geometry one at a time while the player is still in the menu (no stall mid-wave;
+// materials are shared, so no extra shader compile). Stops as soon as play starts — anything left is built lazily.
+{ const todo = [...VARIANT_IDS]; const next = () => { if (!todo.length || state !== 'menu') return; getHollowAssets(todo.shift()); setTimeout(next, 120); }; setTimeout(next, 600); }
 $('aboutVersion').textContent = VERSION;
 $('pauseSettings').onclick = () => { settingsReturn = 'paused'; show('settings'); };
 $('settingsBack').onclick = () => show(settingsReturn);

@@ -28,14 +28,14 @@ const visibleButtons = (page, id) => DA(page, id => [...document.getElementById(
     const errors = []; page.on('pageerror', e => errors.push(e.message)); page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
     await page.goto(base + '/prototype-3d/'); await sleep(300);
     const m = await page.evaluate(() => ({ text: document.getElementById('menu').innerText.replace(/\s+/g, ' ').trim(), focus: document.activeElement && document.activeElement.id, hook: typeof window.__DA3 }));
-    check('Main menu: only the title and ИГРАТЬ / НАСТРОЙКИ / ОБ ИГРЕ (no technical or control hints)', m.text === 'DARK ARENA ИГРАТЬ НАСТРОЙКИ ОБ ИГРЕ' && m.hook === 'undefined', m.text);
+    check('Main menu: only the title (+ M1.7 subtitle OUTPOST ZERO) and ИГРАТЬ / НАСТРОЙКИ / ОБ ИГРЕ (no technical or control hints)', m.text === 'DARK ARENA OUTPOST ZERO ИГРАТЬ НАСТРОЙКИ ОБ ИГРЕ' && m.hook === 'undefined', m.text);
     check('Keyboard: ИГРАТЬ focused when the menu opens', m.focus === 'playBtn');
     await shoot(page, 'm16_menu.png');
     await page.keyboard.press('ArrowDown'); await page.keyboard.press('ArrowDown');
     const f2 = await page.evaluate(() => document.activeElement.id);
     await page.keyboard.press('Enter'); await sleep(80);
     const about = await page.evaluate(() => ({ vis: !document.getElementById('about').classList.contains('hidden'), ver: document.getElementById('aboutVersion').textContent, text: document.getElementById('about').innerText }));
-    check('Keyboard: ↓ ↓ Enter opens ОБ ИГРЕ with the description and version M1.6', f2 === 'aboutBtn' && about.vis && about.ver === 'M1.6' && /DARK ARENA/.test(about.text) && /три волны/.test(about.text), JSON.stringify({ f2, ver: about.ver }));
+    check('Keyboard: ↓ ↓ Enter opens ОБ ИГРЕ with the description and the current version (M1.7)', f2 === 'aboutBtn' && about.vis && about.ver === 'M1.7' && /DARK ARENA/.test(about.text) && /три волны/.test(about.text), JSON.stringify({ f2, ver: about.ver }));
     await shoot(page, 'm16_about.png');
     await page.keyboard.press('Escape'); await sleep(50);
     check('Esc returns from ОБ ИГРЕ to the menu', await page.isVisible('#menu') && !(await page.isVisible('#about')));
@@ -210,8 +210,8 @@ const visibleButtons = (page, id) => DA(page, id => [...document.getElementById(
   // ---------- 4. Render budget on the big arena: 5 infected, lights, arena geometry ----------
   {
     const { ctx, page } = await open(browser, base, desktop, { path: '/prototype-3d/?debug=1' });
-    const lv = await DA(page, () => ({ walls: __DA3.wallCount, lights: __DA3.view.level.lightCount, lamps: __DA3.view.level.lampCount, w: __DA3.game.world.width, h: __DA3.game.world.height }));
-    check('Arena rendered: 30 × 16 grid, 9 lamp fixtures but still only 4 real lights (as M1.5)', lv.w === 30 && lv.h === 16 && lv.lamps === 9 && lv.lights === 4 && lv.walls > 100, JSON.stringify(lv));
+    const lv = await DA(page, () => ({ props: __DA3.outpost ? __DA3.outpost.stats.props : 0, propCells: (() => { const w = __DA3.game.world; let n = 0; for (let y = 1; y < w.height - 1; y++) for (let x = 1; x < w.width - 1; x++) if (w.isSolidCell(x, y) && x !== 15 && x !== 16) n++; return n; })(), walls: __DA3.wallCount, lights: __DA3.view.level.lightCount, lamps: __DA3.view.level.lampCount, w: __DA3.game.world.width, h: __DA3.game.world.height }));
+    check('Arena rendered: 30 × 16 grid, 9 lamp fixtures but still only 4 real lights (as M1.5)', lv.w === 30 && lv.h === 16 && lv.lamps === 9 && lv.lights === 4 && lv.walls + (lv.props === 13 ? lv.propCells : 0) > 100, JSON.stringify(lv)); // M1.7: 21 solid interior cells are drawn as outpost props
     await DA(page, () => { __DA3.setPlayer(3, 8, 0); const g = __DA3.game; for (const [x, y] of [[6, 8], [7, 6.6], [7.2, 9.6], [8.5, 7.4], [8.8, 8.8]]) g.spawnInfected('hollow', x, y, Math.PI).senseT = 1e9; });
     await sleep(600);
     const info = await DA(page, () => ({ world: __DA3.view.info, total: __DA3.view.infoTotal, inst: __DA3.infectedView.stats }));
