@@ -1,6 +1,6 @@
 // DARK ARENA — Three.js prototype (M0 … M1.6). Wires: input → simulation (fixed step) → renderer → HUD/UI.
 import { SIM_HZ } from './config.js';
-import arena from './data/maps/arena-m16.js';
+import arena from './data/maps/outpost-zero.js'; // M1.7: the M1.6 arena (same grid) dressed as OUTPOST ZERO
 import training from './data/maps/training.js';
 import { Game } from './sim/game.js';
 import { startLoop } from './core/loop.js';
@@ -20,7 +20,7 @@ const $ = id => document.getElementById(id);
 const settings = loadSettings();
 // ?debug=1&map=training keeps the original 16×16 Training Grounds for comparisons; the game uses the M1.6 arena.
 const map = /[?&]debug=1(&|$)/.test(location.search) && /[?&]map=training(&|$)/.test(location.search) ? training : arena;
-const VERSION = 'M1.6';
+const VERSION = 'M1.7';
 const game = new Game(map);
 const input = new InputState();
 const gameEl = $('game');

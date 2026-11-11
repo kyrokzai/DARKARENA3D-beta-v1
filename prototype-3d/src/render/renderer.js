@@ -20,6 +20,9 @@ export function createRenderer({ container, world, getSettings, skin }) {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(FOG_COLOR);
   scene.fog = new THREE.Fog(FOG_COLOR, 7, 36);
+  if (world.map.style === 'outpost') { // M1.7: lighter haze, the far end of the hall stays readable
+    const fogC = 0x0c0f14; renderer.setClearColor(fogC); scene.background = new THREE.Color(fogC); scene.fog = new THREE.Fog(fogC, 9, 46);
+  }
 
   const camera = new THREE.PerspectiveCamera(75, 1, 0.05, 80);
   camera.rotation.order = 'YXZ';
@@ -105,6 +108,7 @@ export function createRenderer({ container, world, getSettings, skin }) {
       impacts.update(dt);
       targets.update(w.targets || w.hittables || [], dt, camera.position);
       if (w.enemies) infected.update(w.enemies, w.enemyDt ?? dt, alpha); // enemyDt = 0 while paused → animation frozen
+      if (w.alarm !== undefined) level.setAlarm(w.alarm);
       level.update(camera.position, dt);
       renderer.info.reset();
       renderer.toneMapping = THREE.NoToneMapping;
