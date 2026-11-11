@@ -53,7 +53,7 @@ export class Game {
   spawnInfected(type, x, y, facing = 0, opts = undefined) {
     const e = new Infected('inf-' + this.nextEnemyId++, getInfectedDef(type), x, y, facing, (this.nextEnemyId % 5) / 5, opts);
     this.enemies.push(e); this.rebuildHittables();
-    this.emit('infectedSpawn', { id: e.id, type, x, y, tick: this.tick });
+    this.emit('infectedSpawn', { id: e.id, type, variant: e.variant, x, y, tick: this.tick });
     return e;
   }
   removeInfected(e) {

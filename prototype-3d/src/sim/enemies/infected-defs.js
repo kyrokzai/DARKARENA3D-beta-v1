@@ -45,6 +45,21 @@ export const INFECTED_TYPES = Object.freeze({
   }),
 });
 
+// Visual variants (M1.7 OUTPOST ZERO) — COSMETIC ONLY. A variant picks an outfit / build / infection look for the
+// renderer; it never changes stats, AI, speed, damage or hit zones (those come from the type above, shared by all).
+// 'hollow' = the original M1.6 look (default when a spawn names no variant).
+export const INFECTED_VARIANTS = Object.freeze({
+  hollow: Object.freeze({ id: 'hollow', name: 'THE HOLLOW', role: 'unknown' }),
+  guard: Object.freeze({ id: 'guard', name: 'GUARD', role: 'outpost security' }),
+  technician: Object.freeze({ id: 'technician', name: 'TECHNICIAN', role: 'technical staff' }),
+  worker: Object.freeze({ id: 'worker', name: 'WORKER', role: 'maintenance crew' }),
+});
+export const OUTPOST_VARIANTS = Object.freeze(['guard', 'technician', 'worker']);
+export function checkVariant(v = 'hollow') {
+  if (!INFECTED_VARIANTS[v]) throw new Error('Unknown infected variant: ' + v);
+  return v;
+}
+
 export function getInfectedDef(id = 'hollow') {
   const d = INFECTED_TYPES[id];
   if (!d) throw new Error('Unknown infected type: ' + id);

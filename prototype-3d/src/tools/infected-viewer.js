@@ -1,8 +1,10 @@
 // Developer tool: inspect THE HOLLOW, its procedural animations and its animated hit zones.
 // ?anim=walk&t=1.2 freezes a moment, ?hb=1 shows the sim hit zones. A real sim Infected object is driven by hand
 // (state, speed, timers) and posed by the same stepPose() the game uses — the viewer shows exactly the game's motion.
+// M1.7: ?variant=guard|technician|worker|hollow picks the look; ?lineup=1 shows GUARD, TECHNICIAN and WORKER side by
+// side (same sim pose → identical animation, only the look differs).
 import * as THREE from 'three';
-import { createHollowInstance, getHollowAssets } from '../render/enemies/hollow-model.js';
+import { createHollowInstance, getHollowAssets, VARIANT_IDS } from '../render/enemies/hollow-model.js';
 import { animateHollow, createAnimState } from '../render/enemies/hollow-anim.js';
 import { INFECTED_TYPES } from '../sim/enemies/infected-defs.js';
 import { Infected } from '../sim/enemies/infected.js';
@@ -23,8 +25,17 @@ const floor = new THREE.Mesh(new THREE.CircleGeometry(4, 48), new THREE.MeshStan
 floor.rotation.x = -Math.PI / 2; scene.add(floor);
 const grid = new THREE.GridHelper(8, 16, 0x2a2d36, 0x1c1e25); grid.position.y = 0.001; scene.add(grid);
 
-const inst = createHollowInstance(); scene.add(inst.group);
+let variant = VARIANT_IDS.includes(params.get('variant')) ? params.get('variant') : 'hollow';
+const lineup = params.get('lineup') === '1';
+let inst = createHollowInstance(lineup ? 'technician' : variant); scene.add(inst.group);
 let anim = createAnimState(0.3);
+// line-up: two more instances (same sim object e, own animation state) left and right of the centre one
+const extras = lineup ? [['guard', -0.85], ['worker', 0.85]].map(([v, x]) => { const i = createHollowInstance(v); i.group.position.x = x; scene.add(i.group); return { inst: i, anim: createAnimState(0.3) }; }) : [];
+function setVariant(v) {
+  if (lineup || !VARIANT_IDS.includes(v)) return;
+  scene.remove(inst.group); inst.dispose(); variant = v; inst = createHollowInstance(v); scene.add(inst.group); anim = createAnimState(0.3);
+  for (const b of document.querySelectorAll('#variants button')) b.classList.toggle('on', b.dataset.v === v);
+}
 // sim object standing at the origin, facing +Z (sim facing π/2 ↔ model +Z)
 let e = new Infected('viewer', def, 0, 0, Math.PI / 2);
 const ANIMS = {
@@ -37,7 +48,7 @@ let current = params.get('anim') || 'idle';
 const frozen = params.get('t') !== null ? Number(params.get('t')) : null;
 function setAnim(name) {
   current = name; const A = ANIMS[name];
-  e = new Infected('viewer', def, 0, 0, Math.PI / 2); anim = createAnimState(0.3);
+  e = new Infected('viewer', def, 0, 0, Math.PI / 2); anim = createAnimState(0.3); for (const x of extras) x.anim = createAnimState(0.3);
   Object.assign(e, { state: A.state, speed: A.speed, stateT: 0, attackT: 0, deathT: 0, alive: A.state !== 'DEAD' });
   if (A.fall) e.fall = { kind: A.fall, facing: e.facing };
   if (A.look) e.lookT = 1e9;
@@ -58,6 +69,7 @@ function advance(dt) {
     if (A.hit && e.hit.t === 0 && e.stateT % 1.2 < h) { e.applyDamage(0, A.hit, { dir: { x: 0, y: -1, z: 0 } }); e.pain = false; }
     stepPose(e, h);
     animateHollow(e, inst.bones, anim, h, 2);
+    for (const x of extras) animateHollow(e, x.inst.bones, x.anim, h, 2);
   }
 }
 // hit-zone overlay (sim cells → metres; sim (x, y, z) → three (x, z, y))
@@ -73,7 +85,7 @@ function syncHitboxes() {
 }
 const camera = new THREE.PerspectiveCamera(32, 1, 0.05, 50);
 const VIEWS = { 'Спереди': [0, 0.08, 4.6], 'Профиль': [Math.PI / 2, 0.08, 4.6], 'Сзади': [Math.PI, 0.1, 4.6], '3/4': [0.65, 0.12, 4.6], 'Лицо': [0.25, 0.02, 1.3] };
-let yaw = 0.5, pitch = 0.1, dist = 4.6;
+let yaw = 0.5, pitch = 0.1, dist = lineup ? 6.2 : 4.6;
 const target = new THREE.Vector3(0, 0.95, 0), faceTarget = new THREE.Vector3(0, 1.62, 0.12);
 function place() {
   const tgt = dist < 2 ? faceTarget : target;
@@ -85,6 +97,10 @@ addEventListener('resize', resize); resize();
 const anims = document.getElementById('anims'), views = document.getElementById('views');
 for (const n of Object.keys(ANIMS)) { const b = document.createElement('button'); b.textContent = n.toUpperCase(); b.dataset.a = n; b.onclick = () => setAnim(n); anims.appendChild(b); }
 for (const [n, v] of Object.entries(VIEWS)) { const b = document.createElement('button'); b.textContent = n; b.onclick = () => { [yaw, pitch, dist] = v; }; views.appendChild(b); }
+{
+  const box = document.createElement('div'); box.id = 'variants'; views.after(box);
+  for (const v of VARIANT_IDS) { const b = document.createElement('button'); b.textContent = v.toUpperCase(); b.dataset.v = v; b.classList.toggle('on', v === variant && !lineup); b.onclick = () => setVariant(v); box.appendChild(b); }
+}
 { const b = document.createElement('button'); b.textContent = 'ХИТБОКСЫ'; b.onclick = () => { hbGroup.visible = !hbGroup.visible; b.classList.toggle('on', hbGroup.visible); }; views.appendChild(b); }
 let drag = null;
 renderer.domElement.addEventListener('pointerdown', ev => { drag = { x: ev.clientX, y: ev.clientY }; });
@@ -101,8 +117,9 @@ renderer.setAnimationLoop(() => {
 });
 const v3 = new THREE.Vector3();
 window.__iv = {
-  setAnim, advance, setView: (y, p, d) => { yaw = y; pitch = p; dist = d; }, inst, get e() { return e; }, get anim() { return anim; },
-  tris: getHollowAssets().tris, animNames: Object.keys(ANIMS),
+  setAnim, advance, setView: (y, p, d) => { yaw = y; pitch = p; dist = d; }, get inst() { return inst; }, get e() { return e; }, get anim() { return anim; },
+  get tris() { return getHollowAssets(lineup ? 'technician' : variant).tris; }, animNames: Object.keys(ANIMS),
+  setVariant, get variant() { return variant; }, variants: VARIANT_IDS, trisOf: v => getHollowAssets(v).tris, lineup,
   showHitboxes: on => { hbGroup.visible = on; },
   bonePos: n => { inst.group.updateMatrixWorld(true); return inst.bones[n].getWorldPosition(v3).toArray(); },
   bones: () => { inst.group.updateMatrixWorld(true); return Object.fromEntries(Object.entries(inst.bones).map(([n, b]) => [n, b.getWorldPosition(v3).toArray()])); },

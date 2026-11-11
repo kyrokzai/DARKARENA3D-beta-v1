@@ -13,6 +13,7 @@
 // or lost sight less than memoryTime ago. Implements the "hittable" interface of hitscan:
 // {id, alive, hitboxes(), applyDamage()}; the hit zones follow the animated pose (hollow-rig.js).
 // Units inside the sim are cells (1 cell = 2 m); the def is in metres and converted once here.
+import { checkVariant } from './infected-defs.js';
 import { moveEntity, canStand } from '../collision.js';
 import { lineOfSight, corridorFree, FlowField } from '../nav/grid-nav.js';
 import { createPose, stepPose } from './hollow-rig.js';
@@ -24,8 +25,9 @@ const tmpDir = { x: 0, y: 0 };
 const FALL_STEPS = [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7, 8];
 
 export class Infected {
-  constructor(id, def, x, y, facing = 0, phase = 0, { hunter = false } = {}) {
+  constructor(id, def, x, y, facing = 0, phase = 0, { hunter = false, variant = 'hollow' } = {}) {
     this.id = id; this.def = def; this.type = def.id; this.hunter = hunter;
+    this.variant = checkVariant(variant); // cosmetic only (renderer); stats / AI / hit zones come from def
     const hb = def.hitboxes;
     this.k = { // tuning in cells
       r: def.radius * M, walk: def.walkSpeed * M, run: def.runSpeed * M, accel: def.accel * M,

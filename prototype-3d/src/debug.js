@@ -29,7 +29,12 @@ export function installDebug({ game, input, view, settings, stats, touch, hud, e
     get enemies() { return game.enemies.map(e => e.info()); },
     get kills() { return game.state.kills; },
     infectedView: view.infected,
-    spawnInfected: (x, y, facing = 0) => game.spawnInfected('hollow', x, y, facing),
+    spawnInfected: (x, y, facing = 0, variant = 'hollow') => game.spawnInfected('hollow', x, y, facing, { variant }),
+    // M1.7 alarm / ambience / variants
+    get alarm() { return { ...game.state.alarm, visual: view.level.alarm, edge: gameHud ? gameHud.alarmEdgeOpacity : 0, warn: gameHud ? gameHud.alarmWarnShown : false, waveTime: game.state.waveTime, director: game.waves.phase }; },
+    get audio() { return { state: sfx.state, siren: { ...sfx.stats.siren, active: sfx.sirenActive }, ambience: { ...sfx.stats.ambience, events: { ...sfx.stats.ambience.events } }, ducks: sfx.stats.ducks, played: { ...sfx.stats.played } }; },
+    get variants() { return game.enemies.map(e => ({ id: e.id, variant: e.variant, view: view.infected.variantOf(e) })); },
+    get outpost() { const d = view.level.dressing; return d ? { stats: d.stats, drawCalls: d.drawCalls, monitors: d.monitors.length, lights: view.level.lightCount, lamps: view.level.lampCount } : null; },
     get touch() { return touch.state; },
     get info() { return view.info; },
     get camera() { const c = view.camera; return { x: c.position.x, y: c.position.y, z: c.position.z, aspect: c.aspect, fov: c.fov }; },

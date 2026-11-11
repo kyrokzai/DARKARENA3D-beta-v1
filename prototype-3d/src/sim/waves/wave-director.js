@@ -5,7 +5,8 @@
 // Wave progress lives in GameState (the HUD reads only that).
 import { canStand } from '../collision.js';
 import { lineOfSight } from '../nav/grid-nav.js';
-import { WAVES, MATCH, SPAWN_RULES } from './wave-defs.js';
+import { WAVES, MATCH, SPAWN_RULES, waveQueue } from './wave-defs.js';
+import { alarmState, ALARM_OFF } from './alarm.js';
 
 const M = 0.5; // cells per metre
 
@@ -18,6 +19,7 @@ export class WaveDirector {
   reset() {
     this.index = -1; this.phase = 'idle'; // idle | countdown | active | intermission | victory
     this.t = 0; this.queue = []; this.spawned = 0; this.lastCountdown = -1; this.maxAlive = 0;
+    if (this.game.state) { this.game.state.setAlarm(ALARM_OFF); this.game.state.waveTime = 0; }
   }
   get wave() { return this.waves[this.index] || null; }
   get aliveCount() { let n = 0; for (const e of this.game.enemies) if (e.alive) n++; return n; }
@@ -28,7 +30,7 @@ export class WaveDirector {
   beginWave(index, delay) {
     this.index = index;
     const w = this.wave; if (!w) { this.phase = 'victory'; return; }
-    this.queue.length = 0; for (const g of w.enemies) for (let i = 0; i < g.count; i++) this.queue.push(g.type);
+    waveQueue(w, this.queue);
     this.spawned = 0; this.t = delay; this.phase = 'countdown'; this.lastCountdown = -1;
     const st = this.game.state;
     if (index > 0) { // between waves: resupply
@@ -42,12 +44,15 @@ export class WaveDirector {
     const w = this.wave, st = this.game.state; if (!w || this.phase === 'idle' || this.phase === 'victory') return;
     if (this.phase === 'intermission') {
       this.t -= dt;
+      st.waveTime = Math.max(0, this.t);
+      st.setAlarm(alarmState(this.match.intermission - this.t, this.match.intermission)); // alarm inside the pause
       const c = Math.max(0, Math.ceil(this.t));
       if (c !== this.lastCountdown) { this.lastCountdown = c; st.setWave({ countdown: c, next: w.number + 1 }); }
-      if (this.t <= 0) this.beginWave(this.index + 1, 0.8);
+      if (this.t <= 0) { st.setAlarm(ALARM_OFF); this.beginWave(this.index + 1, 0.8); }
       return;
     }
     this.t -= dt;
+    st.waveTime = this.phase === 'countdown' ? Math.max(0, this.t) : 0;
     if (this.phase === 'countdown') {
       const c = Math.max(0, Math.ceil(this.t));
       if (c !== this.lastCountdown) { this.lastCountdown = c; st.setWave({ countdown: c }); }
@@ -59,7 +64,8 @@ export class WaveDirector {
     if (this.queue.length && this.t <= 0 && alive < this.match.maxActive) {
       const pt = this.pickSpawn();
       if (pt) {
-        const e = this.game.spawnInfected(this.queue.shift(), pt.x, pt.y, pt.facing, { hunter: true });
+        const q = this.queue.shift();
+        const e = this.game.spawnInfected(q.type, pt.x, pt.y, pt.facing, { hunter: true, variant: q.variant });
         // hunters start by running to where the player was when they appeared (not tracking him afterwards)
         e.lastSeen.x = this.game.player.x; e.lastSeen.y = this.game.player.y;
         e.startSearch(this.game.aiCtx, e.lastSeen.x, e.lastSeen.y);

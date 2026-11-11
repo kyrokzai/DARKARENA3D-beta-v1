@@ -6,7 +6,8 @@
 //   'health'  {hp, max, delta}            'ammo'   {mag, reserve, magSize}
 //   'reload'  {active, progress}          'wave'   {number, remaining, total, phase}
 //   'hit'     {kill, headshot}            'waveCleared' {number}
-//   'kills'   {kills}  (M1.5)
+//   'kills'   {kills}  (M1.5)                'alarm'  {phase, siren, warn}  (M1.7, only when one of them changes)
+import { ALARM_OFF } from './waves/alarm.js';
 export const DEFAULT_WEAPON = Object.freeze({ magSize: 30, mag: 30, reserve: 120, reloadTime: 1.3 });
 export const CRITICAL_HP = 0.25; // fraction of max HP
 
@@ -19,6 +20,10 @@ export class GameState {
     // `countdown` = whole seconds until the wave starts (0 = none), `remaining` includes infected not spawned yet.
     this.wave = { number: 1, of: 1, remaining: 0, total: 0, phase: 'idle', countdown: 0 };
     this.kills = 0; // infected killed in this run (M1.5)
+    // Emergency alarm between waves (M1.7): written every tick by the wave director (sim/waves/alarm.js),
+    // POLLED by the renderer / HUD / audio (k changes continuously); 'alarm' is emitted only on phase / siren / warn change.
+    this.alarm = { active: false, phase: 'off', k: 0, siren: false, warn: false, t: 0 };
+    this.waveTime = 0; // seconds left in the current countdown / intermission (float; polled)
   }
 
   // ---- health ----
@@ -66,6 +71,11 @@ export class GameState {
     this.emit('wave', { ...this.wave });
     if (phase === 'cleared' && prev !== 'cleared') this.emit('waveCleared', { number: this.wave.number });
   }
+  setAlarm(a) {
+    const o = this.alarm, changed = o.phase !== a.phase || o.siren !== a.siren || o.warn !== a.warn;
+    o.active = a.active; o.phase = a.phase; o.k = Math.max(0, Math.min(1, a.k)); o.siren = a.siren; o.warn = a.warn; o.t = a.t;
+    if (changed) this.emit('alarm', { phase: o.phase, siren: o.siren, warn: o.warn });
+  }
   enemyKilled() {
     if (this.wave.remaining <= 0) return;
     const remaining = this.wave.remaining - 1;
@@ -78,12 +88,13 @@ export class GameState {
     this.setHealth(this.health.max);
     this.kills = 0; this.emit('kills', { kills: 0 });
     this.setWave({ number: 1, remaining: 0, total: 0, phase: 'idle', countdown: 0 });
+    this.setAlarm(ALARM_OFF); this.waveTime = 0;
   }
 
   // ---- hit confirmation (from hit detection in M1.3) ----
   registerHit({ kill = false, headshot = false } = {}) { this.emit('hit', { kill, headshot }); }
 
-  snapshot() { return { health: { ...this.health }, weapon: { ...this.weapon }, wave: { ...this.wave }, kills: this.kills }; }
+  snapshot() { return { health: { ...this.health }, weapon: { ...this.weapon }, wave: { ...this.wave }, kills: this.kills, alarm: { ...this.alarm } }; }
 }
 
 function clampInt(v, a, b) { v = Math.round(Number(v) || 0); return Math.max(a, Math.min(b, v)); }

@@ -86,8 +86,8 @@ export function buildLevel(scene, world) {
     hemi.color.copy(hemiSky).lerp(alarmSky, k * 0.5); hemi.groundColor.copy(hemiGround).lerp(alarmGround, k * 0.5);
     for (const p of pool) p.light.color.copy(p.base).lerp(alarmRed, k * 0.55);
   }
-  function update(camPos, dt) {
-    if (dressing) dressing.update(dt, alarmK);
+  function update(camPos, dt, dressDt = dt) { // dressDt = 0 while paused (beacons / monitors freeze)
+    if (dressing) dressing.update(dressDt, alarmK);
     if (lamps.length <= pool.length) return;
     if ((tick++ & 7) === 0) {
       for (let i = 0; i < lamps.length; i++) dist[i] = Math.hypot(lamps[i].x * S - camPos.x, lamps[i].y * S - camPos.z);

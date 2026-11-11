@@ -283,3 +283,26 @@ body.is-dead #vignette { opacity: 1; }
 #victory .panel { border-color: var(--ok, #8fe3a8); }
 .win-title { color: var(--ok, #8fe3a8); letter-spacing: 6px; font-size: clamp(26px, 6vmin, 40px); }
 .wv-of { font-size: 0.55em; opacity: 0.6; margin-left: 2px; }
+
+/* M1.7 OUTPOST ZERO: menu subtitle + themed background (static CSS: night steppe, outpost silhouette, beacon) */
+.logo-sub { margin: -14px 0 18px; font-weight: 800; letter-spacing: 9px; font-size: clamp(12px, 2.4vmin, 15px); color: #c9b48a; opacity: .85; padding-left: 9px; }
+#menu.screen { background: linear-gradient(180deg, #0b0e15 0%, #141821 40%, #2a2620 54%, #3a3124 57%, #16130f 61%, #0c0b09 100%); }
+#menu.screen::before { content: ''; position: absolute; left: 0; right: 0; top: 50.5%; height: 7.5%; pointer-events: none; opacity: .55;
+  background: repeating-linear-gradient(90deg, transparent 0 11vw, #0a0c10 11vw calc(11vw + 2px)); }   /* power-line poles */
+#menu.screen::after { content: ''; position: absolute; z-index: 0; left: 68%; width: 22%; top: 52.4%; height: 5.8%; pointer-events: none;
+  background: radial-gradient(circle at 46% 9%, #ff3b2cdd 0 2px, #ff3b2c44 3px, transparent 10px), #07090c;
+  clip-path: polygon(0 100%, 0 45%, 30% 45%, 30% 20%, 42% 20%, 42% 0, 50% 0, 50% 20%, 64% 20%, 64% 55%, 100% 55%, 100% 100%); } /* outpost on the horizon */
+#menu.screen > .panel { background: #0d1016e6; z-index: 1; }
+@media (prefers-reduced-motion: no-preference) { #menu.screen { animation: none; } }
+
+/* alarm between waves: soft red edge (opacity driven from GameState every frame, never strobing) + HUD warning */
+#alarmEdge { position: absolute; inset: 0; pointer-events: none; opacity: 0; z-index: 1;
+  background: radial-gradient(ellipse at center, transparent 62%, #c8141488 100%); }
+body:not(.playing) #alarmEdge { display: none; }
+#alarmWarn { position: absolute; left: 50%; top: calc(var(--sa-top) + 14%); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 5px 16px; pointer-events: none; opacity: 0; transition: opacity .35s; white-space: nowrap; color: #ffd9d4; text-shadow: 0 2px 5px #000;
+  background: linear-gradient(90deg, transparent, #2a0606c8 18%, #2a0606c8 82%, transparent); border-top: 1px solid #ff4a3a99; border-bottom: 1px solid #ff4a3a99; }
+#alarmWarn b { font-size: clamp(13px, 2.6vmin, 18px); letter-spacing: 5px; font-weight: 900; color: #ff6a5c; }
+#alarmWarn span { font-size: clamp(10px, 1.9vmin, 13px); letter-spacing: 3px; font-weight: 700; }
+#alarmWarn.show { opacity: 1; }
+body:not(.playing) #alarmWarn, body.editing #alarmWarn { display: none; }

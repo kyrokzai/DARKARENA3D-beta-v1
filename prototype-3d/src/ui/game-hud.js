@@ -2,8 +2,9 @@
 // No game rules here — weapon (M1.3) and enemies/waves (M1.4–1.5) will drive the same model,
 // and this file will not need changes.
 import { CRITICAL_HP } from '../sim/game-state.js';
+import { alarmVisual, ALARM } from '../sim/waves/alarm.js';
 
-export function createGameHud({ game, hud }) {
+export function createGameHud({ game, hud, getSettings = () => ({ alarmFx: 'full' }) }) {
   const st = game.state;
   const q = (id, sel) => hud.els[id].querySelector(sel);
   const hp = { fill: q('health', '.hp-fill'), trail: q('health', '.hp-trail'), num: q('health', '[data-v=hp]') };
@@ -15,6 +16,8 @@ export function createGameHud({ game, hud }) {
   const vignette = document.getElementById('vignette');
   const banner = document.getElementById('banner');
   const root = hud.els.health.parentElement;
+  const alarmEdge = document.getElementById('alarmEdge'), alarmWarn = document.getElementById('alarmWarn');
+  const alarmSub = alarmWarn ? alarmWarn.querySelector('span') : null;
 
   // ---- health: the bar drops instantly, a pale "trail" follows smoothly (damage readable at a glance) ----
   function renderHealth(delta = 0) {
@@ -103,6 +106,20 @@ export function createGameHud({ game, hud }) {
     cross.style.setProperty('--gap', gapNow.toFixed(1) + 'px');
     cross.style.opacity = String(Math.max(0, 1 - (w.ads || 0) * 1.6));
     hud.els.aim.classList.toggle('toggled', (w.ads || 0) > 0.01);
+    // alarm (M1.7): polled from GameState — the red edge follows k (scaled by the user's setting) with a slow
+    // 0.8 Hz breathing, the warning text shows during the 'warn' window. No strobe.
+    const a = st.alarm, fx = getSettings().alarmFx;
+    if (alarmEdge) {
+      const k = alarmVisual(a.k, fx);
+      const breathe = 0.7 + 0.3 * Math.sin(a.t * Math.PI * 2 * ALARM.pulseHz);
+      const op = k > 0.001 ? (k * breathe * 0.55).toFixed(3) : '0';
+      if (alarmEdge.style.opacity !== op) alarmEdge.style.opacity = op;
+    }
+    if (alarmWarn) {
+      const on = a.warn;
+      if (alarmWarn.classList.contains('show') !== on) alarmWarn.classList.toggle('show', on);
+      if (on) { const txt = `ВОЛНА ${Math.min(st.wave.of, st.wave.number + 1)} · ПРОРЫВ ПЕРИМЕТРА`; if (alarmSub.textContent !== txt) alarmSub.textContent = txt; }
+    }
   }
-  return { renderAll() { renderHealth(); renderAmmo(); renderWave(); }, frame, CRITICAL_HP, get crosshairGap() { return gapNow; } };
+  return { renderAll() { renderHealth(); renderAmmo(); renderWave(); }, frame, get alarmEdgeOpacity() { return alarmEdge ? Number(alarmEdge.style.opacity || 0) : 0; }, get alarmWarnShown() { return !!alarmWarn && alarmWarn.classList.contains('show'); }, CRITICAL_HP, get crosshairGap() { return gapNow; } };
 }

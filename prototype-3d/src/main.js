@@ -15,6 +15,7 @@ import { cloneDefaultLayout } from './ui/hud-layout.js';
 import { createGameHud } from './ui/game-hud.js';
 import { createSfx } from './audio/sfx.js';
 import { SKINS } from './render/weapons/raven-skins.js';
+import { alarmVisual } from './sim/waves/alarm.js';
 
 const $ = id => document.getElementById(id);
 const settings = loadSettings();
@@ -28,7 +29,7 @@ if (!SKINS[settings.weaponSkin]) settings.weaponSkin = 'obsidian';
 const view = createRenderer({ container: gameEl, world: game.world, getSettings: () => settings, skin: settings.weaponSkin });
 const sfx = createSfx(() => settings);
 const hud = createHud({ root: gameEl.querySelector('.hud'), settings, world: game.world });
-const gameHud = createGameHud({ game, hud });
+const gameHud = createGameHud({ game, hud, getSettings: () => settings });
 
 // ---- screens: menu | play | paused | settings | edit ----
 let state = 'menu', settingsReturn = 'menu', editReturn = 'settings';
@@ -210,7 +211,9 @@ startLoop({
     if (state === 'play') infectedAmbience(dt);
     const t0 = performance.now();
     const w = game.state.weapon;
-    view.render(game.player, state === 'play' ? alpha : 1, { dt, ads: w.ads, fovMult: game.weapon.def.ads.fovMult, reload: w.reloading ? w.reloadProgress : -1, triggerDown: game.weapon.triggerDown, targets: game.targets, enemies: game.enemies, enemyDt: (state === 'play' || state === 'dead' || state === 'victory') ? dt : 0, showWeapon: state !== 'menu' && state !== 'about' && state !== 'dead' && state !== 'victory' });
+    // alarm between waves (M1.7): GameState → siren / ambience (audio) and beacons / red light (render)
+    sfx.frame({ playing: state === 'play', siren: game.state.alarm.siren, fx: settings.alarmFx, dt });
+    view.render(game.player, state === 'play' ? alpha : 1, { dt, alarm: alarmVisual(game.state.alarm.k, settings.alarmFx), ads: w.ads, fovMult: game.weapon.def.ads.fovMult, reload: w.reloading ? w.reloadProgress : -1, triggerDown: game.weapon.triggerDown, targets: game.targets, enemies: game.enemies, enemyDt: (state === 'play' || state === 'dead' || state === 'victory') ? dt : 0, showWeapon: state !== 'menu' && state !== 'about' && state !== 'dead' && state !== 'victory' });
     gameHud.frame(view.camera.fov);
     if (state === 'play' || state === 'edit') hud.drawMinimap(game.player);
     const ms = performance.now() - t0;

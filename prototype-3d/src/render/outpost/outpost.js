@@ -106,7 +106,7 @@ const C = {
 
 export function buildOutpost(group, world, map) {
   const T = getOutpostTextures();
-  const surf = new GB(), glow = new GB({ uv: false }), signs = new GB({ color: false }), screens = new GB({ color: false }), win = new GB({ color: false }), pools = new GB({ color: false }), lens = new GB({ uv: false });
+  const surf = new GB(), glow = new GB({ uv: false }), signs = new GB({ color: false }), screens = new GB({ color: false }), win = new GB({ color: false }), pools = new GB({ color: false }), lens = new GB({ uv: false }), halos = new GB({ color: false });
   const stats = { props: 0, decor: 0, windows: 0, monitors: 0, beacons: 0, signs: 0 };
   const led = (x, y, z, col, sz = 0.035, n = [0, 0, 1]) => { // tiny emissive square facing n
     const h = sz / 2;
@@ -292,6 +292,8 @@ export function buildOutpost(group, world, map) {
     // lens: a small box (5 faces) in the beacon material
     const lb = new GB({ uv: false }); lb.box(x0, y0, z0, x1, y1, z1, WHITE);
     lens.p.push(...lb.p); lens.n.push(...lb.n); lens.c.push(...lb.c); const base = lens.count - lb.count; lens.i.push(...lb.i.map(i => i + base));
+    // soft red halo on the wall around the lens (additive, only drawn while the alarm runs)
+    faceQuad(halos, b.face, b.at, b.a - 0.65 / S, b.a + 0.65 / S, b.h - 0.67, b.h + 0.63, 0.035, [0, 0, 1, 1]);
     void F;
   }
 
@@ -337,11 +339,13 @@ export function buildOutpost(group, world, map) {
     }),
     pools: new THREE.MeshBasicMaterial({ map: T.lightPool, transparent: true, opacity: 0.1, blending: THREE.AdditiveBlending, depthWrite: false, color: 0xfff1dc, side: THREE.DoubleSide }),
     beacon: new THREE.MeshBasicMaterial({ color: 0x3a0806 }),
+    halo: new THREE.MeshBasicMaterial({ map: T.lightPool, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, color: 0xff2a1a }),
   };
   const meshes = {};
   const add = (name, gb, mat, extra = null) => { if (!gb.count) return; const m = new THREE.Mesh(gb.build(extra), mat); m.name = 'outpost-' + name; m.matrixAutoUpdate = false; m.updateMatrix(); group.add(m); meshes[name] = m; };
   add('surf', surf, mats.surf); add('glow', glow, mats.glow); add('signs', signs, mats.signs);
-  add('screens', screens, mats.screens, 'cell'); add('windows', win, mats.window); add('pools', pools, mats.pools); add('beacons', lens, mats.beacon);
+  add('screens', screens, mats.screens, 'cell'); add('windows', win, mats.window); add('pools', pools, mats.pools); add('beacons', lens, mats.beacon); add('halos', halos, mats.halo);
+  if (meshes.halos) { meshes.halos.renderOrder = 3; meshes.halos.visible = false; }
   if (meshes.pools) meshes.pools.renderOrder = 2;
 
   // ======================= runtime: monitor noise / rare feed switch, alarm beacons =======================
@@ -363,6 +367,7 @@ export function buildOutpost(group, world, map) {
       // beacons: idle = dark red glass; alarm = slow pulse (0.8 Hz), never a hard flash
       const pulse = alarm > 0 ? alarm * (0.62 + 0.38 * Math.sin(t * Math.PI * 1.6)) : 0;
       mats.beacon.color.copy(off).lerp(red, pulse);
+      if (meshes.halos) { meshes.halos.visible = pulse > 0.005; mats.halo.opacity = Math.min(1, pulse * 1.1); }
     },
     dispose() { for (const m of Object.values(meshes)) { m.geometry.dispose(); group.remove(m); } for (const m of Object.values(mats)) m.dispose(); },
   };

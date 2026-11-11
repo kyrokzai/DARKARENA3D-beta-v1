@@ -9,18 +9,22 @@ import { animateHollow, createAnimState } from './hollow-anim.js';
 const MAX_PARTICLES = 160;
 
 export function createInfectedView(scene) {
-  const pool = [], active = new Map(); // id → slot
+  // one pool per visual variant (M1.7): an instance is bound to its variant's shared geometry, so it is only
+  // reused for an infected of the same variant. Bones / animation / effects are identical for all variants.
+  const pools = {}, active = new Map(); // infected → slot
   let seed = 0;
-  const stats = { instances: 0, created: 0, active: 0, bursts: 0, headBursts: 0, bodyBursts: 0 };
+  const stats = { instances: 0, created: 0, active: 0, bursts: 0, headBursts: 0, bodyBursts: 0, byVariant: {} };
 
-  function acquire() {
+  function acquire(variant) {
+    const pool = pools[variant] || (pools[variant] = []);
     let slot = pool.pop();
-    if (!slot) { slot = { inst: createHollowInstance(), anim: null }; stats.created++; scene.add(slot.inst.group); }
+    if (!slot) { slot = { inst: createHollowInstance(variant), anim: null, variant }; stats.created++; scene.add(slot.inst.group); }
     slot.anim = createAnimState(++seed * 0.37);
     slot.inst.group.visible = true;
     return slot;
   }
-  function release(slot) { slot.inst.group.visible = false; pool.push(slot); }
+  function release(slot) { slot.inst.group.visible = false; pools[slot.variant].push(slot); }
+  const pooled = () => { let n = 0; for (const k in pools) n += pools[k].length; return n; };
 
   // ---- particles: dark blood mist on hits, dust + blood on deaths (one Points object, fixed size) ----
   const pos = new Float32Array(MAX_PARTICLES * 3), col = new Float32Array(MAX_PARTICLES * 3), vel = new Float32Array(MAX_PARTICLES * 3), life = new Float32Array(MAX_PARTICLES);
@@ -66,7 +70,7 @@ export function createInfectedView(scene) {
     update(enemies, dt, alpha = 1) {
       for (const e of enemies) {
         let slot = active.get(e);
-        if (!slot) { slot = acquire(); active.set(e, slot); }
+        if (!slot) { slot = acquire(e.variant || 'hollow'); active.set(e, slot); }
         const g = slot.inst.group;
         const x = e.prevX + (e.x - e.prevX) * alpha, y = e.prevY + (e.y - e.prevY) * alpha;
         const f = e.prevFacing + Math.atan2(Math.sin(e.facing - e.prevFacing), Math.cos(e.facing - e.prevFacing)) * alpha;
@@ -79,7 +83,9 @@ export function createInfectedView(scene) {
         for (const [e, slot] of active) if (!enemies.includes(e)) { release(slot); active.delete(e); }
       }
       updateParticles(dt);
-      stats.active = active.size; stats.instances = active.size + pool.length;
+      stats.active = active.size; stats.instances = active.size + pooled();
+      for (const k in stats.byVariant) stats.byVariant[k] = 0;
+      for (const slot of active.values()) stats.byVariant[slot.variant] = (stats.byVariant[slot.variant] || 0) + 1;
     },
     /** Hit effect at a sim point (cells), dir = shot direction (sim). */
     /** Local hit effect at the impact point: body = short dark spray along the shot; head = bigger burst with pale chips. */
@@ -88,7 +94,8 @@ export function createInfectedView(scene) {
     /** World position of a bone (for tests / screenshots). */
     boneWorld(e, name, out) { const slot = active.get(e); if (!slot) return null; slot.inst.group.updateMatrixWorld(true); return slot.inst.bones[name].getWorldPosition(out); },
     groupOf(e) { const s = active.get(e); return s ? s.inst.group : null; },
-    get poolSize() { return pool.length; },
-    dispose() { for (const s of [...pool, ...active.values()]) { scene.remove(s.inst.group); s.inst.dispose(); } pool.length = 0; active.clear(); pgeo.dispose(); points.material.dispose(); },
+    variantOf(e) { const s = active.get(e); return s ? s.variant : null; },
+    get poolSize() { return pooled(); },
+    dispose() { for (const s of [...Object.values(pools).flat(), ...active.values()]) { scene.remove(s.inst.group); s.inst.dispose(); } for (const k in pools) delete pools[k]; active.clear(); pgeo.dispose(); points.material.dispose(); },
   };
 }

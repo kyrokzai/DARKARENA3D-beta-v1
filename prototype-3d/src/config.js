@@ -44,4 +44,6 @@ export const DEFAULT_SETTINGS = Object.freeze({
   fov: 75,               // vertical field of view, degrees
   renderScale: 0.75,     // fraction of device resolution (0.5 = chunky retro; 0.75 keeps the weapon readable)
   showFps: true,
+  // Alarm between waves (M1.7): 'full' | 'soft' (dimmer beacons/red edge, quieter siren) | 'off' (no beacons, red light or siren)
+  alarmFx: 'full',
 });

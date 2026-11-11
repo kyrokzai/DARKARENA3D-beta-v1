@@ -5,6 +5,7 @@ export function loadSettings() {
     const raw = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
     const s = { ...DEFAULT_SETTINGS };
     for (const k of Object.keys(DEFAULT_SETTINGS)) if (k in raw && typeof raw[k] === typeof DEFAULT_SETTINGS[k]) s[k] = raw[k];
+    if (!['full', 'soft', 'off'].includes(s.alarmFx)) s.alarmFx = DEFAULT_SETTINGS.alarmFx;
     return s;
   } catch { return { ...DEFAULT_SETTINGS }; }
 }
@@ -40,11 +41,13 @@ const TABS = [
   { id: 'audio', title: 'ЗВУК', items: [
     ['range', 'volume', 'Громкость', 0, 1, 0.05, pct],
     ['toggle', 'mute', 'Без звука'],
+    ['seg', 'alarmFx', 'Тревога между волнами', [['full', 'Полная'], ['soft', 'Мягкая'], ['off', 'Выкл']]],
   ] },
   { id: 'gfx', title: 'ГРАФИКА', items: [
     ['range', 'fov', 'Угол обзора', 60, 100, 1, deg],
     ['range', 'renderScale', 'Разрешение (ретро ↔ чётко)', 0.3, 1, 0.05, pct],
     ['toggle', 'showFps', 'Счётчик FPS'],
+    ['seg', 'alarmFx', 'Тревога между волнами', [['full', 'Полная'], ['soft', 'Мягкая'], ['off', 'Выкл']]],
     ['action', 'resetSettings', 'Сбросить все настройки'],
   ] },
 ];

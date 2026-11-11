@@ -3,6 +3,10 @@
 // so shoulders, elbows, wrists, hips and knees are continuous surfaces (no tubes joined by balls).
 // One geometry per material is built ONCE and shared by every infected; an instance only owns its bones.
 // 3 draw calls per infected (skin, rags, eyes). Bind pose: standing straight, facing +Z, feet at y = 0, metres.
+// M1.7: VARIANTS (OUTPOST ZERO staff — GUARD / TECHNICIAN / WORKER) are built by the same code with a different
+// LOOK: body girth, infection pattern, eye depth and outfit. Same skeleton, same bones, same animation, same hit zones
+// (those live in the sim); one geometry set per variant (built once, shared by every infected of that variant),
+// materials shared by all variants.
 import * as THREE from 'three';
 import { BONES } from '../../sim/enemies/hollow-rig.js';
 
@@ -25,22 +29,36 @@ const fbm = (x, y, z) => vnoise(x, y, z) * 0.55 + vnoise(x * 2.3, y * 2.3, z * 2
 const sstep = (x, a, b) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 const gauss = (dx, dy, s) => Math.exp(-(dx * dx + dy * dy) / (s * s));
 
+// ---------------------------------------------------------------- looks (cosmetic; never gameplay)
+// torso / arm / leg: girth multipliers of the lofted cross-sections (bones untouched). infect: extra necrosis,
+// neck / hands: extra infection there, veins: vein strength, tone: skin tint, socket: eye-socket depth, eyeZ: eyes
+// pushed back into the skull (m), eyeScale.
+export const LOOKS = {
+  hollow: { id: 'hollow', torso: [1, 1], arm: 1, leg: 1, infect: 0, neck: 0, hands: 0, veins: 1, tone: [1, 1, 1], socket: 0.2, eyeZ: 0, eyeScale: 1 },
+  guard: { id: 'guard', torso: [1.05, 1.06], arm: 1.06, leg: 1.03, infect: 0.02, neck: 0.3, hands: 0.2, veins: 1, tone: [0.97, 0.96, 0.95], socket: 0.2, eyeZ: 0, eyeScale: 1 },
+  technician: { id: 'technician', torso: [0.9, 0.93], arm: 0.88, leg: 0.92, infect: 0.0, neck: 1.0, hands: 1.0, veins: 1.3, tone: [1.0, 1.0, 1.02], socket: 0.27, eyeZ: -0.008, eyeScale: 0.8 },
+  worker: { id: 'worker', torso: [1.13, 1.12], arm: 1.17, leg: 1.1, infect: 0.1, neck: 0.5, hands: 0.6, veins: 1.6, tone: [0.9, 0.88, 0.84], socket: 0.21, eyeZ: 0, eyeScale: 1.1 },
+};
+let LK = LOOKS.hollow; // look being built (the builders are synchronous)
+
 // ---------------------------------------------------------------- colours (authored in sRGB, stored linear)
 const SKIN = [0.74, 0.72, 0.67], SKIN_COLD = [0.62, 0.66, 0.69], BRUISE = [0.17, 0.11, 0.15], VEIN = [0.27, 0.07, 0.1], ROT = [0.1, 0.09, 0.08];
 /** Infected skin: pale grey with cold areas, dark necrotic patches (denser on neck, left shoulder, forearms, shins), veins. */
 function skinColor(p) {
   const n = fbm(p.x * 4.3 + 3, p.y * 4.3, p.z * 4.3);
   // regions where the infection is advanced
-  const region = Math.max(gauss(p.x - 0.16, p.y - 1.5, 0.2), gauss(p.x + 0.02, p.y - 1.66, 0.12) * 0.9, sstep(1.18, 1.02, 0.86) * (Math.abs(p.x) > 0.15 ? 1 : 0), sstep(0.42, 0.2, 0.02) * 0.8, gauss(p.x + 0.1, p.y - 1.2, 0.13) * 0.7);
-  const patch = sstep(n + region * 0.16, 0.6, 0.7) * 0.88;
+  let region = Math.max(gauss(p.x - 0.16, p.y - 1.5, 0.2), gauss(p.x + 0.02, p.y - 1.66, 0.12) * 0.9, sstep(1.18, 1.02, 0.86) * (Math.abs(p.x) > 0.15 ? 1 : 0), sstep(0.42, 0.2, 0.02) * 0.8, gauss(p.x + 0.1, p.y - 1.2, 0.13) * 0.7);
+  if (LK.neck) region += LK.neck * (p.y > 1.56 && p.y < 1.78 && Math.abs(p.x) < 0.08 ? 1 : 0);          // neck
+  if (LK.hands) region += LK.hands * (p.y < 1.02 && p.y > 0.72 && Math.abs(p.x) > 0.13 ? 1 : 0);       // hands / wrists
+  const patch = sstep(n + region * 0.16 + LK.infect, 0.6, 0.7) * 0.88;
   const cold = fbm(p.x * 2.1 + 9, p.y * 2.1, p.z * 2.1);
   const v = Math.abs(Math.sin(p.y * 38 + p.x * 11 + fbm(p.x * 8, p.y * 3, p.z * 8) * 9)); // branching dark veins near the patches
-  const vein = v < 0.06 ? (0.06 - v) / 0.06 * (0.12 + 0.6 * sstep(n + region * 0.16, 0.46, 0.6)) : 0;
+  const vein = Math.min(1, v < 0.06 ? (0.06 - v) / 0.06 * (0.12 + 0.6 * sstep(n + region * 0.16 + LK.infect, 0.46, 0.6)) * LK.veins : 0);
   const mottle = 0.84 + fbm(p.x * 14, p.y * 14, p.z * 14) * 0.3;
   const ext = p.y < 0.2 ? 0.6 : 1;
   const out = [0, 0, 0];
   for (let i = 0; i < 3; i++) {
-    let c = SKIN[i] + (SKIN_COLD[i] - SKIN[i]) * sstep(cold, 0.45, 0.7);
+    let c = (SKIN[i] + (SKIN_COLD[i] - SKIN[i]) * sstep(cold, 0.45, 0.7)) * LK.tone[i];
     c = c * (1 - patch) + (n > 0.7 ? ROT[i] : BRUISE[i]) * patch;
     c = c * (1 - vein) + VEIN[i] * vein;
     out[i] = c * mottle * ext;
@@ -52,6 +70,16 @@ function clothColor(p) {
   const n = fbm(p.x * 6, p.y * 6, p.z * 6), dirt = 0.62 + n * 0.6, k = p.y < 1.03 ? 1 : 0; // trousers slightly warmer
   const blood = sstep(fbm(p.x * 3 + 5, p.y * 3, p.z * 3), 0.62, 0.72) * 0.55;
   return [0, 1, 2].map(i => (CLOTH[i] + (CLOTH2[i] - CLOTH[i]) * k) * dirt * (1 - blood) + [0.2, 0.02, 0.03][i] * blood);
+}
+
+/** Outfit colour: base (upper) / base2 (below splitY), fbm dirt, blood stains, optional wear (lighter rubbed areas). */
+function clothFn(base, base2 = base, { splitY = -1, dirt = 0.6, blood = 0.5, bloodT = 0.62, wear = 0 } = {}) {
+  return (p) => {
+    const n = fbm(p.x * 6, p.y * 6, p.z * 6), d = (1 - dirt * 0.5) + n * dirt, k = p.y < splitY ? 1 : 0;
+    const b = sstep(fbm(p.x * 3 + 5, p.y * 3, p.z * 3), bloodT, bloodT + 0.1) * blood;
+    const w = wear ? sstep(fbm(p.x * 11 + 2, p.y * 11, p.z * 11), 0.62, 0.75) * wear : 0;
+    return [0, 1, 2].map(i => { const c = (base[i] + (base2[i] - base[i]) * k) * d; return (c + (0.55 - c) * w) * (1 - b) + [0.16, 0.02, 0.025][i] * b; });
+  };
 }
 
 // ---------------------------------------------------------------- builder: skinned, coloured, UV-mapped geometry
@@ -166,10 +194,146 @@ function makeDetailMaps() {
   return { skin: normalMapFrom(skin, S, 2.6), cloth: normalMapFrom(cloth, S, 1.6) };
 }
 
-let shared = null;
-/** Build the shared geometries + materials once. */
-export function getHollowAssets() {
-  if (shared) return shared;
+// ---------------------------------------------------------------- outfits of the OUTPOST ZERO staff (M1.7)
+// All pieces are shells lofted over the SAME body rings (so they deform with the same bones) and go into the one
+// 'rags' geometry → still 3 draw calls per infected. Pieces never extend further than ~4 cm past the body, so the
+// silhouette stays inside the sim hit zones.
+const OUTFITS = {
+  guard: { // dark uniform, heavy plate vest with pouches, combat boots — a dense upper body
+    shirt: clothFn([0.12, 0.13, 0.15], [0.12, 0.13, 0.15], { dirt: 0.5, blood: 0.45 }), sleeveTo: 10, shirtPad: 0.008,
+    trousers: clothFn([0.13, 0.135, 0.15], [0.13, 0.135, 0.15], { dirt: 0.55, blood: 0.3 }), trouserTo: 11,
+    boots: clothFn([0.05, 0.05, 0.055], [0.05, 0.05, 0.055], { dirt: 0.4, blood: 0 }),
+    vest: clothFn([0.19, 0.2, 0.17], [0.19, 0.2, 0.17], { dirt: 0.5, blood: 0.35, bloodT: 0.66 }),
+    tear: 0.985,
+  },
+  technician: { // light-grey coveralls, open collar (infected neck), cuffs at the wrist (infected hands), worn shoes
+    shirt: clothFn([0.47, 0.48, 0.47], [0.47, 0.48, 0.47], { dirt: 0.8, blood: 0.55, bloodT: 0.6, wear: 0 }), sleeveTo: 10, shirtPad: 0.006, openCollar: true,
+    trousers: clothFn([0.44, 0.45, 0.44], [0.44, 0.45, 0.44], { dirt: 0.85, blood: 0.4 }), trouserTo: 11,
+    shoes: clothFn([0.25, 0.21, 0.16], [0.25, 0.21, 0.16], { dirt: 0.6, blood: 0, wear: 0.4 }),
+    stripe: [0.6, 0.42, 0.1], tear: 0.975,
+  },
+  worker: { // olive work jacket (thick), work trousers with knee pads, boots, torn gloves
+    shirt: clothFn([0.27, 0.29, 0.17], [0.27, 0.29, 0.17], { dirt: 0.65, blood: 0.5 }), sleeveTo: 9, shirtPad: 0.02, jacket: true,
+    trousers: clothFn([0.2, 0.19, 0.16], [0.2, 0.19, 0.16], { dirt: 0.6, blood: 0.35 }), trouserTo: 11,
+    boots: clothFn([0.12, 0.09, 0.07], [0.12, 0.09, 0.07], { dirt: 0.5, blood: 0, wear: 0.2 }),
+    gloves: clothFn([0.16, 0.12, 0.08], [0.16, 0.12, 0.08], { dirt: 0.4, blood: 0.6, bloodT: 0.55 }),
+    pads: [0.09, 0.09, 0.08], tear: 0.97,
+  },
+};
+function buildOutfit(id, rags, { torsoRings, armRings, legRings, hole, W }) {
+  const O = OUTFITS[id], pad = O.shirtPad;
+  const noise = (amp, f) => (p) => (fbm(p.x * f, p.y * f, p.z * f) - 0.5) * amp;
+  const plain = (c) => () => c;
+  // upper garment: torso shell hips→collar (jacket: longer and thicker); collar ring narrower
+  const top = torsoRings.slice(O.jacket ? 1 : 2, 12).map(R => ({ c: [...R.c], ru: R.ru * 1.06 + pad, rv: R.rv * 1.08 + pad + 0.002, w: R.w }));
+  const col = top[top.length - 1]; col.ru = O.openCollar ? 0.118 : 0.1 + pad * 0.6; col.rv = O.openCollar ? 0.088 : 0.075 + pad * 0.6;
+  rags.loft(top, {
+    seg: 22, color: O.shirt, uvRep: [8, 12], capStart: false, capEnd: false,
+    jag: (s) => -0.025 * hash(s, 2, 7), displace: noise(0.012, 9),
+    skip: (r, s) => hole(r, s, 11, O.tear) || (O.openCollar && r === top.length - 2 && (s >= 4 && s <= 7) ? 1 : 0), // V-neck
+  });
+  // sleeves: shoulder → cuff (ring 0 of the reversed list = cuff, with a slightly ragged edge)
+  for (const sx of [1, -1]) {
+    const R = armRings(sx).slice(0, O.sleeveTo).reverse().map(r => ({ c: [...r.c], ru: r.ru * 1.12 + pad * 0.7 + 0.004, rv: r.rv * 1.12 + pad * 0.7 + 0.004, w: r.w }));
+    rags.loft(R, { seg: 12, hint: [0, 0, 1], color: O.shirt, uvRep: [4, 12], capStart: false, capEnd: false, jag: (s) => 0.012 * hash(s, sx, 3), displace: noise(0.01, 12), skip: (r, s) => hole(r, s, 5 + sx, O.tear + 0.02) });
+  }
+  // trousers: waist + legs to the ankle
+  const waist = torsoRings.slice(0, 4).map(R => ({ c: [...R.c], ru: R.ru * 1.06 + 0.008, rv: R.rv * 1.08 + 0.008, w: R.w }));
+  rags.loft(waist, { seg: 22, color: O.trousers, uvRep: [8, 12], capStart: true, capEnd: false, displace: noise(0.01, 9) });
+  for (const sx of [1, -1]) {
+    const L = legRings(sx).slice(0, O.trouserTo).reverse().map(R => ({ c: [...R.c], ru: R.ru * 1.14 + 0.009, rv: R.rv * 1.12 + 0.009, w: R.w }));
+    rags.loft(L, { seg: 12, color: O.trousers, uvRep: [5, 12], capStart: false, capEnd: false, jag: (s) => 0.015 * hash(s, sx + 3, 8), displace: noise(0.014, 10), skip: (r, s) => hole(r, s, 9 + sx, O.tear + 0.02) });
+  }
+  // footwear: boots (shaft over the ankle) or low worn shoes (technician: a split at the toe)
+  for (const sx of [1, -1]) {
+    const s = sx > 0 ? 'L' : 'R', boot = !!O.boots, c = O.boots || O.shoes;
+    if (boot) {
+      const shaft = legRings(sx).slice(8, 13).map(R => ({ c: [...R.c], ru: R.ru * 1.2 + 0.012, rv: R.rv * 1.2 + 0.012, w: R.w }));
+      rags.loft(shaft, { seg: 12, color: c, uvRep: [4, 8], capStart: false, capEnd: false, displace: noise(0.004, 14) });
+    }
+    rags.loft([
+      { c: [sx * 0.095, 0.03, -0.062], ru: 0.026, rv: 0.03, w: W(['foot' + s, 1]) },
+      { c: [sx * 0.095, 0.045, -0.025], ru: 0.04, rv: 0.046, w: W(['foot' + s, 1]) },
+      { c: [sx * 0.096, 0.048, 0.04], ru: 0.044, rv: 0.044, w: W(['foot' + s, 1]) },
+      { c: [sx * 0.098, 0.036, 0.11], ru: 0.05, rv: 0.032, w: W(['foot' + s, 1]) },
+      { c: [sx * 0.1, 0.026, 0.17], ru: 0.05, rv: 0.024, w: W(['foot' + s, 1]) },
+      { c: [sx * 0.1, 0.02, 0.2], ru: 0.036, rv: 0.016, w: W(['foot' + s, 1]) },
+    ], { seg: 12, color: c, uvRep: [2, 8], capStart: true, capEnd: true, displace: noise(0.004, 16), skip: (r, k) => (!boot && sx < 0 && r === 4 && (k === 0 || k === 11) ? 1 : 0) });
+    // sole
+    const sole = new THREE.BoxGeometry(0.085, 0.018, 0.27); sole.translate(sx * 0.097, 0.009, 0.066);
+    rags.add(sole, { weights: W(['foot' + s, 1]), color: plain([0.04, 0.04, 0.04]) });
+  }
+  if (O.vest) { // plate carrier: thick shell over the chest + shoulder straps + magazine pouches
+    const V = torsoRings.slice(6, 11).map(R => ({ c: [R.c[0], R.c[1], R.c[2]], ru: R.ru * 1.04 + 0.03, rv: R.rv * 1.0 + 0.036, w: R.w }));
+    rags.loft(V, { seg: 22, color: O.vest, uvRep: [6, 6], capStart: true, capEnd: true, displace: noise(0.006, 7), skip: (r, s) => (r === 3 && (s >= 4 && s <= 6 || s >= 16 && s <= 18) ? 1 : 0) });
+    for (const sx of [-1, 1]) {
+      for (const [y, h] of [[1.25, 0.1]]) {
+        const pch = new THREE.BoxGeometry(0.05, h, 0.03); pch.translate(sx * 0.045, y, torsoRings[7].rv + 0.055);
+        rags.add(pch, { weights: W(['spine', 0.4], ['chest', 0.6]), color: O.vest, displace: noise(0.004, 20) });
+      }
+      const pch2 = new THREE.BoxGeometry(0.045, 0.075, 0.026); pch2.translate(sx * 0.11, 1.26, torsoRings[7].rv + 0.035);
+      rags.add(pch2, { weights: W(['spine', 0.4], ['chest', 0.6]), color: O.vest });
+      const strap = new THREE.BoxGeometry(0.05, 0.02, 0.2); strap.translate(sx * 0.105, 1.565, -0.004);
+      rags.add(strap, { weights: W(['chest', 1]), color: O.vest });
+    }
+    const patch = new THREE.PlaneGeometry(0.07, 0.035); patch.translate(-0.075, 1.43, torsoRings[8].rv + 0.04); // pale ID patch
+    rags.add(patch, { weights: W(['chest', 1]), color: plain([0.42, 0.42, 0.38]) });
+  }
+  if (O.stripe) { // technician: reflective / hazard band across the chest and back
+    const B = torsoRings.slice(7, 9).map(R => ({ c: [...R.c], ru: R.ru * 1.06 + pad + 0.004, rv: R.rv * 1.08 + pad + 0.006, w: R.w }));
+    rags.loft(B, { seg: 22, color: (p) => O.stripe.map(c => c * (0.7 + fbm(p.x * 9, p.y * 9, p.z * 9) * 0.5)), uvRep: [8, 2], capStart: false, capEnd: false, skip: (r, s) => hole(r, s, 3, 0.8) });
+    for (const sx of [1, -1]) { // name tag + pen pocket
+      const t = new THREE.PlaneGeometry(0.06, 0.022); t.translate(sx * 0.07, 1.4, torsoRings[8].rv * 1.08 + pad + 0.009);
+      if (sx > 0) rags.add(t, { weights: W(['chest', 1]), color: plain([0.85, 0.85, 0.8]) });
+    }
+  }
+  if (O.jacket) { // collar, front zip and chest pockets of the work jacket
+    const zip = new THREE.BoxGeometry(0.012, 0.42, 0.008); zip.translate(0, 1.22, torsoRings[7].rv * 1.08 + pad + 0.006);
+    rags.add(zip, { weights: (p) => (p.y > 1.25 ? W(['chest', 1]) : W(['spine', 1])), color: plain([0.08, 0.08, 0.07]) });
+    for (const sx of [-1, 1]) {
+      const pk = new THREE.BoxGeometry(0.075, 0.08, 0.016); pk.translate(sx * 0.085, 1.37, torsoRings[8].rv * 1.08 + pad + 0.006);
+      rags.add(pk, { weights: W(['chest', 1]), color: O.shirt });
+    }
+    const collar = torsoRings.slice(10, 12).map((R, i) => ({ c: [R.c[0], R.c[1] + 0.02 * i, R.c[2] - 0.006], ru: (i ? 0.115 : R.ru * 1.06 + pad + 0.01), rv: (i ? 0.088 : R.rv * 1.08 + pad + 0.01), w: R.w }));
+    rags.loft(collar, { seg: 18, color: O.shirt, uvRep: [6, 4], capStart: false, capEnd: false, skip: (r, s) => (s >= 3 && s <= 6 ? 1 : 0) });
+  }
+  if (O.gloves) { // work gloves over palm / back of the hand: fingers exposed (cut / torn off), holes
+    for (const sx of [1, -1]) {
+      const R = armRings(sx).slice(10, 15).map(r => ({ c: [...r.c], ru: r.ru * 1.12 + 0.005, rv: r.rv * 1.08 + 0.005, w: r.w }));
+      rags.loft(R, { seg: 10, hint: [0, 0, 1], color: O.gloves, uvRep: [3, 8], capStart: false, capEnd: false, jag: (s) => -0.012 * hash(s, sx, 9), skip: (r, s) => hole(r, s, 7 + sx, 0.78) });
+    }
+  }
+  if (O.pads) { // knee pads
+    for (const sx of [1, -1]) {
+      const s = sx > 0 ? 'L' : 'R', k = new THREE.SphereGeometry(1, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+      k.rotateX(Math.PI / 2); k.scale(0.055, 0.07, 0.03); k.translate(sx * 0.095, 0.49, legRings(sx)[5].rv * 1.12 + 0.016);
+      rags.add(k, { weights: W(['thigh' + s, 0.5], ['shin' + s, 0.5]), color: plain(O.pads) });
+    }
+  }
+}
+
+let common = null;       // detail maps + materials: one set for every variant
+const sets = {};         // variant → { geo, mats, maps, tris, headCentre }
+function getCommon() {
+  if (common) return common;
+  const maps = makeDetailMaps();
+  const mats = {
+    skin: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.74, metalness: 0.0, normalMap: maps.skin, normalScale: new THREE.Vector2(0.75, 0.75) }),
+    rags: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.96, metalness: 0.0, side: THREE.DoubleSide, normalMap: maps.cloth, normalScale: new THREE.Vector2(0.5, 0.5) }),
+    eyes: new THREE.MeshStandardMaterial({ color: 0x1a0404, emissive: 0xff2210, emissiveIntensity: 0.26, roughness: 0.4 }),
+  };
+  common = { maps, mats };
+  return common;
+}
+export const VARIANT_IDS = Object.keys(LOOKS);
+/** Build the shared geometries of one variant once (materials are common to all variants). */
+export function getHollowAssets(variant = 'hollow') {
+  if (sets[variant]) return sets[variant];
+  if (!LOOKS[variant]) throw new Error('Unknown infected variant: ' + variant);
+  const prevLook = LK; LK = LOOKS[variant];
+  try { return (sets[variant] = buildVariant()); } finally { LK = prevLook; }
+}
+function buildVariant() {
   const skin = new Builder(), rags = new Builder(), eyes = new Builder();
   const W = (...w) => w; // [[bone, weight], …]
 
@@ -192,7 +356,7 @@ export function getHollowAssets() {
     [1.725, 0.047, 0.052, 0.046, W(['neck', 0.45], ['head', 0.55])],
     [1.76, 0.05, 0.055, 0.052, W(['head', 1])],
   ];
-  const torsoRings = T.map(([y, ru, rv, cz, w]) => ({ c: [0, y, cz], ru, rv, w }));
+  const torsoRings = T.map(([y, ru, rv, cz, w]) => { const g = y < 1.57 ? LK.torso : [1, 1]; return { c: [0, y, cz], ru: ru * g[0], rv: rv * g[1], w }; });
   skin.loft(torsoRings, {
     seg: 22, uvRep: [4, 7], capEnd: false,
     displace: (p, d) => {
@@ -214,7 +378,7 @@ export function getHollowAssets() {
   });
 
   // ============ ARMS: collar → deltoid → elbow → wrist → palm, one loft per arm. hint Z: ru = depth, rv = width
-  const armRings = (sx) => {
+  let armRings = (sx) => {
     const X = (x) => sx * x;
     return [
       { c: [X(0.105), 1.525, -0.005], ru: 0.06, rv: 0.055, w: W(['chest', 1]) },
@@ -234,6 +398,8 @@ export function getHollowAssets() {
       { c: [X(0.19), 0.848, 0.008], ru: 0.014, rv: 0.043, w: W(['hand' + (sx > 0 ? 'L' : 'R'), 1]) },
     ];
   };
+  const armRings0 = armRings, armG = (r) => (r.c[1] > 0.97 ? LK.arm : 1 + (LK.arm - 1) * 0.5); // hands thicken less
+  armRings = (sx) => armRings0(sx).map(r => ({ ...r, ru: r.ru * armG(r), rv: r.rv * armG(r) }));
   for (const sx of [1, -1]) {
     const s = sx > 0 ? 'L' : 'R', R = armRings(sx);
     skin.loft(R, {
@@ -273,7 +439,7 @@ export function getHollowAssets() {
   }
 
   // ============ LEGS: pelvis → thigh → knee → calf → ankle, one loft per leg; feet separately
-  const legRings = (sx) => {
+  let legRings = (sx) => {
     const s = sx > 0 ? 'L' : 'R';
     return [
       { c: [sx * 0.082, 0.975, 0], ru: 0.074, rv: 0.086, w: W(['hips', 1]) },
@@ -291,6 +457,8 @@ export function getHollowAssets() {
       { c: [sx * 0.095, 0.03, 0.004], ru: 0.03, rv: 0.036, w: W(['foot' + s, 1]) },
     ];
   };
+  const legRings0 = legRings;
+  legRings = (sx) => legRings0(sx).map(r => ({ ...r, ru: r.ru * (r.c[1] > 0.08 ? LK.leg : 1), rv: r.rv * (r.c[1] > 0.08 ? LK.leg : 1) }));
   for (const sx of [1, -1]) {
     const s = sx > 0 ? 'L' : 'R';
     skin.loft(legRings(sx), {
@@ -328,7 +496,7 @@ export function getHollowAssets() {
       if (y < -0.66) y = -0.66 - (y + 0.66) * 0.18;                  // flat underside: the mandible sits below
       const front = z > 0.25 ? 1 : 0;
       let k = 0;
-      k -= 0.2 * gauss(Math.abs(x) - 0.4, y - 0.06, 0.2) * front;     // eye sockets (deep)
+      k -= LK.socket * gauss(Math.abs(x) - 0.4, y - 0.06, 0.2) * front; // eye sockets (deep)
       k += 0.085 * gauss(Math.abs(x) - 0.38, y - 0.27, 0.16) * front + 0.05 * gauss(x, y - 0.24, 0.12) * front; // brow ridge
       k -= 0.1 * gauss(x, y + 0.2, 0.085) * front;                    // nasal cavity
       k += 0.05 * gauss(x, y + 0.02, 0.07) * front;                   // remains of the nose bridge
@@ -372,12 +540,13 @@ export function getHollowAssets() {
     // ears: small, pressed to the skull, one torn
     for (const sx of [1, -1]) { const e = new THREE.SphereGeometry(1, 8, 6); e.scale(0.007, sx > 0 ? 0.024 : 0.016, 0.014); e.translate(hc[0] + sx * 0.082, hc[1] - 0.012, hc[2] - 0.012); skin.add(e, { weights: W(['head', 1]), color: (p) => skinColor(p).map(c => c * 0.75) }); }
     // eyes: tiny, deep in the sockets — a faint red glow from the material's emission only (no light source)
-    for (const sx of [-1, 1]) { const e = new THREE.SphereGeometry(1, 8, 6); e.scale(0.007, 0.0055, 0.005); e.translate(hc[0] + sx * 0.034, hc[1] + 0.008, hc[2] + 0.079); eyes.add(e, { weights: W(['head', 1]), color: () => [1, 1, 1] }); }
+    for (const sx of [-1, 1]) { const e = new THREE.SphereGeometry(1, 8, 6); e.scale(0.007 * LK.eyeScale, 0.0055 * LK.eyeScale, 0.005); e.translate(hc[0] + sx * 0.034, hc[1] + 0.008, hc[2] + 0.079 + LK.eyeZ); eyes.add(e, { weights: W(['head', 1]), color: () => [1, 1, 1] }); }
   }
 
   // ============ RAGS: shells lofted over the body rings with torn hems and holes (double-sided)
   const hole = (r, s, salt, th) => (hash(r * 1.7 + salt, s * 2.3, salt) > th ? 2 + (hash(s, r, salt) > 0.5 ? 1 : 0) : 0); // small triangular rips
-  { // shirt: ripped open over the left ribs, shredded hem, wide torn collar
+  if (LK.id !== 'hollow') buildOutfit(LK.id, rags, { torsoRings, armRings, legRings, hole, W });
+  else { // shirt: ripped open over the left ribs, shredded hem, wide torn collar
     const rs = torsoRings.slice(4, 12).map((R, i) => ({ c: [R.c[0], R.c[1], R.c[2]], ru: R.ru * 1.07 + 0.007, rv: R.rv * 1.1 + 0.008, w: R.w, i }));
     rs[rs.length - 1].ru = 0.125; rs[rs.length - 1].rv = 0.085; // collar
     rags.loft(rs, {
@@ -399,7 +568,7 @@ export function getHollowAssets() {
       rags.add(st, { weights: W(['spine', 0.6], ['hips', 0.4]), color: clothColor, uvRep: 2, displace: (p) => (fbm(p.x * 20, p.y * 20, p.z * 20) - 0.5) * 0.02 });
     }
   }
-  { // trousers: waist + both legs; left leg torn at the knee and ends mid-shin, right leg ripped off above the knee
+  if (LK.id === 'hollow') { // trousers: waist + both legs; left leg torn at the knee and ends mid-shin, right leg ripped off above the knee
     const waist = torsoRings.slice(0, 4).map(R => ({ c: [...R.c], ru: R.ru * 1.06 + 0.006, rv: R.rv * 1.08 + 0.006, w: R.w }));
     rags.loft(waist, { seg: 22, color: clothColor, uvRep: [8, 12], capStart: true, capEnd: false, displace: (p) => (fbm(p.x * 9, p.y * 9, p.z * 9) - 0.5) * 0.012, skip: (r, s) => (r === 2 && hash(s, 4, 4) > 0.75 ? 3 : 0) });
     for (const sx of [1, -1]) {
@@ -413,27 +582,21 @@ export function getHollowAssets() {
       });
     }
   }
-  { // torn sleeve remnant on the right arm only (asymmetric silhouette)
+  if (LK.id === 'hollow') { // torn sleeve remnant on the right arm only (asymmetric silhouette)
     const R = armRings(-1).slice(1, 6).reverse().map(r => ({ c: [...r.c], ru: r.ru * 1.12 + 0.005, rv: r.rv * 1.12 + 0.005, w: r.w }));
     rags.loft(R, { seg: 10, hint: [0, 0, 1], color: clothColor, uvRep: [4, 12], capStart: false, capEnd: false, jag: (s) => 0.06 * hash(s, 1, 1), displace: (p) => (fbm(p.x * 12, p.y * 12, p.z * 12) - 0.5) * 0.016, skip: (r, s) => (r === 0 && hash(s, 2, 2) > 0.5 ? 2 : 0) || hole(r, s, 2, 0.93) });
   }
 
   const geo = { skin: skin.build(), rags: rags.build(), eyes: eyes.build() };
-  const maps = makeDetailMaps();
-  const mats = {
-    skin: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.74, metalness: 0.0, normalMap: maps.skin, normalScale: new THREE.Vector2(0.75, 0.75) }),
-    rags: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.96, metalness: 0.0, side: THREE.DoubleSide, normalMap: maps.cloth, normalScale: new THREE.Vector2(0.5, 0.5) }),
-    eyes: new THREE.MeshStandardMaterial({ color: 0x1a0404, emissive: 0xff2210, emissiveIntensity: 0.26, roughness: 0.4 }),
-  };
+  const { maps, mats } = getCommon();
   const tris = Object.values(geo).reduce((s, g) => s + g.index.count / 3, 0);
-  shared = { geo, mats, maps, tris, headCentre: hc };
-  return shared;
+  return { variant: LK.id, geo, mats, maps, tris, headCentre: hc };
 }
 
-/** One infected: its own bones bound to the shared geometry. */
-export function createHollowInstance() {
-  const A = getHollowAssets();
-  const group = new THREE.Group(); group.name = 'hollow';
+/** One infected: its own bones bound to the shared geometry of its variant. */
+export function createHollowInstance(variant = 'hollow') {
+  const A = getHollowAssets(variant);
+  const group = new THREE.Group(); group.name = 'hollow'; group.userData.variant = variant;
   const bones = BONES.map(([n, , o]) => { const b = new THREE.Bone(); b.name = n; b.position.set(...o); return b; });
   BONES.forEach(([, p], i) => { if (p) bones[BONE_INDEX[p]].add(bones[i]); });
   group.add(bones[0]);
@@ -448,13 +611,13 @@ export function createHollowInstance() {
     group.add(m); meshes[k] = m;
   }
   const B = Object.fromEntries(BONES.map(([n], i) => [n, bones[i]]));
-  return { group, bones: B, skeleton, meshes, dispose() { skeleton.dispose(); } };
+  return { group, bones: B, skeleton, meshes, variant, dispose() { skeleton.dispose(); } };
 }
 
 export function disposeHollowAssets() {
-  if (!shared) return;
-  for (const g of Object.values(shared.geo)) g.dispose();
-  for (const m of Object.values(shared.mats)) m.dispose();
-  for (const t of Object.values(shared.maps)) t.dispose();
-  shared = null;
+  for (const k of Object.keys(sets)) { for (const g of Object.values(sets[k].geo)) g.dispose(); delete sets[k]; }
+  if (!common) return;
+  for (const m of Object.values(common.mats)) m.dispose();
+  for (const t of Object.values(common.maps)) t.dispose();
+  common = null;
 }
