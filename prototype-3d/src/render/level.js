@@ -43,18 +43,15 @@ export function buildLevel(scene, world) {
   ceiling.name = 'ceiling';
   group.add(floor, ceiling);
 
-  // Atmosphere. M1.6 arena: dim hemisphere fill + lamps. OUTPOST ZERO (M1.7): brighter neutral-cool fill, a soft
-  // daylight from the windows (one directional light, no shadows) and the same pooled lamps; red only for the alarm.
+  // Atmosphere. M1.6 arena: dim hemisphere fill + lamps. OUTPOST ZERO (M1.7): brighter neutral-cool fill, window light carried by the
+  // fill and the floor light pools (no extra light) and the same pooled lamps; red only for the alarm.
   const outpost = map.style === 'outpost';
-  const hemi = outpost ? new THREE.HemisphereLight(0x9aa6bc, 0x2c2628, 0.78) : new THREE.HemisphereLight(0x7d8aa8, 0x22161a, 1.1);
+  const hemi = outpost ? new THREE.HemisphereLight(0xa2acbe, 0x2c2628, 0.9) : new THREE.HemisphereLight(0x7d8aa8, 0x22161a, 1.1);
   group.add(hemi);
   const hemiSky = hemi.color.clone(), hemiGround = hemi.groundColor.clone(), alarmSky = new THREE.Color(0xd06058), alarmGround = new THREE.Color(0x5a1c1c);
-  let daylight = null;
-  if (outpost) {
-    daylight = new THREE.DirectionalLight(0xfff0dc, 0.2);
-    daylight.position.set(W * S * 0.55, 30, H * S * 0.2); daylight.target.position.set(W * S * 0.5, 0, H * S * 0.6);
-    group.add(daylight, daylight.target);
-  }
+  // (A directional "daylight" was tried and removed for performance: one extra light is evaluated for every lit
+  //  pixel; the window light is carried by the hemisphere fill, the bright panes and the floor light pools.)
+  const daylight = null;
   const dressing = (map.props || map.decor || map.windows) ? buildOutpost(group, world, map) : null;
   // Lamps: every lamp has a cheap emissive fixture, but only LIGHT_POOL real point lights exist (the same number
   // as the 4 lamps of M1.5 → identical shader cost on phones). The pool follows the camera: each light sits on one
