@@ -136,8 +136,10 @@ SURF = {
 // Each chart keeps its surface functions { color(p, n, loc) → sRGB, height(p, n, loc) → metres, rough(p, n, loc) }
 // for the offline bake; at runtime only the vertex colours (fallback until the maps load) use them.
 class Builder {
-  constructor(kind = 'skin') { this.kind = kind; this.pos = []; this.col = []; this.uv = []; this.si = []; this.sw = []; this.idx = []; this.loc = []; this.cid = []; this.charts = []; this.pairs = []; this.chart = -1; }
+  constructor(kind = 'skin', preset = null) { this.kind = kind; this.preset = preset; this.pos = []; this.col = []; this.uv = []; this.si = []; this.sw = []; this.idx = []; this.loc = []; this.cid = []; this.charts = []; this.pairs = []; this.chart = -1; }
   newChart(w, h, fns = {}, density = 1, name = '') {
+    const pr = this.preset && this.preset[this.charts.length]; // LOD1/2: reuse LOD0's metric chart sizes → identical atlas packing
+    if (pr) { w = pr[0]; h = pr[1]; }
     this.charts.push({ w: Math.max(0.004, w), h: Math.max(0.004, h), density, name, fns: { ...(SURF && SURF[this.kind]), ...fns } });
     return (this.chart = this.charts.length - 1);
   }
@@ -539,11 +541,31 @@ function bakedMaterial(variant, part, opts) {
 export function getHollowAssets(variant = 'hollow') {
   if (sets[variant]) return sets[variant];
   if (!LOOKS[variant]) throw new Error('Unknown infected variant: ' + variant);
-  const prevLook = LK; LK = LOOKS[variant];
-  try { return (sets[variant] = buildVariant()); } finally { LK = prevLook; }
+  const prevLook = LK, prevSeg = LOD_SEG; LK = LOOKS[variant];
+  try {
+    // M1.8 LOD: LOD0 full tessellation; LOD1 / LOD2 the same parts with fewer segments and LOD0's chart sizes, so all
+    // three use the same baked maps. Same skeleton → no animation desync when switching (render-only; hit zones live in the sim).
+    const L0 = buildVariant({ lod: 1 });
+    const lods = [L0.geo];
+    for (const lod of LOD_LEVELS.slice(1)) {
+      const Lk = buildVariant({ lod, presets: L0.charts });
+      for (const k of ['skin', 'rags']) if (Lk.charts[k].length !== L0.charts[k].length) throw new Error(`LOD chart mismatch (${variant} ${k})`);
+      lods.push(Lk.geo);
+    }
+    const { maps, mats: shared } = getCommon();
+    const mats = BAKED_VARIANTS.includes(LK.id) ? {
+      skin: bakedMaterial(LK.id, 'skin', { roughness: 0.74 }),
+      rags: bakedMaterial(LK.id, 'rags', { roughness: 0.96, side: THREE.DoubleSide }),
+      eyes: shared.eyes,
+    } : shared;
+    const tri = (g) => Object.values(g).reduce((s, x) => s + x.index.count / 3, 0);
+    return (sets[variant] = { variant: LK.id, geo: L0.geo, lods, mats, maps, tris: tri(L0.geo), trisLod: lods.map(tri), headCentre: L0.hc });
+  } finally { LK = prevLook; LOD_SEG = prevSeg; }
 }
-function buildVariant() {
-  const skin = new Builder('skin'), rags = new Builder('rags'), eyes = new Builder('eyes');
+export const LOD_LEVELS = [1, 0.55, 0.32];
+function buildVariant({ lod = 1, presets = null } = {}) {
+  LOD_SEG = lod;
+  const skin = new Builder('skin', presets && presets.skin), rags = new Builder('rags', presets && presets.rags), eyes = new Builder('eyes');
   const W = (...w) => w; // [[bone, weight], …]
 
   // ============ TORSO + NECK (one continuous loft, bottom → top). ru = half-width (X), rv = half-depth (Z)
@@ -850,15 +872,7 @@ function buildVariant() {
   }
 
   const geo = { skin: skin.build(ATLAS.skin), rags: rags.build(ATLAS.rags), eyes: eyes.build(ATLAS.eyes) };
-  const { maps, mats: shared } = getCommon();
-  // M1.8: the outpost variants have their own baked maps → own skin / outfit materials (same shader program)
-  const mats = BAKED_VARIANTS.includes(LK.id) ? {
-    skin: bakedMaterial(LK.id, 'skin', { roughness: 0.74 }),
-    rags: bakedMaterial(LK.id, 'rags', { roughness: 0.96, side: THREE.DoubleSide }),
-    eyes: shared.eyes,
-  } : shared;
-  const tris = Object.values(geo).reduce((s, g) => s + g.index.count / 3, 0);
-  return { variant: LK.id, geo, mats, maps, tris, headCentre: hc };
+  return { geo, hc, charts: { skin: skin.charts.map(c => [c.w, c.h]), rags: rags.charts.map(c => [c.w, c.h]) } };
 }
 
 /** One infected: its own bones bound to the shared geometry of its variant. */
@@ -870,21 +884,31 @@ export function createHollowInstance(variant = 'hollow') {
   group.add(bones[0]);
   group.updateMatrixWorld(true);
   const skeleton = new THREE.Skeleton(bones);
-  const meshes = {};
-  for (const k of ['skin', 'rags', 'eyes']) {
-    const m = new THREE.SkinnedMesh(A.geo[k], A.mats[k]);
-    m.bind(skeleton);
-    m.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0.9, 0), 2.3); // generous: covers attacks and the fall
-    m.frustumCulled = true;
-    group.add(m); meshes[k] = m;
-  }
+  const lodMeshes = A.lods.map((geo, li) => {
+    const out = {};
+    for (const k of ['skin', 'rags', 'eyes']) {
+      const m = new THREE.SkinnedMesh(geo[k], A.mats[k]);
+      m.bind(skeleton);
+      m.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0.9, 0), 2.3); // generous: covers attacks and the fall
+      m.frustumCulled = true; m.visible = li === 0; m.userData.lod = li;
+      group.add(m); out[k] = m;
+    }
+    return out;
+  });
   const B = Object.fromEntries(BONES.map(([n], i) => [n, bones[i]]));
-  return { group, bones: B, skeleton, meshes, variant, dispose() { skeleton.dispose(); } };
+  let lod = 0;
+  return {
+    group, bones: B, skeleton, meshes: lodMeshes[0], lodMeshes, variant,
+    get lod() { return lod; },
+    /** Show one LOD (0 = full). All levels share the skeleton, so the pose is identical. */
+    setLod(l) { l = Math.max(0, Math.min(lodMeshes.length - 1, l)); if (l === lod) return; for (const k in lodMeshes[lod]) lodMeshes[lod][k].visible = false; for (const k in lodMeshes[l]) lodMeshes[l][k].visible = true; lod = l; },
+    dispose() { skeleton.dispose(); },
+  };
 }
 
 export function disposeHollowAssets() {
   for (const k of Object.keys(sets)) {
-    for (const g of Object.values(sets[k].geo)) g.dispose();
+    for (const L of sets[k].lods) for (const g of Object.values(L)) g.dispose();
     for (const part of ['skin', 'rags']) { const m = sets[k].mats[part]; if (common && m === common.mats[part]) continue; if (m.map) m.map.dispose(); if (m.normalMap && m.userData.baked) m.normalMap.dispose(); m.dispose(); }
     delete sets[k];
   }

@@ -7,13 +7,15 @@ import { createHollowInstance } from './hollow-model.js';
 import { animateHollow, createAnimState } from './hollow-anim.js';
 
 const MAX_PARTICLES = 160;
+// M1.8 LOD switch distances (metres, with hysteresis so a model never flickers between levels)
+export const LOD_DIST = Object.freeze({ in1: 8, out1: 7, in2: 16, out2: 14 });
 
 export function createInfectedView(scene) {
   // one pool per visual variant (M1.7): an instance is bound to its variant's shared geometry, so it is only
   // reused for an infected of the same variant. Bones / animation / effects are identical for all variants.
   const pools = {}, active = new Map(); // infected → slot
   let seed = 0;
-  const stats = { instances: 0, created: 0, active: 0, bursts: 0, headBursts: 0, bodyBursts: 0, byVariant: {} };
+  const stats = { instances: 0, created: 0, active: 0, bursts: 0, headBursts: 0, bodyBursts: 0, byVariant: {}, byLod: [0, 0, 0] };
 
   function acquire(variant) {
     const pool = pools[variant] || (pools[variant] = []);
@@ -67,7 +69,7 @@ export function createInfectedView(scene) {
   return {
     stats,
     /** enemies = game.enemies (sim). alpha = render interpolation. */
-    update(enemies, dt, alpha = 1) {
+    update(enemies, dt, alpha = 1, camPos = null) {
       for (const e of enemies) {
         let slot = active.get(e);
         if (!slot) { slot = acquire(e.variant || 'hollow'); active.set(e, slot); }
@@ -77,6 +79,14 @@ export function createInfectedView(scene) {
         g.position.set(x * S, 0, y * S);
         g.rotation.y = Math.PI / 2 - f; // model faces +Z; sim facing f points along (cos f, sin f) in (x, z)
         animateHollow(e, slot.inst.bones, slot.anim, dt, S);
+        if (camPos && slot.inst.setLod) { // visual level of detail only — hit zones, AI and damage never look at it
+          const d = Math.hypot(g.position.x - camPos.x, g.position.z - camPos.z), cur = slot.inst.lod;
+          let l = cur;
+          if (cur === 0 && d > LOD_DIST.in1) l = 1;
+          if (cur === 1) l = d > LOD_DIST.in2 ? 2 : d < LOD_DIST.out1 ? 0 : 1;
+          if (cur === 2 && d < LOD_DIST.out2) l = d < LOD_DIST.out1 ? 0 : 1;
+          slot.inst.setLod(l);
+        }
       }
       // release instances whose infected were removed from the sim
       if (active.size !== enemies.length) {
@@ -85,7 +95,8 @@ export function createInfectedView(scene) {
       updateParticles(dt);
       stats.active = active.size; stats.instances = active.size + pooled();
       for (const k in stats.byVariant) stats.byVariant[k] = 0;
-      for (const slot of active.values()) stats.byVariant[slot.variant] = (stats.byVariant[slot.variant] || 0) + 1;
+      stats.byLod[0] = stats.byLod[1] = stats.byLod[2] = 0;
+      for (const slot of active.values()) { stats.byVariant[slot.variant] = (stats.byVariant[slot.variant] || 0) + 1; stats.byLod[slot.inst.lod || 0]++; }
     },
     /** Hit effect at a sim point (cells), dir = shot direction (sim). */
     /** Local hit effect at the impact point: body = short dark spray along the shot; head = bigger burst with pale chips. */
@@ -94,6 +105,7 @@ export function createInfectedView(scene) {
     /** World position of a bone (for tests / screenshots). */
     boneWorld(e, name, out) { const slot = active.get(e); if (!slot) return null; slot.inst.group.updateMatrixWorld(true); return slot.inst.bones[name].getWorldPosition(out); },
     groupOf(e) { const s = active.get(e); return s ? s.inst.group : null; },
+    lodOf(e) { const s = active.get(e); return s ? s.inst.lod : null; },
     variantOf(e) { const s = active.get(e); return s ? s.variant : null; },
     get poolSize() { return pooled(); },
     dispose() { for (const s of [...Object.values(pools).flat(), ...active.values()]) { scene.remove(s.inst.group); s.inst.dispose(); } for (const k in pools) delete pools[k]; active.clear(); pgeo.dispose(); points.material.dispose(); },

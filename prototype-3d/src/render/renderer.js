@@ -119,7 +119,7 @@ export function createRenderer({ container, world, getSettings, skin }) {
       syncCamera(player, alpha);
       impacts.update(dt);
       targets.update(w.targets || w.hittables || [], dt, camera.position);
-      if (w.enemies) infected.update(w.enemies, w.enemyDt ?? dt, alpha); // enemyDt = 0 while paused → animation frozen
+      if (w.enemies) infected.update(w.enemies, w.enemyDt ?? dt, alpha, camera.position); // enemyDt = 0 while paused → animation frozen
       if (w.alarm !== undefined) level.setAlarm(w.alarm);
       level.update(camera.position, dt, w.enemyDt ?? dt);
       renderer.info.reset();
