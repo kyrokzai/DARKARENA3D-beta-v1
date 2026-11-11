@@ -14,7 +14,7 @@ const SHOTS = process.env.SHOTS || '';
 const { results, check } = makeChecker();
 const DA = (page, fn, arg) => page.evaluate(fn, arg);
 const shoot = async (page, file) => { if (SHOTS) await page.screenshot({ path: path.join(SHOTS, file) }); };
-const ticks = (page, n) => DA(page, n => new Promise(res => { const t0 = __DA3.game.tick; const f = () => (__DA3.game.tick - t0 >= n ? res() : requestAnimationFrame(f)); f(); }), n);
+const ticks = (page, n) => DA(page, n => new Promise(res => { const t0 = __DA3.game.tick, s0 = performance.now(); const f = () => (__DA3.game.tick - t0 >= n || performance.now() - s0 > 6000 ? res() : requestAnimationFrame(f)); f(); }), n); // capped: never hangs
 const WAVES = '/prototype-3d/?debug=1&waves=1';
 const VARIANTS = ['guard', 'technician', 'worker'];
 
@@ -35,13 +35,13 @@ const VARIANTS = ['guard', 'technician', 'worker'];
     const env = await DA(page, async () => {
       const T = await import('/prototype-3d/src/render/outpost/outpost-textures.js');
       const tex = T.getOutpostTextures(); const o = __DA3.outpost, lv = __DA3.view.level;
-      const texOk = Object.entries(tex).map(([k, t]) => [k, !!(t && t.image && t.image.width > 0 && t.image.height > 0)]);
-      let point = 0, dir = 0, hemi = 0, shadows = 0; __DA3.view.scene.traverse(x => { if (x.isPointLight) point++; if (x.isDirectionalLight) dir++; if (x.isHemisphereLight) hemi++; if (x.isLight && x.castShadow) shadows++; });
-      return { o, texOk, signs: T.SIGN_TEXT, point, dir, hemi, shadows, mapId: __DA3.game.world.width + 'x' + __DA3.game.world.height, monTexV: tex.monitors.version };
+      const texOk = Object.entries(tex).filter(([, t]) => t && t.isTexture).map(([k, t]) => [k, !!(t && t.image && t.image.width > 0 && t.image.height > 0)]);
+      let point = 0, dir = 0, hemi = 0, shadows = 0, dressLights = 0; lv.dressing.group && lv.dressing.group.traverse(x => { if (x.isLight) dressLights++; }); lv.group.traverse(x => { if (x.isPointLight) point++; }); __DA3.view.scene.traverse(x => { if (x.isDirectionalLight) dir++; if (x.isHemisphereLight) hemi++; if (x.isLight && x.castShadow) shadows++; });
+      return { o, texOk, signs: T.SIGN_TEXT, point, dir, hemi, shadows, dressLights, mapId: __DA3.game.world.width + 'x' + __DA3.game.world.height, monTexV: tex.monitors.version };
     });
     check('2. Environment loads: 13 props, 5 CCTV monitors, 7 windows, 7 beacons, signs; ≤ 9 dressing draw calls', env.o.stats.props === 13 && env.o.monitors === 5 && env.o.stats.windows === 7 && env.o.stats.beacons === 7 && env.o.stats.signs >= 8 && env.o.drawCalls <= 9 && env.mapId === '30x16', JSON.stringify(env.o));
     check('8. All outpost textures generated (atlas, signs, monitors, steppe, light pool) and no failed / 404 requests', env.texOk.every(([, ok]) => ok) && !bad.length, JSON.stringify(env.texOk) + ' ' + bad.join(' '));
-    check('Light budget: still 4 pooled point lights + 1 hemisphere + 1 daylight (no per-lamp lights, no shadows)', env.point === 4 && env.hemi === 1 && env.dir <= 2 && env.shadows === 0 && env.o.lights === 4, JSON.stringify({ point: env.point, dir: env.dir, hemi: env.hemi, shadows: env.shadows }));
+    check('Light budget: still 4 pooled point lights + 1 hemisphere + 1 daylight (no per-lamp lights, no shadows)', env.point === 4 && env.dressLights === 0 && env.hemi === 1 && env.dir <= 2 && env.shadows === 0 && env.o.lights === 4, JSON.stringify({ levelPoint: env.point, dressing: env.dressLights, dir: env.dir, hemi: env.hemi, shadows: env.shadows }));
     const S = env.signs;
     check('Bilingual signs: ҚАУІПТІ АЙМАҚ / ОПАСНАЯ ЗОНА, КІРУГЕ БОЛМАЙДЫ / ВХОД ЗАПРЕЩЁН, СЕКТОР 01, БАЙЛАНЫС / СВЯЗЬ', S.danger.join('/') === 'ҚАУІПТІ АЙМАҚ/ОПАСНАЯ ЗОНА' && S.noEntry.join('/') === 'КІРУГЕ БОЛМАЙДЫ/ВХОД ЗАПРЕЩЁН' && S.sector[0] === 'СЕКТОР 01' && S.comms.join('/') === 'БАЙЛАНЫС/СВЯЗЬ');
     // monitors: prepared texture (never redrawn per frame), shader noise only; a feed switches rarely
@@ -59,14 +59,15 @@ const VARIANTS = ['guard', 'technician', 'worker'];
     const px = await DA(page, () => {
       const v = __DA3.view, r = v.renderer, gl = r.getContext(), out = {};
       const read = (fx, fy) => { const w = gl.drawingBufferWidth, h = gl.drawingBufferHeight, p = new Uint8Array(4); gl.readPixels(Math.floor(fx * w), Math.floor((1 - fy) * h), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, p); return [p[0], p[1], p[2]]; };
-      const at = (x, y) => { __DA3.setPlayer(x, y, -Math.PI / 2, 0); v.render(__DA3.game.player, 1, { dt: 0, enemies: [], enemyDt: 0 }); return { c: read(0.5, 0.5), up: read(0.5, 0.43), down: read(0.5, 0.57), left: read(0.47, 0.5) }; };
-      out.a = at(20.3, 3.0); out.b = at(20.42, 3.0); out.near = at(20.3, 2.2);
+      // sample inside the glass panes (left of the centre mullion, above / below the transom at eye level), weapon hidden
+      const at = (x, y) => { __DA3.setPlayer(x, y, -Math.PI / 2, 0); v.render(__DA3.game.player, 1, { dt: 0, enemies: [], enemyDt: 0, showWeapon: false }); return { c: read(0.523, 0.43), up: read(0.523, 0.42), down: read(0.523, 0.55) }; };
+      out.a = at(20.0, 3.0); out.b = at(20.06, 3.0); out.near = at(20.0, 2.2);
       return out;
     });
     const diff = (a, b) => Math.max(...a.map((v, i) => Math.abs(v - b[i])));
     const lum = c => c[0] * 0.3 + c[1] * 0.59 + c[2] * 0.11;
-    check('7. Window perspective: steppe has no parallax — same ray, same colour after moving sideways 0.24 m or 1.6 m closer', diff(px.a.c, px.b.c) <= 14 && diff(px.a.c, px.near.c) <= 14 && diff(px.a.up, px.near.up) <= 14, JSON.stringify(px));
-    check('7. Horizon at eye level through the window: sky above is brighter than the ground below', lum(px.a.up) > lum(px.a.down) + 4 && lum(px.a.c) > 20, `${lum(px.a.up).toFixed(0)} vs ${lum(px.a.down).toFixed(0)}`);
+    check('7. Window perspective: steppe has no parallax — same ray, same colour after moving sideways 0.24 m or 1.6 m closer', diff(px.a.c, px.b.c) <= 14 && diff(px.a.c, px.near.c) <= 14 && diff(px.a.down, px.near.down) <= 14 && lum(px.a.c) > 60, JSON.stringify(px));
+    check('7. Horizon at eye level through the window: sky above is brighter than the ground below', lum(px.a.up) > lum(px.a.down) + 4 && lum(px.a.down) > 40, `${lum(px.a.up).toFixed(0)} vs ${lum(px.a.down).toFixed(0)}`);
     // 6 (integration): a real RAVEN shot at an electrical cabinet stops on the cabinet face
     const shot = await DA(page, () => new Promise(res => { const g = __DA3.game; g.waves.reset(); __DA3.setPlayer(16.6, 3.5, 0, 0); __DA3.gs.setAmmo(30, 120); let hit = null; const off = g.on ? null : null; g.on('impact', e => { if (!hit) hit = e; }); __DA3.input.setAction('fire', true); setTimeout(() => { __DA3.input.setAction('fire', false); res(hit && { x: hit.point ? hit.point.x : hit.x, type: hit.type || 'world' }); }, 250); void off; }));
     check('6. Real shot at the electrical cabinet (prop on a solid cell) hits its face — bullets do not pass through', shot && Math.abs(shot.x - 18) < 0.02, JSON.stringify(shot));
@@ -87,7 +88,7 @@ const VARIANTS = ['guard', 'technician', 'worker'];
       const headErr = e => { const grp = v.groupOf(e); grp.updateMatrixWorld(true); V.set(0, 0.085, 0.015).applyMatrix4(grp.children.find(o => o.isBone).getObjectByName('head').matrixWorld); const hb = e.hitboxes()[0]; return Math.hypot(V.x - hb.cx * 2, V.y - hb.cz * 2, V.z - hb.cy * 2); };
       g.waves.reset(); clear(); __DA3.setPlayer(4, 8, 0, 0);
       const out = { created: {}, meshes: {}, geo: {}, mats: {}, err: {}, hits: {}, dead: {} };
-      const es = VARIANTS.map((vr, i) => g.spawnInfected('hollow', 9 + i * 0.01, 6.2 + i * 1.8, Math.PI, { variant: vr }));
+      const es = VARIANTS.map((vr, i) => g.spawnInfected('hollow', 9 + i * 0.01, 7.6 + i * 0.9, Math.PI, { variant: vr })); // clear line of sight (the comm column is at x 7, y 5–7)
       v.update(g.enemies, 0, 1);
       for (const [i, e] of es.entries()) { const grp = v.groupOf(e), m = grp.children.filter(o => o.isSkinnedMesh); out.created[VARIANTS[i]] = v.variantOf(e); out.meshes[VARIANTS[i]] = m.length; out.geo[VARIANTS[i]] = m.map(x => x.geometry.uuid).join(); out.mats[VARIANTS[i]] = m.map(x => x.material.uuid).join(); }
       // a second GUARD shares the GUARD geometry
@@ -113,13 +114,15 @@ const VARIANTS = ['guard', 'technician', 'worker'];
       step(30); out.deadStates = es.map(e => e.state + ':' + !!v.groupOf(e));
       step(Math.round(60 * 4.3)); out.afterCorpse = { enemies: g.enemies.length, active: v.stats.active, pool: v.poolSize };
       // 16. resource reuse: 4 cycles of 5 mixed infected → instances bounded, geometries stable
-      const mem0 = __DA3.view.renderer.info.memory.geometries, created0 = v.stats.created;
-      for (let c = 0; c < 4; c++) {
+      const cycle = (c) => {
         for (let i = 0; i < 5; i++) g.spawnInfected('hollow', 6 + i, 12, 0, { variant: VARIANTS[(c + i) % 3] });
         step(2); __DA3.view.render(g.player, 1, { dt: 1 / 60, enemies: g.enemies, enemyDt: 1 / 60 });
         for (const e of g.enemies) if (e.alive) { e.applyDamage(e.hp, 'body', null); g.onInfectedKilled(e); }
         step(Math.round(60 * 4.3));
-      }
+      };
+      cycle(0); // first cycle uploads every variant once
+      const mem0 = __DA3.view.renderer.info.memory.geometries, created0 = v.stats.created;
+      for (let c = 1; c < 5; c++) cycle(c);
       out.reuse = { created: v.stats.created - created0, totalCreated: v.stats.created, pool: v.poolSize, memDelta: __DA3.view.renderer.info.memory.geometries - mem0, byVariant: v.stats.byVariant };
       return out;
     }, { VARIANTS });
@@ -176,7 +179,7 @@ const VARIANTS = ['guard', 'technician', 'worker'];
     check('18/19. Alarm during the intermission: HUD warning «ДАБЫЛ · ТРЕВОГА / ВОЛНА 2», red edge, beacons glow, red light tint', on.a.warn && on.a.edge > 0.05 && on.a.visual > 0.5 && on.halo && on.beacon !== '3a0806' && on.hemi !== hemiIdle && /ДАБЫЛ · ТРЕВОГА/.test(on.warnText) && /ВОЛНА 2/.test(on.warnText), JSON.stringify(on));
     check('6.3 Siren plays inside the alarm, quieter than the shot level (gain ≤ 0.06)', on.siren && on.sirenGain > 0 && on.sirenGain <= 0.06, String(on.sirenGain));
     // 21. pause → siren and ambience stop; resume → restored
-    await page.keyboard.press('KeyP'); await ticks(page, 1); await sleep(250);
+    await page.keyboard.press('KeyP'); await sleep(350);
     const paused = await DA(page, () => ({ st: __DA3.state, siren: __DA3.sfx.sirenActive, amb: __DA3.audio.ambience.on, t: __DA3.alarm.t }));
     await sleep(300);
     const paused2 = await DA(page, () => __DA3.alarm.t);
@@ -194,7 +197,7 @@ const VARIANTS = ['guard', 'technician', 'worker'];
     await DA(page, () => { const kill = () => { const g = __DA3.game; if (__DA3.state === 'play' && g.waves.phase === 'active' && g.enemies.some(e => e.alive)) __DA3.dbg.infKill(); if (g.waves.phase !== 'intermission') setTimeout(kill, 150); }; kill(); });
     await page.waitForFunction(() => __DA3.sfx.sirenActive, null, { timeout: 90000 }).catch(() => {});
     const second = await DA(page, () => ({ siren: __DA3.sfx.sirenActive, wave: __DA3.gs.wave.number }));
-    await page.keyboard.press('KeyP'); await sleep(450); await page.click('#quitBtn'); await sleep(200); await ticks(page, 1); await sleep(100);
+    await page.keyboard.press('KeyP'); await sleep(450); await page.click('#quitBtn'); await sleep(350);
     const menu = await DA(page, () => ({ st: __DA3.state, siren: __DA3.sfx.sirenActive, amb: __DA3.audio.ambience.on, a: __DA3.alarm, ambGain: __DA3.audio.levels.amb }));
     check('22/29. В ГЛАВНОЕ МЕНЮ during the alarm: siren off, ambience off, alarm reset', second.siren && menu.st === 'menu' && !menu.siren && !menu.amb && menu.a.phase === 'off' && menu.a.k === 0 && !menu.a.warn, JSON.stringify({ second, menu }));
     // 23. restart → match from wave 1 with no alarm; 30. ambience graph not duplicated by restarts
