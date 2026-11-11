@@ -181,6 +181,8 @@ export function createSfx(getSettings) {
     /** Stop everything continuous right now (menu / page hide). */
     silence() { if (!ctx) return; if (siren) stopSiren(); if (ambBus) { ambBus.gain.cancelScheduledValues(ctx.currentTime); ambBus.gain.setValueAtTime(0, ctx.currentTime); stats.ambience.on = false; } },
     get sirenActive() { return !!siren; },
+    /** Current bus gains (tests / debug): master volume, ambience on/off gain, duck levels. */
+    get levels() { return ctx ? { master: master.gain.value, amb: ambBus.gain.value, ambDuck: ambDuck.gain.value, alarmDuck: alarmDuck.gain.value, siren: siren ? siren.out.gain.value : 0 } : null; },
     /** Rifle shot: sharp crack + body + low thump + short tail; random variation so sprays don't sound looped. */
     shot(ads = 0) {
       count('shot'); if (!ready()) return;

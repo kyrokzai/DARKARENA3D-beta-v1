@@ -107,6 +107,23 @@ death screen with ЗАНОВО. `?debug=1` keeps the shooting range without wave
 - Menu: ИГРАТЬ / НАСТРОЙКИ / ОБ ИГРЕ, keyboard (↑ ↓ Enter Esc), pause, death and victory screens.
 - Viewer: `tools/infected-viewer.html?anim=run&hb=1` (hb = show sim hit zones).
 
+## M1.7: OUTPOST ZERO
+
+- Same arena grid, dressed as an abandoned security outpost in the steppe (`data/maps/outpost-zero.js`,
+  `render/outpost/`): zone A КПП (guard post, lockers, barrier, armoured door), zone B surveillance (monitor bank with
+  procedural CCTV feeds, comm column, server rack, cable tray), zone C technical (electrical cabinets, generator, pipes,
+  shelving, transformer, hatches). Props sit exactly on the existing solid cells → collision / bullets / sight unchanged.
+- Windows: static steppe panorama (dry grass, hills, power line, old road, perimeter fence) in a view-ray shader —
+  infinitely distant, correct perspective, no exit. Bilingual signs (Kazakh / Russian).
+- Lighting ~+45 % mean brightness vs M1.6 (hemisphere + one shadowless daylight + the 4 pooled lamps), darker ceiling.
+- Infected variants GUARD / TECHNICIAN / WORKER (`render/enemies/hollow-model.js` LOOKS + OUTFITS): same skeleton,
+  animation and hit zones, 3 draw calls each; every wave 3/3/3 mixed (`sim/waves/wave-defs.js`).
+- Alarm in the 6 s intermission (`sim/waves/alarm.js` → `GameState.alarm`): beacons with a soft pulse, red light tint,
+  HUD warning «ДАБЫЛ · ТРЕВОГА», short siren; setting НАСТРОЙКИ → «Тревога между волнами»: полная / мягкая / выкл.
+- Ambience (`audio/sfx.js`): wind, vent hum, equipment whine, crackle, metal creak — one persistent graph, ducked by shots
+  and infected cries, silent outside play.
+- Viewer: `tools/infected-viewer.html?variant=worker` or `?lineup=1`.
+
 ## Structure
 
 ```
@@ -158,4 +175,6 @@ node tests/sim-m1.5.test.mjs        # M1.5 infected AI + waves (Node)
 node tests/m1.5-infected.test.js    # M1.5 infected in the browser
 node tests/sim-m1.6.test.mjs        # M1.6 arena, waves, AI 2.0, hit zones, death falls (Node)
 node tests/m1.6-evolution.test.js   # M1.6 menus, full match, animation ↔ hit zones, phone
+node tests/sim-m1.7.test.mjs        # M1.7 outpost data, variants, alarm timeline, balance (Node)
+node tests/m1.7-outpost.test.js     # M1.7 environment, variants, alarm, sound, gameplay pass (browser)
 ```

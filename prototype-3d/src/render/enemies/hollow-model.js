@@ -204,7 +204,7 @@ const OUTFITS = {
     trousers: clothFn([0.13, 0.135, 0.15], [0.13, 0.135, 0.15], { dirt: 0.55, blood: 0.3 }), trouserTo: 11,
     boots: clothFn([0.05, 0.05, 0.055], [0.05, 0.05, 0.055], { dirt: 0.4, blood: 0 }),
     vest: clothFn([0.19, 0.2, 0.17], [0.19, 0.2, 0.17], { dirt: 0.5, blood: 0.35, bloodT: 0.66 }),
-    tear: 0.985,
+    tear: 0.985, cap: { theta: 1.25, scale: 1.1, tall: 0.8, dy: 0.008, brim: true, lumpy: 0.002, color: clothFn([0.1, 0.11, 0.13], [0.1, 0.11, 0.13], { dirt: 0.4, blood: 0.2 }) },
   },
   technician: { // light-grey coveralls, open collar (infected neck), cuffs at the wrist (infected hands), worn shoes
     shirt: clothFn([0.47, 0.48, 0.47], [0.47, 0.48, 0.47], { dirt: 0.8, blood: 0.55, bloodT: 0.6, wear: 0 }), sleeveTo: 10, shirtPad: 0.006, openCollar: true,
@@ -218,9 +218,10 @@ const OUTFITS = {
     boots: clothFn([0.12, 0.09, 0.07], [0.12, 0.09, 0.07], { dirt: 0.5, blood: 0, wear: 0.2 }),
     gloves: clothFn([0.16, 0.12, 0.08], [0.16, 0.12, 0.08], { dirt: 0.4, blood: 0.6, bloodT: 0.55 }),
     pads: [0.09, 0.09, 0.08], tear: 0.97,
+    cap: { theta: 1.32, scale: 1.12, tall: 0.9, dy: 0.0, brim: false, lumpy: 0.006, color: clothFn([0.17, 0.14, 0.11], [0.17, 0.14, 0.11], { dirt: 0.7, blood: 0.3 }) },
   },
 };
-function buildOutfit(id, rags, { torsoRings, armRings, legRings, hole, W }) {
+function buildOutfit(id, rags, { torsoRings, armRings, legRings, hole, W, hc, HR }) {
   const O = OUTFITS[id], pad = O.shirtPad;
   const noise = (amp, f) => (p) => (fbm(p.x * f, p.y * f, p.z * f) - 0.5) * amp;
   const plain = (c) => () => c;
@@ -230,7 +231,7 @@ function buildOutfit(id, rags, { torsoRings, armRings, legRings, hole, W }) {
   rags.loft(top, {
     seg: 22, color: O.shirt, uvRep: [8, 12], capStart: false, capEnd: false,
     jag: (s) => -0.025 * hash(s, 2, 7), displace: noise(0.012, 9),
-    skip: (r, s) => hole(r, s, 11, O.tear) || (O.openCollar && r === top.length - 2 && (s >= 4 && s <= 7) ? 1 : 0), // V-neck
+    skip: (r, s) => hole(r, s, 11, O.tear),
   });
   // sleeves: shoulder → cuff (ring 0 of the reversed list = cuff, with a slightly ragged edge)
   for (const sx of [1, -1]) {
@@ -301,6 +302,19 @@ function buildOutfit(id, rags, { torsoRings, armRings, legRings, hole, W }) {
     for (const sx of [1, -1]) {
       const R = armRings(sx).slice(10, 15).map(r => ({ c: [...r.c], ru: r.ru * 1.12 + 0.005, rv: r.rv * 1.08 + 0.005, w: r.w }));
       rags.loft(R, { seg: 10, hint: [0, 0, 1], color: O.gloves, uvRep: [3, 8], capStart: false, capEnd: false, jag: (s) => -0.012 * hash(s, sx, 9), skip: (r, s) => hole(r, s, 7 + sx, 0.78) });
+    }
+  }
+  if (O.cap) { // headwear (soft — a cap / beanie, no armour): a shell over the crown, weighted to the head bone
+    const g = new THREE.SphereGeometry(1, 20, 8, 0, Math.PI * 2, 0, O.cap.theta), P = g.getAttribute('position');
+    for (let i = 0; i < P.count; i++) {
+      const x = P.getX(i), y = P.getY(i), z = P.getZ(i), back = z < 0 ? 1.12 : 1;
+      P.setXYZ(i, hc[0] + x * HR[0] * O.cap.scale, hc[1] + O.cap.dy + y * HR[1] * O.cap.scale * O.cap.tall, hc[2] - 0.004 + z * HR[2] * O.cap.scale * back);
+    }
+    rags.add(g, { weights: W(['head', 1]), color: O.cap.color, displace: noise(O.cap.lumpy, 26) });
+    if (O.cap.brim) { // patrol-cap visor
+      const b = new THREE.CylinderGeometry(1, 1, 0.006, 16, 1, false, -0.9, 1.8); b.scale(0.07, 1, 0.06);
+      b.translate(hc[0], hc[1] + O.cap.dy + HR[1] * 0.3, hc[2] + HR[2] * 0.86);
+      rags.add(b, { weights: W(['head', 1]), color: O.cap.color });
     }
   }
   if (O.pads) { // knee pads
@@ -545,7 +559,7 @@ function buildVariant() {
 
   // ============ RAGS: shells lofted over the body rings with torn hems and holes (double-sided)
   const hole = (r, s, salt, th) => (hash(r * 1.7 + salt, s * 2.3, salt) > th ? 2 + (hash(s, r, salt) > 0.5 ? 1 : 0) : 0); // small triangular rips
-  if (LK.id !== 'hollow') buildOutfit(LK.id, rags, { torsoRings, armRings, legRings, hole, W });
+  if (LK.id !== 'hollow') buildOutfit(LK.id, rags, { torsoRings, armRings, legRings, hole, W, hc, HR });
   else { // shirt: ripped open over the left ribs, shredded hem, wide torn collar
     const rs = torsoRings.slice(4, 12).map((R, i) => ({ c: [R.c[0], R.c[1], R.c[2]], ru: R.ru * 1.07 + 0.007, rv: R.rv * 1.1 + 0.008, w: R.w, i }));
     rs[rs.length - 1].ru = 0.125; rs[rs.length - 1].rv = 0.085; // collar

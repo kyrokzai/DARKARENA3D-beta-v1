@@ -22,7 +22,8 @@ Browser FPS (survival vs. waves of infected). Owner makes key decisions; work in
    + `node tests/m1.2-hud.test.js` + `node tests/sim-m1.3.test.mjs` + `node tests/m1.3-weapon.test.js`
    + `node tests/m1.4-hands.test.js` + `node tests/m1.4.1-jump.test.js`
    + `node tests/sim-m1.5.test.mjs` + `node tests/m1.5-infected.test.js`
-   + `node tests/sim-m1.6.test.mjs` + `node tests/m1.6-evolution.test.js`; report changed files,
+   + `node tests/sim-m1.6.test.mjs` + `node tests/m1.6-evolution.test.js`
+   + `node tests/sim-m1.7.test.mjs` + `node tests/m1.7-outpost.test.js`; report changed files,
    test results, how to verify on PC and iPhone, and known limitations. Not accepted until the owner confirms.
 7. Test hooks and the debug panel are allowed only behind `?debug=1`.
 8. Gameplay values reach the HUD only through `prototype-3d/src/sim/game-state.js` (GameState + events);
@@ -31,7 +32,13 @@ Browser FPS (survival vs. waves of infected). Owner makes key decisions; work in
    `WeaponSystem`; skins are cosmetic material sets on shared geometry and never change stats.
 10. Infected are data + generic AI: types in `prototype-3d/src/sim/enemies/infected-defs.js`, waves in
     `prototype-3d/src/sim/waves/wave-defs.js`; AI/waves are pure JS (no DOM / three.js). M1.6 = one type (THE HOLLOW), 3 waves × 9, max 5 alive.
+    M1.7: visual VARIANTS (GUARD / TECHNICIAN / WORKER, `INFECTED_VARIANTS`) are cosmetic only — same type, stats, AI and
+    hit zones; the spawn config carries `variant`, each wave is 3/3/3. Never give a variant its own stats.
 11. The infected's pose scalars and hit zones are computed in the sim (`sim/enemies/hollow-rig.js`) and only applied by
     the renderer — never derive gameplay (hits, damage timing) from three.js objects.
-12. Arena = `prototype-3d/src/data/maps/arena-m16.js` (28×14 interior). Real point lights are pooled (4): do not add
-    per-lamp lights. `?debug=1&map=training` keeps the old 16×16 map for the M0 tests.
+12. Arena = `prototype-3d/src/data/maps/arena-m16.js` (28×14 interior), dressed in M1.7 as OUTPOST ZERO
+    (`data/maps/outpost-zero.js`, same grid): props only on existing solid cells (exact footprint), wall decor ≤ 0.22 m deep,
+    windows only in solid walls. Real point lights are pooled (4) + 1 daylight: do not add per-lamp lights.
+    `?debug=1&map=training` keeps the old 16×16 map for the M0 tests.
+13. The alarm between waves is a view of the existing intermission: `sim/waves/alarm.js` (pure) → `GameState.alarm`
+    (written by the wave director) → renderer / HUD / audio read it. No separate timer; it resets on restart.

@@ -32,7 +32,7 @@ export function installDebug({ game, input, view, settings, stats, touch, hud, e
     spawnInfected: (x, y, facing = 0, variant = 'hollow') => game.spawnInfected('hollow', x, y, facing, { variant }),
     // M1.7 alarm / ambience / variants
     get alarm() { return { ...game.state.alarm, visual: view.level.alarm, edge: gameHud ? gameHud.alarmEdgeOpacity : 0, warn: gameHud ? gameHud.alarmWarnShown : false, waveTime: game.state.waveTime, director: game.waves.phase }; },
-    get audio() { return { state: sfx.state, siren: { ...sfx.stats.siren, active: sfx.sirenActive }, ambience: { ...sfx.stats.ambience, events: { ...sfx.stats.ambience.events } }, ducks: sfx.stats.ducks, played: { ...sfx.stats.played } }; },
+    get audio() { return { levels: sfx.levels, state: sfx.state, siren: { ...sfx.stats.siren, active: sfx.sirenActive }, ambience: { ...sfx.stats.ambience, events: { ...sfx.stats.ambience.events } }, ducks: sfx.stats.ducks, played: { ...sfx.stats.played } }; },
     get variants() { return game.enemies.map(e => ({ id: e.id, variant: e.variant, view: view.infected.variantOf(e) })); },
     get outpost() { const d = view.level.dressing; return d ? { stats: d.stats, drawCalls: d.drawCalls, monitors: d.monitors.length, lights: view.level.lightCount, lamps: view.level.lampCount } : null; },
     get touch() { return touch.state; },
