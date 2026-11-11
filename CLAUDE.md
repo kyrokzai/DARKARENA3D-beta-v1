@@ -38,7 +38,8 @@ Browser FPS (survival vs. waves of infected). Owner makes key decisions; work in
     the renderer — never derive gameplay (hits, damage timing) from three.js objects.
 12. Arena = `prototype-3d/src/data/maps/arena-m16.js` (28×14 interior), dressed in M1.7 as OUTPOST ZERO
     (`data/maps/outpost-zero.js`, same grid): props only on existing solid cells (exact footprint), wall decor ≤ 0.22 m deep,
-    windows only in solid walls. Real point lights are pooled (4) + 1 daylight: do not add per-lamp lights.
+    windows only in solid walls. Real point lights are pooled (4) + hemisphere fill (no directional daylight — removed for
+    perf in M1.7): do not add per-lamp lights.
     `?debug=1&map=training` keeps the old 16×16 map for the M0 tests.
 13. The alarm between waves is a view of the existing intermission: `sim/waves/alarm.js` (pure) → `GameState.alarm`
     (written by the wave director) → renderer / HUD / audio read it. No separate timer; it resets on restart.
