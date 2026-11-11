@@ -22,7 +22,8 @@ export function buildLevel(scene, world) {
   let wallCount = 0;
   for (const [type, cells] of Object.entries(byType)) {
     const name = map.legend[type] || 'concrete';
-    const mat = new THREE.MeshLambertMaterial({ map: tex[name] || tex.concrete });
+    const t = tex[name] || tex.concrete, bump = t.userData && t.userData.bump; // M1.8: relief (seams, chips, bolts) on the outpost walls
+    const mat = new THREE.MeshLambertMaterial({ map: t, ...(bump ? { bumpMap: bump, bumpScale: 1.2 } : {}) });
     const mesh = new THREE.InstancedMesh(box, mat, cells.length);
     cells.forEach((c, i) => mesh.setMatrixAt(i, m.makeTranslation((c.x + 0.5) * S, WALL_HEIGHT / 2, (c.y + 0.5) * S)));
     mesh.instanceMatrix.needsUpdate = true;
@@ -33,11 +34,12 @@ export function buildLevel(scene, world) {
 
   // Floor and ceiling: single quads with a repeating 1-cell texture.
   const plane = new THREE.PlaneGeometry(W * S, H * S);
-  const floor = new THREE.Mesh(plane, new THREE.MeshLambertMaterial({ map: tex.floor }));
+  const bm = (t, k) => (t.userData && t.userData.bump ? { bumpMap: t.userData.bump, bumpScale: k } : {});
+  const floor = new THREE.Mesh(plane, new THREE.MeshLambertMaterial({ map: tex.floor, ...bm(tex.floor, 1.0) }));
   floor.rotation.x = -Math.PI / 2;
   floor.position.set(W * S / 2, 0, H * S / 2);
   floor.name = 'floor';
-  const ceiling = new THREE.Mesh(plane, new THREE.MeshLambertMaterial({ map: tex.ceiling }));
+  const ceiling = new THREE.Mesh(plane, new THREE.MeshLambertMaterial({ map: tex.ceiling, ...bm(tex.ceiling, 0.8) }));
   ceiling.rotation.x = Math.PI / 2;
   ceiling.position.set(W * S / 2, WALL_HEIGHT, H * S / 2);
   ceiling.name = 'ceiling';
@@ -46,7 +48,7 @@ export function buildLevel(scene, world) {
   // Atmosphere. M1.6 arena: dim hemisphere fill + lamps. OUTPOST ZERO (M1.7): brighter neutral-cool fill, window light carried by the
   // fill and the floor light pools (no extra light) and the same pooled lamps; red only for the alarm.
   const outpost = map.style === 'outpost';
-  const hemi = outpost ? new THREE.HemisphereLight(0xa2acbe, 0x2c2628, 0.9) : new THREE.HemisphereLight(0x7d8aa8, 0x22161a, 1.1);
+  const hemi = outpost ? new THREE.HemisphereLight(0xa8b2c4, 0x403a3c, 1.45) : new THREE.HemisphereLight(0x7d8aa8, 0x22161a, 1.1);
   group.add(hemi);
   const hemiSky = hemi.color.clone(), hemiGround = hemi.groundColor.clone(), alarmSky = new THREE.Color(0xd06058), alarmGround = new THREE.Color(0x5a1c1c);
   // (A directional "daylight" was tried and removed for performance: one extra light is evaluated for every lit

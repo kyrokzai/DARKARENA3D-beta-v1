@@ -20,7 +20,7 @@ function toTexture(c, { srgb = true, repeat = false, nearest = false } = {}) {
 const FONT = '"DejaVu Sans", "Arial", "Helvetica Neue", sans-serif';
 
 // ---------------------------------------------------------------- surface atlas
-export const ATLAS = { size: 512, cells: 4, pad: 4 };
+export const ATLAS = { size: 1024, cells: 4, pad: 8 }; // M1.8: 256 px per region (M1.7: 128)
 export const R = { // region ids (column-major reading: id = row * 4 + col)
   steel: 0, louver: 1, cabinet: 2, shelves: 3, locker: 4, hazard: 5, rack: 6, gauges: 7,
   junction: 8, glass: 9, damaged: 10, hatch: 11, door: 12, concrete: 13, radio: 14, vent: 15,
