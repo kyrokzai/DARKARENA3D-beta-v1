@@ -1,0 +1,215 @@
+{
+ "method": "Headless Chromium 1280x720 (software WebGL/SwiftShader), renderScale 0.75, same camera (3,8 yaw 0), N frozen infected, 95 frames after warm-up, 4 interleaved runs per build, medians of runs. NOT an iPhone measurement.",
+ "runs": {
+  "m16_1": {
+   "mean_ms": 253.4,
+   "median_ms": 242.3,
+   "p95_ms": 339.6,
+   "draw_calls": 36,
+   "triangles": 26852,
+   "dynamic_lights": 5,
+   "js_heap_mb": 10.7,
+   "gpu_mem": {
+    "geometries": 40,
+    "textures": 19
+   },
+   "all_runs": [
+    {
+     "mean": 252.4,
+     "median": 247,
+     "p95": 313.4
+    },
+    {
+     "mean": 234.7,
+     "median": 223.7,
+     "p95": 326.4
+    },
+    {
+     "mean": 254.4,
+     "median": 238.9,
+     "p95": 352.8
+    },
+    {
+     "mean": 254.8,
+     "median": 245.7,
+     "p95": 356.1
+    }
+   ]
+  },
+  "m17_1": {
+   "mean_ms": 258.2,
+   "median_ms": 245.9,
+   "p95_ms": 356.1,
+   "draw_calls": 42,
+   "triangles": 33345,
+   "dynamic_lights": 5,
+   "js_heap_mb": 12.1,
+   "gpu_mem": {
+    "geometries": 47,
+    "textures": 22
+   },
+   "all_runs": [
+    {
+     "mean": 261.7,
+     "median": 244.8,
+     "p95": 367.5
+    },
+    {
+     "mean": 254.8,
+     "median": 237.9,
+     "p95": 359.5
+    },
+    {
+     "mean": 255.9,
+     "median": 247,
+     "p95": 344.3
+    },
+    {
+     "mean": 260.5,
+     "median": 252,
+     "p95": 352.7
+    }
+   ]
+  },
+  "m16_3": {
+   "mean_ms": 248.55,
+   "median_ms": 242.65,
+   "p95_ms": 320.35,
+   "draw_calls": 42,
+   "triangles": 38440,
+   "dynamic_lights": 5,
+   "js_heap_mb": 10.7,
+   "gpu_mem": {
+    "geometries": 40,
+    "textures": 22
+   },
+   "all_runs": [
+    {
+     "mean": 249.3,
+     "median": 243.4,
+     "p95": 319.6
+    },
+    {
+     "mean": 264.2,
+     "median": 251.7,
+     "p95": 351.8
+    },
+    {
+     "mean": 239.7,
+     "median": 235.9,
+     "p95": 312.1
+    },
+    {
+     "mean": 247.8,
+     "median": 241.9,
+     "p95": 321.1
+    }
+   ]
+  },
+  "m17_3": {
+   "mean_ms": 270.25,
+   "median_ms": 259.25,
+   "p95_ms": 375.85,
+   "draw_calls": 48,
+   "triangles": 47861,
+   "dynamic_lights": 5,
+   "js_heap_mb": 12.1,
+   "gpu_mem": {
+    "geometries": 53,
+    "textures": 25
+   },
+   "all_runs": [
+    {
+     "mean": 273.3,
+     "median": 259.3,
+     "p95": 390.2
+    },
+    {
+     "mean": 267.2,
+     "median": 259.2,
+     "p95": 361.5
+    },
+    {
+     "mean": 261.5,
+     "median": 250.2,
+     "p95": 333.7
+    },
+    {
+     "mean": 286.2,
+     "median": 266.1,
+     "p95": 395
+    }
+   ]
+  },
+  "m16_5": {
+   "mean_ms": 268.8,
+   "median_ms": 260.8,
+   "p95_ms": 352.6,
+   "draw_calls": 48,
+   "triangles": 50028,
+   "dynamic_lights": 5,
+   "js_heap_mb": 10.7,
+   "gpu_mem": {
+    "geometries": 40,
+    "textures": 26
+   },
+   "all_runs": [
+    {
+     "mean": 253.7,
+     "median": 246.8,
+     "p95": 322.5
+    },
+    {
+     "mean": 273.8,
+     "median": 267.6,
+     "p95": 364.9
+    },
+    {
+     "mean": 263.8,
+     "median": 254,
+     "p95": 340.3
+    },
+    {
+     "mean": 275.8,
+     "median": 271,
+     "p95": 398.7
+    }
+   ]
+  },
+  "m17_5": {
+   "mean_ms": 283.6,
+   "median_ms": 273.65,
+   "p95_ms": 372.04999999999995,
+   "draw_calls": 54,
+   "triangles": 62224,
+   "dynamic_lights": 5,
+   "js_heap_mb": 12.1,
+   "gpu_mem": {
+    "geometries": 53,
+    "textures": 29
+   },
+   "all_runs": [
+    {
+     "mean": 283.4,
+     "median": 268.6,
+     "p95": 387.2
+    },
+    {
+     "mean": 283.8,
+     "median": 279.5,
+     "p95": 356.9
+    },
+    {
+     "mean": 275.4,
+     "median": 276.5,
+     "p95": 337
+    },
+    {
+     "mean": 284,
+     "median": 270.8,
+     "p95": 405.8
+    }
+   ]
+  }
+ }
+}
