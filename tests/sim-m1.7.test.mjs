@@ -99,7 +99,7 @@ check('17. Variants are cosmetic data only: no stats on variants, a single infec
 // full match: each wave actually spawns 3/3/3 and every infected carries the variant
 {
   const { g, run, ev } = setup({ waves: true });
-  run(400, () => { g.state.setHealth(100); for (const e of g.enemies) if (e.alive && Math.random() < 0.02) kill(g, e); return g.waves.phase !== 'victory'; });
+  run(400, () => { g.state.setHealth(100); for (const e of g.enemies) if (e.alive && rng() < 0.02) kill(g, e); return g.waves.phase !== 'victory'; });
   const sp = ev.filter(e => e[0] === 'infectedSpawn').map(e => e[1]);
   const byWave = [0, 1, 2].map(i => sp.slice(i * 9, i * 9 + 9).reduce((c, s) => (c[s.variant] = (c[s.variant] || 0) + 1, c), {}));
   check('10. Real match: 27 spawns, each wave 3/3/3, spawn events carry the variant', sp.length === 27 && byWave.every(c => c.guard === 3 && c.technician === 3 && c.worker === 3) && g.waves.phase === 'victory', JSON.stringify(byWave));
@@ -178,10 +178,12 @@ check('Balance: intermission still 6 s, 3 waves × 9, max 5 alive, 27 total, res
   // 21. pause: no sim steps → the alarm freezes exactly where it was; resume continues
   const { g, run } = setup({ waves: true });
   run(200, () => { g.state.setHealth(100); for (const e of g.enemies) if (e.alive) kill(g, e); return !(g.waves.phase === 'intermission' && g.state.alarm.siren); });
-  const before = JSON.stringify(g.state.alarm);
-  const frozen = JSON.stringify(g.state.alarm); // (paused = the loop does not call step)
+  const before = JSON.stringify(g.state.alarm), tick0 = g.tick;
+  // paused = main.js does not call game.step (update() only steps in play / dead / victory); render frames still run
+  for (let i = 0; i < 120; i++) g.state.alarm.k; // the alarm has no clock of its own: nothing advances it
+  const frozen = JSON.stringify(g.state.alarm);
   run(0.5);
-  check('21. Pause / resume: the alarm state is frozen without sim steps and continues afterwards', before === frozen && g.state.alarm.t > JSON.parse(before).t && g.state.alarm.siren);
+  check('21. Pause / resume: the alarm only advances with sim steps (frozen while paused, continues on resume)', before === frozen && g.tick === tick0 + 30 && g.state.alarm.t > JSON.parse(before).t + 0.49 && g.state.alarm.siren);
   // 23. restart during the alarm resets every effect
   g.restart({ waves: true });
   check('23. Restart during the alarm: alarm off, k 0, no siren, wave 1 again', g.state.alarm.phase === 'off' && g.state.alarm.k === 0 && !g.state.alarm.siren && !g.state.alarm.warn && g.state.wave.number === 1 && g.waves.phase === 'countdown');

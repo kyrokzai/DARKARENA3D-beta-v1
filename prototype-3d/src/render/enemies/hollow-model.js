@@ -37,7 +37,7 @@ export const LOOKS = {
   hollow: { id: 'hollow', torso: [1, 1], arm: 1, leg: 1, infect: 0, neck: 0, hands: 0, veins: 1, tone: [1, 1, 1], socket: 0.2, eyeZ: 0, eyeScale: 1 },
   guard: { id: 'guard', torso: [1.05, 1.06], arm: 1.06, leg: 1.03, infect: 0.02, neck: 0.3, hands: 0.2, veins: 1, tone: [0.97, 0.96, 0.95], socket: 0.2, eyeZ: 0, eyeScale: 1 },
   technician: { id: 'technician', torso: [0.9, 0.93], arm: 0.88, leg: 0.92, infect: 0.0, neck: 1.0, hands: 1.0, veins: 1.3, tone: [1.0, 1.0, 1.02], socket: 0.27, eyeZ: -0.008, eyeScale: 0.8 },
-  worker: { id: 'worker', torso: [1.13, 1.12], arm: 1.17, leg: 1.1, infect: 0.1, neck: 0.5, hands: 0.6, veins: 1.6, tone: [0.9, 0.88, 0.84], socket: 0.21, eyeZ: 0, eyeScale: 1.1 },
+  worker: { id: 'worker', torso: [1.08, 1.08], arm: 1.17, leg: 1.1, infect: 0.1, neck: 0.5, hands: 0.6, veins: 1.6, tone: [0.9, 0.88, 0.84], socket: 0.21, eyeZ: 0, eyeScale: 1.1 },
 };
 let LK = LOOKS.hollow; // look being built (the builders are synchronous)
 
@@ -213,7 +213,7 @@ const OUTFITS = {
     stripe: [0.6, 0.42, 0.1], tear: 0.975,
   },
   worker: { // olive work jacket (thick), work trousers with knee pads, boots, torn gloves
-    shirt: clothFn([0.27, 0.29, 0.17], [0.27, 0.29, 0.17], { dirt: 0.65, blood: 0.5 }), sleeveTo: 9, shirtPad: 0.02, jacket: true,
+    shirt: clothFn([0.27, 0.29, 0.17], [0.27, 0.29, 0.17], { dirt: 0.65, blood: 0.5 }), sleeveTo: 9, shirtPad: 0.014, jacket: true,
     trousers: clothFn([0.2, 0.19, 0.16], [0.2, 0.19, 0.16], { dirt: 0.6, blood: 0.35 }), trouserTo: 11,
     boots: clothFn([0.12, 0.09, 0.07], [0.12, 0.09, 0.07], { dirt: 0.5, blood: 0, wear: 0.2 }),
     gloves: clothFn([0.16, 0.12, 0.08], [0.16, 0.12, 0.08], { dirt: 0.4, blood: 0.6, bloodT: 0.55 }),

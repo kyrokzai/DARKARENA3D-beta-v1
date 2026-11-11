@@ -47,7 +47,6 @@ const TABS = [
     ['range', 'fov', 'Угол обзора', 60, 100, 1, deg],
     ['range', 'renderScale', 'Разрешение (ретро ↔ чётко)', 0.3, 1, 0.05, pct],
     ['toggle', 'showFps', 'Счётчик FPS'],
-    ['seg', 'alarmFx', 'Тревога между волнами', [['full', 'Полная'], ['soft', 'Мягкая'], ['off', 'Выкл']]],
     ['action', 'resetSettings', 'Сбросить все настройки'],
   ] },
 ];

@@ -357,12 +357,12 @@ export function buildOutpost(group, world, map) {
     get drawCalls() { return Object.keys(meshes).length; },
     /** dt: render delta (0 while paused); alarm: 0..1 (already scaled by the alarm-effects setting). */
     update(dt, alarm = 0) {
-      t += dt; mats.screens.uniforms.time.value = t;
+      t += dt; mats.screens.uniforms.time.value = t % 600; // bounded: large sin() arguments degrade on mobile GPUs
       switchT -= dt;
       if (switchT <= 0 && cellAttr && monitors.length) { // every ~7 s one camera cycles to its alternate view
         switchT = 6 + (which % 3);
         const m = monitors[which % monitors.length]; which++;
-        if (m.base !== 3) { m.feed = m.feed === m.base ? (m.base + 4) % 8 : m.base; for (let k = 0; k < 4; k++) cellAttr.setXY(m.vtx + k, m.feed % 4, Math.floor(m.feed / 4)); cellAttr.needsUpdate = true; }
+        if (m.base !== 3) { m.feed = m.feed === m.base ? Math.min(7, m.base + 4) : m.base; for (let k = 0; k < 4; k++) cellAttr.setXY(m.vtx + k, m.feed % 4, Math.floor(m.feed / 4)); cellAttr.needsUpdate = true; }
       }
       // beacons: idle = dark red glass; alarm = slow pulse (0.8 Hz), never a hard flash
       const pulse = alarm > 0 ? alarm * (0.62 + 0.38 * Math.sin(t * Math.PI * 1.6)) : 0;

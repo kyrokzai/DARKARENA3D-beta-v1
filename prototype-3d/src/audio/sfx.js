@@ -145,7 +145,7 @@ export function createSfx(getSettings) {
     lfo.connect(depth); depth.connect(a.frequency); depth.connect(b.frequency);
     a.connect(lp); b.connect(bg).connect(lp); lp.connect(out).connect(alarmBus);
     const end = t + SIREN_MAX; for (const o of [lfo, a, b]) { o.start(t); o.stop(end); }
-    siren = { out, nodes: [lfo, a, b], end };
+    siren = { out, nodes: [lfo, a, b], end, lvl: level };
     a.onended = () => { if (siren && siren.nodes[1] === a) { siren = null; stats.siren.active = false; stats.siren.forced++; sirenBlocked = true; } }; // hard stop: not restarted until the alarm's siren window ends
     stats.siren.starts++; stats.siren.active = true;
   }
@@ -177,6 +177,7 @@ export function createSfx(getSettings) {
       if (!wantSiren) sirenBlocked = false;
       const lvl = sirenLevel(fx), want = playing && wantSiren && lvl > 0 && vol > 0 && !sirenBlocked;
       if (want && !siren) startSiren(lvl); else if (!want && siren) stopSiren();
+      else if (siren && siren.lvl !== lvl) { siren.lvl = lvl; siren.out.gain.setTargetAtTime(0.055 * lvl, ctx.currentTime, 0.1); }
     },
     /** Stop everything continuous right now (menu / page hide). */
     silence() { if (!ctx) return; if (siren) stopSiren(); if (ambBus) { ambBus.gain.cancelScheduledValues(ctx.currentTime); ambBus.gain.setValueAtTime(0, ctx.currentTime); stats.ambience.on = false; } },

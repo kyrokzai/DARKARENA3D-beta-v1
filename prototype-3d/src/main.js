@@ -16,6 +16,7 @@ import { createGameHud } from './ui/game-hud.js';
 import { createSfx } from './audio/sfx.js';
 import { SKINS } from './render/weapons/raven-skins.js';
 import { alarmVisual } from './sim/waves/alarm.js';
+import { getHollowAssets, VARIANT_IDS } from './render/enemies/hollow-model.js';
 
 const $ = id => document.getElementById(id);
 const settings = loadSettings();
@@ -53,7 +54,7 @@ function show(next) {
   }
   document.body.classList.toggle('editing', next === 'edit');
   // Leaving play (pause, menus, editor, focus loss): stop firing and leave ADS safely.
-  if (next !== 'play') { desktop.release(); touch.releaseAll(); input.clear(); game.releaseCombat(); }
+  if (next !== 'play') { desktop.release(); touch.releaseAll(); input.clear(); game.releaseCombat(); if (sfx) sfx.silence(); }
   hud.layoutNow();
 }
 const isPlaying = () => state === 'play';
@@ -90,6 +91,8 @@ $('resumeBtn').onclick = resume;
 $('menuSettings').onclick = () => { settingsReturn = 'menu'; show('settings'); };
 $('aboutBtn').onclick = () => show('about');
 $('aboutBack').onclick = () => show('menu');
+// M1.7: build every variant's shared geometry and compile the shaders while the menu shows (no stall mid-wave)
+setTimeout(() => { for (const v of VARIANT_IDS) getHollowAssets(v); view.renderer.compile(view.scene, view.camera); }, 50);
 $('aboutVersion').textContent = VERSION;
 $('pauseSettings').onclick = () => { settingsReturn = 'paused'; show('settings'); };
 $('settingsBack').onclick = () => show(settingsReturn);
@@ -120,7 +123,7 @@ view.renderer.domElement.addEventListener('click', () => { if (state === 'play')
 addEventListener('keydown', e => {
   if (state === 'play' && (e.code === 'KeyP' || e.code === 'Escape')) { desktop.exitLock(); pausedAt = performance.now(); show('paused'); }
 });
-document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') show('paused'); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { if (state === 'play') show('paused'); sfx.silence(); } }); // rAF stops in a hidden tab → silence now
 
 // Switching to touch (first touch on a hybrid device) changes the layout profile.
 new MutationObserver(() => hud.layoutNow()).observe(document.body, { attributes: true, attributeFilter: ['class'] });

@@ -293,7 +293,6 @@ body.is-dead #vignette { opacity: 1; }
   background: radial-gradient(circle at 46% 9%, #ff3b2cdd 0 2px, #ff3b2c44 3px, transparent 10px), #07090c;
   clip-path: polygon(0 100%, 0 45%, 30% 45%, 30% 20%, 42% 20%, 42% 0, 50% 0, 50% 20%, 64% 20%, 64% 55%, 100% 55%, 100% 100%); } /* outpost on the horizon */
 #menu.screen > .panel { background: #0d1016e6; z-index: 1; }
-@media (prefers-reduced-motion: no-preference) { #menu.screen { animation: none; } }
 
 /* alarm between waves: soft red edge (opacity driven from GameState every frame, never strobing) + HUD warning */
 #alarmEdge { position: absolute; inset: 0; pointer-events: none; opacity: 0; z-index: 1;

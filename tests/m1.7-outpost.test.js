@@ -181,9 +181,9 @@ const VARIANTS = ['guard', 'technician', 'worker'];
     await sleep(300);
     const paused2 = await DA(page, () => __DA3.alarm.t);
     await page.click('#resumeBtn'); await sleep(250); await ticks(page, 6);
-    const resumed = await DA(page, () => ({ st: __DA3.state, siren: __DA3.sfx.sirenActive, amb: __DA3.audio.ambience.on, warn: __DA3.alarm.warn, a: __DA3.alarm.phase }));
+    const resumed = await DA(page, () => ({ st: __DA3.state, siren: __DA3.sfx.sirenActive, want: __DA3.alarm.siren, amb: __DA3.audio.ambience.on, warn: __DA3.alarm.warn, a: __DA3.alarm.phase, t: __DA3.alarm.t }));
     check('21. Pause during the siren: siren and ambience stop, the alarm freezes', paused.st === 'paused' && !paused.siren && !paused.amb && paused2 === paused.t, JSON.stringify(paused));
-    check('21. Resume: the alarm continues where it was (siren / warning restored while its window lasts)', resumed.st === 'play' && resumed.amb && (resumed.siren || !['siren', 'warning'].includes(resumed.a) || !resumed.warn), JSON.stringify(resumed));
+    check('21. Resume: the alarm continues where it was (siren / warning restored while its window lasts)', resumed.st === 'play' && resumed.amb && resumed.siren === resumed.want && resumed.t >= paused.t, JSON.stringify(resumed));
     // 20. end: wave 2 begins with everything back to normal
     await page.waitForFunction(() => __DA3.game.waves.phase !== 'intermission', null, { timeout: 15000 }).catch(() => {});
     await ticks(page, 4);

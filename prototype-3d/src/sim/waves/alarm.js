@@ -4,7 +4,7 @@
 //   0.0  «WAVE N COMPLETE» message (shown by the HUD on waveCleared)
 //   0.8  red beacons fade in with a soft pulse (no strobe: ≤ 0.8 Hz, never fully dark ↔ fully bright)
 //   1.4  siren starts
-//   2.0  HUD warning («ТРЕВОГА · НОВАЯ ВОЛНА»)
+//   2.0  HUD warning («ДАБЫЛ · ТРЕВОГА» / «ВОЛНА N · ПРОРЫВ ПЕРИМЕТРА»)
 //   4.4  siren stops — well before the next wave's first spawn (intermission end + 0.8 s countdown)
 //   4.8  HUD warning ends; beacons fade out
 //   5.6  lights back to normal (k = 0) — 0.4 s before the intermission ends

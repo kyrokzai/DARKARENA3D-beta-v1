@@ -333,6 +333,7 @@ export function getOutpostTextures() {
   const atlas = toTexture(drawSurfaceAtlas());
   atlas.generateMipmaps = true; atlas.minFilter = THREE.LinearMipmapLinearFilter;
   const steppe = toTexture(steppeCanvas); steppe.wrapS = THREE.RepeatWrapping;
+  steppe.generateMipmaps = false; steppe.minFilter = THREE.LinearFilter; // the atan() wrap would pick the smallest mip → seam
   cache = {
     atlas, steppe, steppeCanvas,
     signs: toTexture(drawSigns()),
