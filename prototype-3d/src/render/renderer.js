@@ -1,6 +1,7 @@
 // three.js renderer: world scene (first-person camera) + weapon viewmodel overlay + impacts + targets.
 // Reads simulation state; never writes it.
 import * as THREE from 'three';
+import { computePixelRatio, getProfile, AutoResolution } from './quality.js';
 import { CELL_SIZE as S, EYE_HEIGHT } from '../config.js';
 import { buildLevel } from './level.js';
 import { createViewmodel } from './weapons/viewmodel.js';
@@ -11,7 +12,11 @@ import { createInfectedView } from './enemies/infected-view.js';
 const FOG_COLOR = 0x07090d;
 
 export function createRenderer({ container, world, getSettings, skin }) {
-  const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+  // M1.8: MSAA comes from the quality profile; it is a context attribute, so a profile change applies after a reload.
+  const startProfile = getProfile(getSettings().graphicsProfile);
+  const renderer = new THREE.WebGLRenderer({ antialias: startProfile.msaa, powerPreference: 'high-performance' });
+  const autoRes = new AutoResolution();
+  let res = { ratio: 1, width: 1, height: 1, pixels: 1, budgetLimited: false };
   renderer.setClearColor(FOG_COLOR);
   renderer.domElement.id = 'view';
   renderer.info.autoReset = false; // we count world and viewmodel separately per frame
@@ -49,7 +54,9 @@ export function createRenderer({ container, world, getSettings, skin }) {
   function resize(force) {
     const s = getSettings();
     const w = Math.max(1, innerWidth), h = Math.max(1, innerHeight);
-    const pr = Math.min(devicePixelRatio || 1, 2) * s.renderScale;
+    autoRes.enabled = s.autoResolution !== false;
+    res = computePixelRatio(w, h, devicePixelRatio || 1, s.graphicsProfile, s.renderScale, autoRes.enabled ? autoRes.factor : 1);
+    const pr = res.ratio;
     const key = `${w}x${h}@${pr}`;
     if (key === lastKey && !force) return;
     lastKey = key;
@@ -86,6 +93,11 @@ export function createRenderer({ container, world, getSettings, skin }) {
       flashT = 0.045;
     },
     onImpact(ev) { impacts.impact(ev); },
+    /** M1.8: real frame time while playing → adaptive resolution guard (resizes only when the factor changes). */
+    sampleFrame(dt) { if (autoRes.sample(dt, getProfile(getSettings().graphicsProfile).minAuto)) resize(true); },
+    /** Current render resolution facts (tests / FPS overlay). */
+    get resolution() { const gl = renderer.getContext(); return { ...res, profile: getSettings().graphicsProfile, msaa: !!gl.getContextAttributes().antialias, startProfile: startProfile.id, buffer: [gl.drawingBufferWidth, gl.drawingBufferHeight], auto: autoRes.factor, autoChanges: autoRes.changes, dpr: devicePixelRatio || 1 }; },
+    get autoRes() { return autoRes; },
     setSkin(id) { vm.setSkin(id); },
     /**
      * Draw a frame. w = { ads 0..1, fovMult, reload (0..1 | -1), triggerDown, dt, hittables } (optional for older callers).

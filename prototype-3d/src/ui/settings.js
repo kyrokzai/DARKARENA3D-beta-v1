@@ -6,6 +6,11 @@ export function loadSettings() {
     const s = { ...DEFAULT_SETTINGS };
     for (const k of Object.keys(DEFAULT_SETTINGS)) if (k in raw && typeof raw[k] === typeof DEFAULT_SETTINGS[k]) s[k] = raw[k];
     if (!['full', 'soft', 'off'].includes(s.alarmFx)) s.alarmFx = DEFAULT_SETTINGS.alarmFx;
+    if (!['performance', 'balanced', 'quality'].includes(s.graphicsProfile)) s.graphicsProfile = DEFAULT_SETTINGS.graphicsProfile;
+    // M1.8 migration: before v2 renderScale was the absolute resolution (default 0.75 — the main cause of the blur);
+    // now it is a fine-tune on top of the profile, so an old saved value is reset once.
+    if (raw.settingsVersion !== DEFAULT_SETTINGS.settingsVersion) { s.renderScale = DEFAULT_SETTINGS.renderScale; s.settingsVersion = DEFAULT_SETTINGS.settingsVersion; }
+    s.renderScale = Math.min(1, Math.max(0.5, s.renderScale));
     return s;
   } catch { return { ...DEFAULT_SETTINGS }; }
 }
@@ -45,7 +50,9 @@ const TABS = [
   ] },
   { id: 'gfx', title: 'ГРАФИКА', items: [
     ['range', 'fov', 'Угол обзора', 60, 100, 1, deg],
-    ['range', 'renderScale', 'Разрешение (ретро ↔ чётко)', 0.3, 1, 0.05, pct],
+    ['seg', 'graphicsProfile', 'Качество графики', [['performance', 'Скорость'], ['balanced', 'Баланс'], ['quality', 'Качество']]],
+    ['range', 'renderScale', 'Разрешение (доля от профиля)', 0.5, 1, 0.05, pct],
+    ['toggle', 'autoResolution', 'Авто-снижение разрешения при просадках FPS'],
     ['toggle', 'showFps', 'Счётчик FPS'],
     ['action', 'resetSettings', 'Сбросить все настройки'],
   ] },
@@ -78,7 +85,7 @@ export function mountSettings(root, settings, onChange, actions) {
     for (const el of root.querySelectorAll('[data-only]')) el.classList.toggle('hidden', settings.lookMode !== el.dataset.only);
   }
   const fill = el => el.style.setProperty('--fill', ((el.value - el.min) / (el.max - el.min) * 100) + '%');
-  const set = (key, v) => { settings[key] = v; sync(); saveSettings(settings); onChange(settings, key); };
+  const set = (key, v) => { settings[key] = v; sync(); saveSettings(settings); onChange(settings, key); if (key === 'graphicsProfile') toast('Разрешение применено · сглаживание — после перезапуска страницы'); };
 
   root.addEventListener('input', e => {
     const k = e.target.dataset.key;

@@ -19,8 +19,8 @@ button, input { font: inherit; color: inherit; }
 /* ---------- Game layer: no browser gestures (scroll, zoom); menus keep native behaviour ---------- */
 #game { position: fixed; inset: 0; touch-action: none; }
 #game * { touch-action: none; }
-#view { position: absolute; inset: 0; width: 100% !important; height: 100% !important; display: block;
-  image-rendering: pixelated; image-rendering: crisp-edges; }
+#view { position: absolute; inset: 0; width: 100% !important; height: 100% !important; display: block; }
+/* M1.8: no image-rendering: pixelated — a smaller buffer is filtered, not stretched with nearest-neighbour */
 .hud { position: absolute; inset: 0; pointer-events: none; }
 body:not(.playing):not(.editing) .hud { display: none; }
 

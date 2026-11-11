@@ -42,7 +42,12 @@ export const DEFAULT_SETTINGS = Object.freeze({
   weaponSkin: 'obsidian',
   // Graphics
   fov: 75,               // vertical field of view, degrees
-  renderScale: 0.75,     // fraction of device resolution (0.5 = chunky retro; 0.75 keeps the weapon readable)
+  // M1.8: the render resolution comes from a quality PROFILE (render/quality.js: DPR cap + pixel budget + MSAA);
+  // renderScale is only a fine-tune multiplier on top of it (1 = the profile's resolution).
+  graphicsProfile: 'balanced', // 'performance' | 'balanced' | 'quality'
+  renderScale: 1.0,
+  autoResolution: true,  // lower the resolution automatically while frames are slow, restore when they are fast
+  settingsVersion: 2,    // 2 = M1.8 meaning of renderScale (older saved 0.75 is reset once)
   showFps: true,
   // Alarm between waves (M1.7): 'full' | 'soft' (dimmer beacons/red edge, quieter siren) | 'off' (no beacons, red light or siren)
   alarmFx: 'full',

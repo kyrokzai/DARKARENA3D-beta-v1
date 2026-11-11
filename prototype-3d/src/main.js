@@ -141,6 +141,7 @@ addEventListener('resize', onViewportChange);
 if (window.visualViewport) visualViewport.addEventListener('resize', onViewportChange);
 
 const settingsUi = mountSettings($('settingsForm'), settings, (s, key) => {
+  if (key === 'graphicsProfile' || key === '*') view.autoRes.reset();
   view.resize(true); updateFpsVisibility(); hud.layoutNow();
   if (key === 'lookMode' || key === 'moveStickMode') touch.releaseAll();
 }, {
@@ -212,7 +213,7 @@ startLoop({
       const k = 1 - game.state.weapon.ads * (1 - game.weapon.def.ads.sensMult);
       game.look(dy * k, dp * k);
     }
-    if (state === 'play') infectedAmbience(dt);
+    if (state === 'play') { infectedAmbience(dt); view.sampleFrame(dt); }
     const t0 = performance.now();
     const w = game.state.weapon;
     // alarm between waves (M1.7): GameState → siren / ambience (audio) and beacons / red light (render)
@@ -225,7 +226,7 @@ startLoop({
     if (acc >= 0.5) {
       stats.fps = Math.round(frames / acc); stats.frameMs = +(1000 * acc / frames).toFixed(1); stats.worstMs = +worst.toFixed(1);
       frames = 0; acc = 0; worst = 0;
-      if (settings.showFps) { const i = view.infoTotal; fpsEl.textContent = `${stats.fps} FPS · ${stats.frameMs} ms · draw ${i.calls} · tri ${(i.triangles / 1000).toFixed(1)}k`; }
+      if (settings.showFps) { const i = view.infoTotal, r = view.resolution; fpsEl.textContent = `${stats.fps} FPS · ${stats.frameMs} ms · draw ${i.calls} · tri ${(i.triangles / 1000).toFixed(1)}k · ${r.width}×${r.height}${r.msaa ? ' AA' : ''}`; }
     }
   },
 });

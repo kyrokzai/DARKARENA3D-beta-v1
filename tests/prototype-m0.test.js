@@ -237,15 +237,17 @@ async function holdKey(page, code, ms) {
   // ---------- 7. Resize / orientation ----------
   {
     const { ctx, page } = await open(browser, base, { viewport: { width: 1280, height: 720 }, hasTouch: true, isMobile: false });
+    await page.evaluate(() => { __DA3.settings.autoResolution = false; __DA3.view.autoRes.reset(); }); // deterministic: no adaptive steps
     const sizes = [[1280, 720], [844, 390], [568, 320], [1920, 1080], [1024, 768]];
     let ok = true; const log = [];
     for (const [w, h] of sizes) {
       await page.setViewportSize({ width: w, height: h }); await sleep(200);
-      const d = await page.evaluate(() => ({ c: __DA3.canvas, cam: __DA3.camera, s: __DA3.settings.renderScale, dpr: devicePixelRatio }));
-      const good = d.c.cssW === w && d.c.cssH === h && Math.abs(d.cam.aspect - w / h) < 1e-6 && Math.abs(d.c.w - Math.round(w * d.dpr * d.s)) <= 1;
+      // M1.8: internal resolution = quality profile (DPR cap × scale × fine-tune, clamped to the profile's pixel budget)
+      const d = await page.evaluate(async ([w, h]) => { const q = await import('/prototype-3d/src/render/quality.js'); const s = __DA3.settings; return { c: __DA3.canvas, cam: __DA3.camera, exp: q.computePixelRatio(w, h, devicePixelRatio, s.graphicsProfile, s.renderScale, 1).width }; }, [w, h]);
+      const good = d.c.cssW === w && d.c.cssH === h && Math.abs(d.cam.aspect - w / h) < 1e-6 && Math.abs(d.c.w - d.exp) <= 1;
       ok = ok && good; log.push(`${w}x${h}→${d.c.w}x${d.c.h}${good ? '' : '!'}`);
     }
-    check('Resize: canvas fills window, aspect correct, internal resolution = renderScale', ok, log.join(' '));
+    check('Resize: canvas fills window, aspect correct, internal resolution = quality profile (DPR cap, scale, pixel budget)', ok, log.join(' '));
     await page.evaluate(() => { __DA3.settings.renderScale = 0.75; }); await sleep(150);
     const rs = await page.evaluate(() => __DA3.canvas);
     check('Render-resolution setting applies live', Math.abs(rs.w - 768) <= 1, `${rs.w}x${rs.h} @1024 css`);
