@@ -247,8 +247,9 @@ const VARIANTS = ['guard', 'technician', 'worker'];
     const { ctx, page, errors } = await open(browser, base, desktop, { path: WAVES });
     // 31–34 desktop: jump, fire, ADS, reload
     await DA(page, () => { __DA3.setPlayer(4, 8, 0, 0); __DA3.gs.setAmmo(30, 120); window.__f = 0; __DA3.game.on('fire', () => window.__f++); });
-    await page.keyboard.down('Space'); await ticks(page, 4); await page.keyboard.up('Space'); await ticks(page, 10);
-    const z = await DA(page, () => __DA3.player.z);
+    await DA(page, () => { window.__zmax = 0; window.__zt = setInterval(() => { window.__zmax = Math.max(window.__zmax, __DA3.player.z); }, 16); });
+    await page.keyboard.down('Space'); await ticks(page, 4); await page.keyboard.up('Space'); await ticks(page, 30);
+    const z = await DA(page, () => { clearInterval(window.__zt); return window.__zmax; });
     await page.mouse.move(640, 360); await page.mouse.down({ button: 'left' }); await ticks(page, 20); await page.mouse.up({ button: 'left' });
     const fired = await DA(page, () => ({ f: window.__f, mag: __DA3.gs.weapon.mag }));
     await page.mouse.down({ button: 'right' }); await ticks(page, 30); const ads = await DA(page, () => __DA3.gs.weapon.ads); await page.mouse.up({ button: 'right' }); await ticks(page, 20);
@@ -256,7 +257,7 @@ const VARIANTS = ['guard', 'technician', 'worker'];
     const rel = await DA(page, () => __DA3.gs.weapon.mag);
     check('31–34. Jump (in the air), fire (rounds spent), ADS (aim 1), reload (full magazine) still work in OUTPOST ZERO', z > 0.1 && fired.f >= 2 && fired.mag < 30 && ads > 0.95 && rel === 30, JSON.stringify({ z, fired, ads, rel }));
     // 38–39: three full waves with mixed variants → victory
-    await DA(page, () => { window.__v = { spawns: [], maxAlive: 0 }; __DA3.game.on('infectedSpawn', e => window.__v.spawns.push(e.variant)); setInterval(() => { const g = __DA3.game; if (__DA3.state !== 'play') return; __DA3.gs.setHealth(100); const alive = g.enemies.filter(e => e.alive).length; window.__v.maxAlive = Math.max(window.__v.maxAlive, alive); if (alive >= 5 || (alive > 0 && g.waves.queue.length === 0)) __DA3.dbg.infKill(); }, 150); });
+    await DA(page, () => { __DA3.game.restart({ waves: true }); window.__v = { spawns: [], maxAlive: 0 }; __DA3.game.on('infectedSpawn', e => window.__v.spawns.push(e.variant)); setInterval(() => { const g = __DA3.game; if (__DA3.state !== 'play') return; __DA3.gs.setHealth(100); const alive = g.enemies.filter(e => e.alive).length; window.__v.maxAlive = Math.max(window.__v.maxAlive, alive); if (alive >= 5 || (alive > 0 && g.waves.queue.length === 0)) __DA3.dbg.infKill(); }, 150); });
     await page.waitForFunction(() => __DA3.state === 'victory', null, { timeout: 300000 }).catch(() => {});
     const vic = await DA(page, () => ({ st: __DA3.state, kills: __DA3.gs.kills, v: window.__v, alarm: __DA3.alarm.phase, siren: __DA3.sfx.sirenActive }));
     const cnt = vic.v.spawns.reduce((c, v) => (c[v] = (c[v] || 0) + 1, c), {});
