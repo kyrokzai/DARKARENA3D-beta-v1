@@ -1,0 +1,222 @@
+{
+ "iPhone 11 landscape a_m17_default": {
+  "css": [
+   800,
+   364
+  ],
+  "dpr": 2,
+  "renderScale": 0.75,
+  "pixelRatio": 1.5,
+  "buffer": [
+   1200,
+   546
+  ],
+  "physical": [
+   1600,
+   728
+  ],
+  "aa": false,
+  "samples": 0,
+  "cssImageRendering": "crisp-edges",
+  "linearPct": 75,
+  "pixelPct": 56.3
+ },
+ "iPhone 11 landscape b_scale100": {
+  "css": [
+   800,
+   364
+  ],
+  "dpr": 2,
+  "renderScale": 1,
+  "pixelRatio": 2,
+  "buffer": [
+   1600,
+   728
+  ],
+  "physical": [
+   1600,
+   728
+  ],
+  "aa": false,
+  "samples": 0,
+  "cssImageRendering": "crisp-edges",
+  "linearPct": 100,
+  "pixelPct": 100
+ },
+ "iPhone 11 landscape c_native_dpr": {
+  "css": [
+   800,
+   364
+  ],
+  "dpr": 2,
+  "renderScale": 1,
+  "pixelRatio": 2,
+  "buffer": [
+   1600,
+   728
+  ],
+  "physical": [
+   1600,
+   728
+  ],
+  "aa": false,
+  "samples": 0,
+  "cssImageRendering": "crisp-edges",
+  "linearPct": 100,
+  "pixelPct": 100
+ },
+ "iPhone 11 landscape d_linear_tex": {
+  "css": [
+   800,
+   364
+  ],
+  "dpr": 2,
+  "renderScale": 1,
+  "pixelRatio": 2,
+  "buffer": [
+   1600,
+   728
+  ],
+  "physical": [
+   1600,
+   728
+  ],
+  "aa": false,
+  "samples": 0,
+  "cssImageRendering": "crisp-edges",
+  "linearPct": 100,
+  "pixelPct": 100
+ },
+ "iPhone 11 landscape e_aa": {
+  "css": [
+   800,
+   364
+  ],
+  "dpr": 2,
+  "renderScale": 1,
+  "pixelRatio": 2,
+  "buffer": [
+   1600,
+   728
+  ],
+  "physical": [
+   1600,
+   728
+  ],
+  "aa": true,
+  "samples": 4,
+  "cssImageRendering": "crisp-edges",
+  "linearPct": 100,
+  "pixelPct": 100
+ },
+ "iPhone 14 Pro Max landscape a_m17_default": {
+  "css": [
+   814,
+   380
+  ],
+  "dpr": 3,
+  "renderScale": 0.75,
+  "pixelRatio": 1.5,
+  "buffer": [
+   1221,
+   570
+  ],
+  "physical": [
+   2442,
+   1140
+  ],
+  "aa": false,
+  "samples": 0,
+  "cssImageRendering": "crisp-edges",
+  "linearPct": 50,
+  "pixelPct": 25
+ },
+ "iPhone 14 Pro Max landscape b_scale100": {
+  "css": [
+   814,
+   380
+  ],
+  "dpr": 3,
+  "renderScale": 1,
+  "pixelRatio": 2,
+  "buffer": [
+   1628,
+   760
+  ],
+  "physical": [
+   2442,
+   1140
+  ],
+  "aa": false,
+  "samples": 0,
+  "cssImageRendering": "crisp-edges",
+  "linearPct": 66.7,
+  "pixelPct": 44.4
+ },
+ "iPhone 14 Pro Max landscape c_native_dpr": {
+  "css": [
+   814,
+   380
+  ],
+  "dpr": 3,
+  "renderScale": 1,
+  "pixelRatio": 3,
+  "buffer": [
+   2442,
+   1140
+  ],
+  "physical": [
+   2442,
+   1140
+  ],
+  "aa": false,
+  "samples": 0,
+  "cssImageRendering": "crisp-edges",
+  "linearPct": 100,
+  "pixelPct": 100
+ },
+ "iPhone 14 Pro Max landscape d_linear_tex": {
+  "css": [
+   814,
+   380
+  ],
+  "dpr": 3,
+  "renderScale": 1,
+  "pixelRatio": 3,
+  "buffer": [
+   2442,
+   1140
+  ],
+  "physical": [
+   2442,
+   1140
+  ],
+  "aa": false,
+  "samples": 0,
+  "cssImageRendering": "crisp-edges",
+  "linearPct": 100,
+  "pixelPct": 100
+ },
+ "iPhone 14 Pro Max landscape e_aa": {
+  "css": [
+   814,
+   380
+  ],
+  "dpr": 3,
+  "renderScale": 1,
+  "pixelRatio": 3,
+  "buffer": [
+   2442,
+   1140
+  ],
+  "physical": [
+   2442,
+   1140
+  ],
+  "aa": true,
+  "samples": 4,
+  "cssImageRendering": "crisp-edges",
+  "linearPct": 100,
+  "pixelPct": 100
+ }
+}
