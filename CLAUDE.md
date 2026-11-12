@@ -24,7 +24,8 @@ Browser FPS (survival vs. waves of infected). Owner makes key decisions; work in
    + `node tests/sim-m1.5.test.mjs` + `node tests/m1.5-infected.test.js`
    + `node tests/sim-m1.6.test.mjs` + `node tests/m1.6-evolution.test.js`
    + `node tests/sim-m1.7.test.mjs` + `node tests/m1.7-outpost.test.js`
-   + `node tests/sim-m1.8.test.mjs` + `node tests/m1.8-visual.test.js`; report changed files,
+   + `node tests/sim-m1.8.test.mjs` + `node tests/m1.8-visual.test.js`
+   + `node tests/sim-m1.9.test.mjs` + `node tests/m1.9-fp-combat.test.js`; report changed files,
    test results, how to verify on PC and iPhone, and known limitations. Not accepted until the owner confirms.
 7. Test hooks and the debug panel are allowed only behind `?debug=1`.
 8. Gameplay values reach the HUD only through `prototype-3d/src/sim/game-state.js` (GameState + events);
@@ -45,5 +46,7 @@ Browser FPS (survival vs. waves of infected). Owner makes key decisions; work in
 14. Render resolution comes from the graphics profile (`render/quality.js`: DPR cap + pixel budget + MSAA + adaptive
     guard); never hard-code a pixel ratio. Infected PBR maps are baked offline (`node scripts/bake-infected.js` after any
     change to the model / surface functions) into `prototype-3d/assets/infected/*.jpg`; LODs share the skeleton and atlas.
+15. Melee is weapon data (`defs.js` → `melee` block) handled by the generic `sim/weapons/melee-system.js`: one strike per
+    press + cooldown, never in the same tick as a shot, not during a reload; the viewmodel / HUD only read `GameState.melee`.
 13. The alarm between waves is a view of the existing intermission: `sim/waves/alarm.js` (pure) → `GameState.alarm`
     (written by the wave director) → renderer / HUD / audio read it. No separate timer; it resets on restart.
