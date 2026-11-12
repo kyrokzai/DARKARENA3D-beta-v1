@@ -6,11 +6,11 @@
 // - Dead zones configurable; output rescaled so it starts at 0 right after the dead zone.
 // - Every captured pointer is released on up/cancel/lostpointercapture, blur, pagehide, visibility, rotation.
 // - Zoom/scroll prevention is scoped to the game layer; menus (.screen) keep native behaviour.
-import { HUD_ELEMENTS } from '../ui/hud-layout.js';
+import { HUD_ELEMENTS, MOVE_ZONE_X } from '../ui/hud-layout.js';
 import { readSafeArea } from '../ui/safe-area.js';
 
 export { readSafeArea };
-const LEFT_ZONE = 0.4;     // left 40 % of the safe area belongs to movement
+const LEFT_ZONE = MOVE_ZONE_X; // left 40 % of the safe area belongs to movement (shared with the layout model)
 const FIXED_SLOP = 1.3;    // fixed stick accepts touches up to 30 % outside its ring
 
 /** Radial dead zone with rescale. Returns magnitude 0..1. */

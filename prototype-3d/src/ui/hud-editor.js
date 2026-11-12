@@ -23,8 +23,21 @@ export function createHudEditor({ hud, settings, toolbar, onExit }) {
     $('[data-ed=done]').disabled = bad.size > 0;
     placeToolbar(rs);
   }
-  /** Put the toolbar where it covers no HUD element: scan a grid of positions, prefer top-centre. */
+  /** Put the toolbar where it covers no HUD element: scan a grid of positions, prefer top-centre. If the one-row bar
+   * fits nowhere (M2.0: more elements on small phones), try the compact two-row form and keep whichever covers less;
+   * covering a passive panel costs less than covering a control. */
   function placeToolbar(rs) {
+    toolbar.classList.remove('compact');
+    let best = scanToolbar(rs);
+    if (best.area > 0) {
+      toolbar.classList.add('compact');
+      const c = scanToolbar(rs);
+      if (c.cost < best.cost) best = c; else toolbar.classList.remove('compact');
+    }
+    toolbar.style.top = Math.round(best.top) + 'px';
+    toolbar.style.left = Math.round(best.left) + 'px';
+  }
+  function scanToolbar(rs) {
     const sc = hud.screen(), th = (toolbar.offsetHeight || 56) + 26 /* toast below */, tw = toolbar.offsetWidth || 500;
     const minL = sc.safe.left + 4, maxL = sc.w - sc.safe.right - tw - 4, minT = sc.safe.top + 8, maxT = sc.h - sc.safe.bottom - th - 4;
     let best = null;
@@ -34,14 +47,13 @@ export function createHudEditor({ hud, settings, toolbar, onExit }) {
         let area = 0;
         for (const r of rs) {
           const ox = Math.min(left + tw, r.x1) - Math.max(left, r.x0), oy = Math.min(top + th, r.y1) - Math.max(top, r.y0);
-          if (ox > 0 && oy > 0) area += ox * oy;
+          if (ox > 0 && oy > 0) area += ox * oy * (HUD_ELEMENTS[r.id] && (HUD_ELEMENTS[r.id].kind === 'info' || HUD_ELEMENTS[r.id].kind === 'map') ? 0.3 : 1);
         }
         const cost = area * 1000 + Math.abs(left + tw / 2 - sc.w / 2) + (top - minT) * 2;
-        if (!best || cost < best.cost) best = { cost, top, left };
+        if (!best || cost < best.cost) best = { cost, top, left, area };
       }
     }
-    toolbar.style.top = Math.round(best.top) + 'px';
-    toolbar.style.left = Math.round(best.left) + 'px';
+    return best;
   }
   function toast(msg) {
     const t = $('.ed-toast'); t.textContent = msg; t.classList.add('show');
