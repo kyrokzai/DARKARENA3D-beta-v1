@@ -52,7 +52,7 @@ export function createViewmodel({ renderer, skin }) {
   function makeKit(id) {
     if (kits[id]) return kits[id];
     let k;
-    if (id === 'ak47') { const m = createAk47Model(); k = { id, model: m, ctl: createHandsController(m, hands, { poses: getAkPoses(), chargeTravel: 0.075 }), kind: 'rifle', chargeTravel: 0.075, recoil: 1.35, flash: 1.2, casing: 'brass', light: 7 }; }
+    if (id === 'ak47') { const m = createAk47Model(); k = { id, model: m, ctl: createHandsController(m, hands, { poses: getAkPoses(), chargeTravel: 0.075, dropSide: 0.6, dropBack: 0.3, dropSpeed: 2.2, dropHide: 0.43 }), kind: 'rifle', chargeTravel: 0.075, dropSide: 0.6, dropBack: 0.3, dropSpeed: 2.2, dropHide: 0.43, recoil: 1.35, flash: 1.2, casing: 'brass', light: 7 }; }
     else if (id === 'krait') { const m = createKraitModel(); k = { id, model: m, ctl: createShotgunController(m, hands, getKraitPoses(), WEAPONS.krait, PUMP_TRAVEL), kind: 'shotgun', recoil: 2.2, flash: 1.7, casing: 'shell', light: 10 }; }
     else { const m = createRavenModel(skin); k = { id: 'raven', model: m, ctl: createHandsController(m, hands), kind: 'rifle', chargeTravel: 0.055, recoil: 1, flash: 1, casing: 'brass', light: 6 }; }
     const sp = k.model.anchors.sight.position;
@@ -189,7 +189,7 @@ export function createViewmodel({ renderer, skin }) {
     // reload: ONE timeline per weapon kind (weapon-anim.js) for weapon tilt, magazines / pump, charging handle, left hand
     const rr = api.forceReload ?? s.reload;
     const sv = api.forceShell ? { cycle: 1, ...api.forceShell } : { cycle: api.forceCycle ?? s.cycle ?? 1, shellPhase: s.shellPhase, shellT: s.shellT, shellPump: s.shellPump };
-    const tl = kit.kind === 'shotgun' ? ctl.timeline(sv) : reloadTimeline(rr, { chargeTravel: kit.chargeTravel });
+    const tl = kit.kind === 'shotgun' ? ctl.timeline(sv) : reloadTimeline(rr, { chargeTravel: kit.chargeTravel, dropSide: kit.dropSide ?? 0.15, dropBack: kit.dropBack ?? 0, dropSpeed: kit.dropSpeed ?? 0.6, dropHide: kit.dropHide ?? 0.5 });
     rig.rotation.x += tl.rig.rx; rig.rotation.y += tl.rig.ry; rig.rotation.z += tl.rig.rz;
     rig.position.x += tl.rig.px; rig.position.y += tl.rig.py; rig.position.z += tl.rig.pz;
     // M1.9 rifle-butt strike (weapon-anim.js meleeTimeline, driven by the sim's GameState.melee.progress)

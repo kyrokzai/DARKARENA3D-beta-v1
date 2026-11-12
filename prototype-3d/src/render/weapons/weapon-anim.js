@@ -35,7 +35,7 @@ const out = {
 };
 
 /** Evaluate the timeline at reload progress r (−1 = not reloading). Returns a shared object (no allocations). */
-export function reloadTimeline(r, { chargeTravel = 0.055 } = {}) { // M2.0: chargeTravel per weapon (AK bolt 0.075)
+export function reloadTimeline(r, { chargeTravel = 0.055, dropSide = 0.15, dropBack = 0, dropSpeed = 0.6, dropHide = 0.5 } = {}) { // M2.0: per weapon (AK: bolt 0.075, the long mag falls further aside)
   const o = out;
   if (r < 0) {
     Object.assign(o.rig, { rx: 0, ry: 0, rz: 0, px: 0, py: 0, pz: 0 });
@@ -53,9 +53,9 @@ export function reloadTimeline(r, { chargeTravel = 0.055 } = {}) { // M2.0: char
   o.mag.x = 0; o.mag.y = -0.12 * pull; o.mag.z = -0.012 * pull; o.mag.rx = 0;
   if (r >= 0.36 && r < 0.62) {
     const t = (r - 0.36) * 1.3; // seconds since let go
-    o.mag.y = -0.12 - 4.9 * t * t - 0.6 * t; o.mag.x = -0.15 * t; o.mag.rx = -2.2 * t;
+    o.mag.y = -0.12 - 4.9 * t * t - dropSpeed * t; o.mag.x = -dropSide * t; o.mag.z = dropBack * t; o.mag.rx = -2.2 * t;
   }
-  o.mag.visible = r < 0.5 || r >= 0.62;
+  o.mag.visible = r < dropHide || r >= 0.62; // (AK: hidden at 0.43 — already below the frame when the new mag comes up)
   if (r >= 0.62) { o.mag.y = 0; o.mag.x = 0; o.mag.z = 0; o.mag.rx = 0; o.mag.y += 0.006 * Math.sin(Math.min(1, seg(r, 0.62, 0.665)) * Math.PI); }
   // new magazine: from the pouch (below the frame) up to the well, inserted at 0.62
   o.spare.visible = r >= 0.43 && r < 0.62;
@@ -125,7 +125,11 @@ export function kraitTimeline(s) {
   const tilt = s.shellPhase === 'end' ? 1 - smooth(seg(s.shellT, 0, s.shellPump ? R.endPump * 0.5 : R.end)) : s.shellPhase === 'start' ? smooth(seg(s.shellT, 0, R.start * 0.8)) : 1;
   Object.assign(o.rig, { rx: 0.12 * tilt, ry: -0.10 * tilt, rz: -0.55 * tilt, px: -0.02 * tilt, py: 0.04 * tilt, pz: 0.02 * tilt });
   o.rightIndexOff = 1;
-  if (s.shellPhase === 'start') { const u = seg(s.shellT, 0, R.start); o.left.a = 'leftPump'; o.left.b = 'leftLoadLow'; o.left.t = smooth(u); return o; }
+  if (s.shellPhase === 'start') { // open the hand and lift it off the pump first, then down to the shells
+    const u = seg(s.shellT, 0, R.start);
+    if (u < 0.35) { o.left.a = 'leftPump'; o.left.b = 'leftPumpOff'; o.left.t = smooth(u / 0.35); } else { o.left.a = 'leftPumpOff'; o.left.b = 'leftLoadLow'; o.left.t = smooth((u - 0.35) / 0.65); }
+    return o;
+  }
   if (s.shellPhase === 'shell') {
     const u = seg(s.shellT, 0, R.perShell);
     if (u < 0.35) { o.left.a = 'leftLoadLow'; o.left.b = 'leftLoadReach'; o.left.t = smooth(u / 0.35); }
@@ -135,8 +139,9 @@ export function kraitTimeline(s) {
     return o;
   }
   // end: back to the pump; if it was empty, rack it once (chambers the first shell)
-  const dur = s.shellPump ? R.endPump : R.end, u = seg(s.shellT, 0, dur);
-  o.left.a = 'leftLoadLow'; o.left.b = 'leftPump'; o.left.t = smooth(Math.min(1, u / (s.shellPump ? 0.45 : 1)));
+  const dur = s.shellPump ? R.endPump : R.end, u = seg(s.shellT, 0, dur), back = s.shellPump ? 0.45 : 1; // back on the pump at `back`
+  if (u < back * 0.65) { o.left.a = 'leftLoadLow'; o.left.b = 'leftPumpOff'; o.left.t = smooth(u / (back * 0.65)); }
+  else { o.left.a = 'leftPumpOff'; o.left.b = 'leftPump'; o.left.t = smooth(Math.min(1, (u - back * 0.65) / (back * 0.35))); }
   if (s.shellPump && u > 0.45) o.pump = rack(P.start + (u - 0.45) / 0.55 * (P.forward - P.start));
   o.rightIndexOff = 1 - smooth(seg(u, 0.6, 1));
   return o;

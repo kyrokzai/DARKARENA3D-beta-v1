@@ -5,7 +5,7 @@ import { POSES, blendPoses, makePoseBuffer } from './hand-poses.js';
 import { reloadTimeline, kraitTimeline } from './weapon-anim.js';
 
 /** Magazine-fed rifles (RAVEN, AK-47): the shared reload timeline with the weapon's own poses / bolt travel (M2.0). */
-export function createHandsController(model, hands, { poses = POSES, chargeTravel = 0.055 } = {}) {
+export function createHandsController(model, hands, { poses = POSES, chargeTravel = 0.055, dropSide = 0.15, dropBack = 0, dropSpeed = 0.6, dropHide = 0.5 } = {}) {
   const spareMag = model.parts.mag.clone(); spareMag.name = 'spare-magazine'; spareMag.visible = false;
   model.group.add(spareMag);
   const leftPose = makePoseBuffer(), rightPose = makePoseBuffer(), tmpPose = makePoseBuffer();
@@ -18,7 +18,7 @@ export function createHandsController(model, hands, { poses = POSES, chargeTrave
      */
     poses,
     apply(r, triggerPull, elbows) {
-      const tl = reloadTimeline(r, { chargeTravel });
+      const tl = reloadTimeline(r, { chargeTravel, dropSide, dropBack, dropSpeed, dropHide });
       const mag = model.parts.mag, ch = model.parts.charging;
       mag.position.set(tl.mag.x, tl.mag.y, tl.mag.z); mag.rotation.x = tl.mag.rx; mag.visible = tl.mag.visible;
       spareMag.position.set(tl.spare.x, tl.spare.y, tl.spare.z); spareMag.visible = tl.spare.visible;
