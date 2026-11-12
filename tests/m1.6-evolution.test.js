@@ -72,9 +72,15 @@ const visibleButtons = (page, id) => DA(page, id => [...document.getElementById(
     check('Esc on the pause screen resumes the match', escResume && await page.isVisible('#paused'));
     // a key still held from the fight must not press a menu button (Space would otherwise hit the focused button)
     const focusNow = await page.evaluate(() => document.activeElement && document.activeElement.id);
+    // timestamps are taken inside the page: under software WebGL one frame can block the main thread for ~1 s, so a
+    // wall-clock sleep in the test does not tell how long after the pause the focus really arrived
+    await page.evaluate(() => { window.__fd = { pause: 0, focus: 0, focusEarly: null };
+      addEventListener('keydown', e => { if (e.code === 'KeyP' && !__fd.pause) { __fd.pause = performance.now(); setTimeout(() => { __fd.focusEarly = document.activeElement && document.activeElement.id; }, 120); } }, true);
+      const f = HTMLElement.prototype.focus; HTMLElement.prototype.focus = function (...a) { if (this.id === 'resumeBtn' && __fd.pause && !__fd.focus) __fd.focus = performance.now(); return f.apply(this, a); }; });
     await page.click('#resumeBtn'); await sleep(100); await page.keyboard.down('Space'); await page.keyboard.press('KeyP'); await sleep(120);
-    const early = await page.evaluate(() => document.activeElement && document.activeElement.id); await page.keyboard.up('Space'); await sleep(500);
-    check('Menu focus arrives after a short delay: a held Space cannot press ПРОДОЛЖИТЬ / ЗАНОВО by accident', focusNow === 'resumeBtn' && early !== 'resumeBtn' && await page.isVisible('#paused') && await page.evaluate(() => document.activeElement.id) === 'resumeBtn', `${focusNow} / early: ${early}`);
+    await page.keyboard.up('Space'); await sleep(500); await page.waitForFunction(() => __fd.focus > 0, null, { timeout: 10000 }).catch(() => {});
+    const fd = await page.evaluate(() => ({ ...__fd, delay: Math.round(__fd.focus - __fd.pause) }));
+    check('Menu focus arrives after a short delay: a held Space cannot press ПРОДОЛЖИТЬ / ЗАНОВО by accident', focusNow === 'resumeBtn' && fd.pause > 0 && fd.delay >= 440 && fd.focusEarly !== 'resumeBtn' && await page.isVisible('#paused') && await page.evaluate(() => document.activeElement.id) === 'resumeBtn', `${focusNow} / focus ${fd.delay} ms after the pause key, at +120 ms: ${fd.focusEarly}`);
     await page.click('#resumeBtn'); await sleep(100);
     check('ПРОДОЛЖИТЬ resumes the same match', await page.evaluate(() => document.body.classList.contains('playing') && /ОСТАЛОСЬ/.test(document.querySelector('[data-v=remainingText]').textContent)));
     await page.keyboard.press('KeyP'); await sleep(450); await page.click('#quitBtn'); await sleep(100);
