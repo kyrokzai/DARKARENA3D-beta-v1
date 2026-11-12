@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from '../geometry-merge.js';
 import { getWeaponTextures } from './weapon-textures.js';
+import { getWeaponSurfaceMaps } from './proc-maps.js';
 import { SKINS, DEFAULT_SKIN } from './raven-skins.js';
 
 // ---------------------------------------------------------------- profile helpers
@@ -186,10 +187,12 @@ function geometry() { return shared || (shared = buildGeometry()); }
 
 // ---------------------------------------------------------------- materials & skins
 function makeMaterials() {
-  const t = getWeaponTextures();
-  const std = (extra = {}) => new THREE.MeshStandardMaterial({ map: t.wear, roughnessMap: t.rough, ...extra });
+  const t = getWeaponTextures(), n = getWeaponSurfaceMaps();
+  // M1.9: every slot gets a relief (normal map) matching its material — machined metal, stippled polymer, carbon weave —
+  // and a soft roughness variation (the old per-pixel roughness noise sparkled under the rim light).
+  const std = (normalMap, k, extra = {}) => new THREE.MeshStandardMaterial({ map: t.wear, roughnessMap: n.rough, normalMap, normalScale: new THREE.Vector2(k, k), ...extra });
   return {
-    body: std(), polymer: std(), grip: std(), accent: std(), steel: std(), line: new THREE.MeshStandardMaterial({ roughness: 0.4, metalness: 0.2 }),
+    body: std(n.metal, 0.32), polymer: std(n.polymer, 0.25), grip: std(n.polymer, 0.4), accent: std(n.metal, 0.3), steel: std(n.metal, 0.22), line: new THREE.MeshStandardMaterial({ roughness: 0.4, metalness: 0.2 }),
     dark: new THREE.MeshStandardMaterial({ color: 0x050506, roughness: 0.9, metalness: 0.2 }),
     emblem: new THREE.MeshStandardMaterial({ map: t.logo, transparent: true, alphaTest: 0.35, roughness: 0.45, metalness: 0.4, polygonOffset: true, polygonOffsetFactor: -2 }),
     text: new THREE.MeshStandardMaterial({ map: t.markings, transparent: true, alphaTest: 0.35, roughness: 0.5, metalness: 0.3, polygonOffset: true, polygonOffsetFactor: -2 }),
@@ -203,8 +206,8 @@ function applySkin(m, id) {
     const p = s[k] || s.polymer;
     m[k].color.setHex(p.color); m[k].metalness = p.metalness; m[k].roughness = p.roughness;
   }
-  const carbonMap = s.accent.carbon ? t.carbon : t.wear;
-  if (m.accent.map !== carbonMap) { m.accent.map = carbonMap; m.accent.needsUpdate = true; }
+  const carbonMap = s.accent.carbon ? t.carbon : t.wear, n = getWeaponSurfaceMaps(), accentN = s.accent.carbon ? n.carbon : n.metal;
+  if (m.accent.map !== carbonMap || m.accent.normalMap !== accentN) { m.accent.map = carbonMap; m.accent.normalMap = accentN; m.accent.normalScale.setScalar(s.accent.carbon ? 0.45 : 0.3); m.accent.needsUpdate = true; }
   for (const k of ['line', 'emblem']) {
     m[k].color.setHex(s[k].color); m[k].emissive.setHex(s[k].emissive); m[k].emissiveIntensity = s[k].emissiveIntensity;
   }

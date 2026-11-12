@@ -1,4 +1,6 @@
 // First-person hands: tactical gloves (separate fingers, knuckle & finger pads) and combat-suit sleeves.
+// M1.9: anatomical phalanges, two-tone glove (dark leather back / suede palm via vertex colours), seams and joint
+// creases, matte rubber guards, hook-and-loop strap, sleeve with folds and a knit cuff (procedural normal maps).
 // GEOMETRY + RIG only — poses come from hand-poses.js, timing from weapon-anim.js.
 //
 // Cost: 7 draw calls for both hands. All finger phalanges are instances of ONE capsule geometry, all pads are
@@ -9,6 +11,7 @@
 // index finger on +side (side = +1 right hand, −1 left hand); +Z = palm normal. A positive curl bends a
 // finger towards the palm (rotation about local X). Geometry is left/right symmetric → no mirrored instances.
 import * as THREE from 'three';
+import { gloveGrain, fingerHeight, rubberHeight, sleeveHeight, heightToNormal, dataTexture } from './proc-maps.js';
 
 export const PALM_LEN = 0.088;
 export const FINGERS = ['index', 'middle', 'ring', 'pinky'];
@@ -21,7 +24,7 @@ export const FINGER_SPEC = {
 export const THUMB_SPEC = { x: 0.024, y: 0.018, z: 0.006, len: [0.038, 0.031, 0.026], r: [0.0128, 0.0104, 0.0094] };
 const SEG_TAPER = [1, 0.93, 0.86];
 const CAPS_PER_HAND = 17, PADS_PER_HAND = 10; // 15 phalanges + thenar + hypothenar
-const SLEEVE_LEN = 0.34;
+const SLEEVE_LEN = 0.5; // M1.9: long enough to leave the screen in every pose (the melee swing showed the open end of a 0.34 m sleeve)
 
 /**
  * Shared finger kinematics (used by the renderer and by the grip solver in hand-poses.js, so both always agree).
@@ -53,57 +56,91 @@ export function fingerRadius(finger, s) { return finger === 'thumb' ? THUMB_SPEC
 export function fingerLength(finger, s) { return finger === 'thumb' ? THUMB_SPEC.len[s] : FINGER_SPEC[finger].len[s]; }
 
 let texCache = null;
+// M1.9: procedural relief instead of flat colour noise — leather grain, finger seams / creases, ribbed rubber guards,
+// sleeve twill with folds and a knit cuff (proc-maps.js). Generated once, shared by every hands instance.
 function textures() {
   if (texCache) return texCache;
-  const mk = (size, draw, repeat) => {
-    const c = document.createElement('canvas'); c.width = c.height = size; const g = c.getContext('2d'); draw(g, size);
-    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(repeat, repeat); t.anisotropy = 4; return t;
-  };
-  let s = 17; const r = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+  const grain = heightToNormal(gloveGrain(256), 256, 2.2);
   texCache = {
-    // synthetic glove leather/fabric grain
-    glove: mk(128, (g, n) => { g.fillStyle = '#d4d4d4'; g.fillRect(0, 0, n, n); for (let i = 0; i < 4000; i++) { const v = 170 + r() * 80 | 0; g.fillStyle = `rgb(${v},${v},${v})`; g.fillRect(r() * n, r() * n, 1.5, 1.5); } }, 6),
-    // woven suit fabric
-    weave: mk(64, (g, n) => { for (let y = 0; y < n; y += 2) for (let x = 0; x < n; x += 2) { const v = ((x + y) >> 1) % 2 ? 210 : 175; g.fillStyle = `rgb(${v},${v},${v})`; g.fillRect(x, y, 2, 2); } }, 14),
+    palmN: dataTexture(grain, { repeat: [28, 28] }),          // extruded palm: UVs in metres → ≈ 36 mm per tile
+    cuffN: dataTexture(grain, { repeat: [5, 1.2] }),          // lathe UVs 0..1
+    fingerN: dataTexture(heightToNormal(fingerHeight(256), 256, 5), { repeat: [1, 1] }),
+    rubberN: dataTexture(heightToNormal(rubberHeight(128), 128, 3), { repeat: [2, 2] }),
+    sleeveN: dataTexture(heightToNormal(sleeveHeight(512), 512, 4.5), { repeat: [1, -1] }), // lathe v runs elbow → wrist: flipped so the cuff sits at the wrist
   };
   return texCache;
 }
+// two-tone glove: dark synthetic leather on the back, worn suede on the palm side (vertex colours by normal → no extra
+// draw calls, no colour textures). Palm side = +Z of the hand frame / lathe phi 0.
+// (the viewmodel scene is lit brightly + ACES: albedos stay in the weapon's dark linear range, contrast comes from the relief)
+const GLOVE_BACK = new THREE.Color(0x222420), GLOVE_PALM = new THREE.Color(0x2f2b26), CUFF_COL = new THREE.Color(0x1b1c19);
+function paintByNormalZ(geo, back, palm, a = -0.15, b = 0.45) {
+  const n = geo.getAttribute('normal'), col = new Float32Array(n.count * 3), c = new THREE.Color();
+  for (let i = 0; i < n.count; i++) {
+    const t = Math.max(0, Math.min(1, (n.getZ(i) - a) / (b - a))), k = t * t * (3 - 2 * t);
+    c.copy(back).lerp(palm, k); col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+}
 
 function buildGeometries() {
-  const capsule = new THREE.CapsuleGeometry(0.5, 2, 4, 10); // total height 3, radius 0.5
-  const pad = new THREE.SphereGeometry(0.5, 12, 8);
+  // M1.9 fix: LatheGeometry faces outwards only when the profile goes UP (increasing y). The cuff / strap / sleeve /
+  // insert profiles were listed top → down, so their faces pointed inwards: the near wall was culled and the camera saw
+  // the inside of the far wall, lit from the camera side (a pale, "glowing" forearm). Profiles are now sorted by y.
+  const lathe = (pts, seg = 16, phiStart = 0, phiLen = Math.PI * 2) => new THREE.LatheGeometry([...pts].sort((a, b) => a[1] - b[1]).map(([rr, y]) => new THREE.Vector2(rr, y)), seg, phiStart, phiLen);
+  // M1.9 phalanx: same unit frame as the old capsule (radius 0.5, height 3 centred on 0 → segment() unchanged), but
+  // anatomical — rounded joint at the base, a slight waist, a bulge at the next joint, a soft rounded tip.
+  const capsule = lathe([[0.001, -1.5], [0.24, -1.44], [0.38, -1.31], [0.47, -1.12], [0.52, -0.86], [0.505, -0.5], [0.47, -0.1],
+    [0.46, 0.3], [0.48, 0.72], [0.5, 0.98], [0.47, 1.18], [0.39, 1.34], [0.25, 1.45], [0.001, 1.5]], 12);
+  paintByNormalZ(capsule, GLOVE_BACK, GLOVE_PALM, -0.2, 0.5);
+  const pad = new THREE.SphereGeometry(0.5, 14, 9);
   const palmShape = new THREE.Shape();
   // organic palm: narrow at the wrist, widest at the knuckles, generous rounded bevel
   palmShape.moveTo(-0.024, -0.004); palmShape.quadraticCurveTo(0, -0.010, 0.024, -0.004);
   palmShape.quadraticCurveTo(0.038, 0.040, 0.034, PALM_LEN - 0.004); palmShape.quadraticCurveTo(0, PALM_LEN + 0.003, -0.034, PALM_LEN - 0.004);
   palmShape.quadraticCurveTo(-0.038, 0.040, -0.024, -0.004);
-  const palm = new THREE.ExtrudeGeometry(palmShape, { depth: 0.005, bevelEnabled: true, bevelThickness: 0.0085, bevelSize: 0.009, bevelSegments: 5, curveSegments: 12 });
+  const palm = new THREE.ExtrudeGeometry(palmShape, { depth: 0.005, bevelEnabled: true, bevelThickness: 0.0085, bevelSize: 0.009, bevelSegments: 7, curveSegments: 16 });
   palm.translate(0, 0, -0.0025);
-  const lathe = (pts, seg = 16, phiStart = 0, phiLen = Math.PI * 2) => new THREE.LatheGeometry(pts.map(([rr, y]) => new THREE.Vector2(rr, y)), seg, phiStart, phiLen);
-  const cuff = lathe([[0.0225, 0.016], [0.0275, 0.010], [0.0292, -0.006], [0.0296, -0.030], [0.0278, -0.036]]);
-  const strap = lathe([[0.0302, 0.000], [0.0306, -0.004], [0.0306, -0.014], [0.0302, -0.018]]);
-  const sleeve = lathe([[0.027, -0.016], [0.0315, -0.030], [0.0355, -0.09], [0.040, -0.17], [0.0425, -0.26], [0.043, -SLEEVE_LEN]], 16);
+  palm.computeVertexNormals(); paintByNormalZ(palm, GLOVE_BACK, GLOVE_PALM);
+  const cuff = lathe([[0.0225, 0.016], [0.0262, 0.012], [0.0281, 0.006], [0.0292, -0.006], [0.0297, -0.018], [0.0296, -0.030], [0.0286, -0.035], [0.0272, -0.037]], 20);
+  const strap = lathe([[0.0300, 0.001], [0.0308, -0.002], [0.0310, -0.008], [0.0310, -0.014], [0.0307, -0.017], [0.0300, -0.019]], 20);
+  // sleeve: more rings + a fold displacement (bunched just above the wrist, soft lengthwise creases further up)
+  const sp = []; for (let i = 0; i <= 22; i++) { const t = i / 22, y = -0.016 - t * (SLEEVE_LEN - 0.016); sp.push([0.027 + (0.043 - 0.027) * Math.min(1, Math.pow(t / 0.75, 0.6)) + (t < 0.05 ? -0.003 * (1 - t / 0.05) : 0), y]); }
+  const sleeve = lathe(sp, 24);
+  { const P = sleeve.getAttribute('position');
+    for (let i = 0; i < P.count; i++) {
+      const x = P.getX(i), y = P.getY(i), z = P.getZ(i), r = Math.hypot(x, z); if (r < 1e-6) continue;
+      const phi = Math.atan2(x, z), d = -y; // distance from the wrist end (m)
+      const bunch = Math.max(0, 1 - Math.abs(d - 0.07) / 0.06);
+      const k = 1 + bunch * 0.055 * Math.sin(d * 150 + Math.sin(phi * 2 + 1.3) * 1.4) + 0.022 * Math.sin(phi * 3 + d * 18) * Math.min(1, d / 0.12);
+      P.setX(i, x * k); P.setZ(i, z * k);
+    }
+    sleeve.computeVertexNormals(); }
   // graphite panel on the top (back-of-hand side = +Z of the sleeve frame; lathe phi 0 = +Z)
-  const insert = lathe([[0.0328, -0.05], [0.0368, -0.11], [0.0408, -0.19], [0.0438, -0.30]], 6, -0.6, 1.2);
+  const insert = lathe([[0.0335, -0.05], [0.0372, -0.11], [0.0412, -0.19], [0.0442, -0.30]], 8, -0.6, 1.2);
   return { capsule, pad, palm, cuff, strap, sleeve, insert };
 }
 
 export function createHands() {
   const geo = buildGeometries(), tex = textures();
+  const N = (t, k) => ({ normalMap: t, normalScale: new THREE.Vector2(k, k) });
   const mats = {
-    glove: new THREE.MeshStandardMaterial({ color: 0x24262c, roughness: 0.7, metalness: 0.06, map: tex.glove }),
-    pad: new THREE.MeshStandardMaterial({ color: 0x41454e, roughness: 0.4, metalness: 0.3 }),
-    sleeve: new THREE.MeshStandardMaterial({ color: 0x23262c, roughness: 0.93, metalness: 0.0, map: tex.weave }),
-    insert: new THREE.MeshStandardMaterial({ color: 0x484c55, roughness: 0.88, metalness: 0.0, map: tex.weave }),
+    glove: new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.74, metalness: 0.0, ...N(tex.palmN, 0.55) }),
+    finger: new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.72, metalness: 0.0, ...N(tex.fingerN, 0.8) }),
+    cuff: new THREE.MeshStandardMaterial({ color: CUFF_COL, roughness: 0.8, metalness: 0.0, ...N(tex.cuffN, 0.6) }),
+    pad: new THREE.MeshStandardMaterial({ color: 0x17181b, roughness: 0.55, metalness: 0.0, ...N(tex.rubberN, 0.7) }),   // moulded TPR guards (matte, not metal)
+    strap: new THREE.MeshStandardMaterial({ color: 0x2a2b26, roughness: 0.9, metalness: 0.0, ...N(tex.rubberN, 0.5) }),  // hook-and-loop wrist strap
+    sleeve: new THREE.MeshStandardMaterial({ color: 0x171a14, roughness: 0.94, metalness: 0.0, ...N(tex.sleeveN, 1.0) }),
+    insert: new THREE.MeshStandardMaterial({ color: 0x2a2c27, roughness: 0.9, metalness: 0.0, ...N(tex.sleeveN, 0.8) }),
   };
   const group = new THREE.Group(); group.name = 'hands';
   const inst = (g, m, n, name) => { const im = new THREE.InstancedMesh(g, m, n); im.name = name; im.frustumCulled = false; group.add(im); return im; };
   const meshes = {
-    caps: inst(geo.capsule, mats.glove, CAPS_PER_HAND * 2, 'fingers'),
+    caps: inst(geo.capsule, mats.finger, CAPS_PER_HAND * 2, 'fingers'),
     pads: inst(geo.pad, mats.pad, PADS_PER_HAND * 2, 'pads'),
     palm: inst(geo.palm, mats.glove, 2, 'palms'),
-    cuff: inst(geo.cuff, mats.glove, 2, 'cuffs'),
-    strap: inst(geo.strap, mats.pad, 2, 'straps'),
+    cuff: inst(geo.cuff, mats.cuff, 2, 'cuffs'),
+    strap: inst(geo.strap, mats.strap, 2, 'straps'),
     sleeve: inst(geo.sleeve, mats.sleeve, 2, 'sleeves'),
     insert: inst(geo.insert, mats.insert, 2, 'sleeve-inserts'),
   };

@@ -16,7 +16,8 @@ function tex(c, { repeat = 1, srgb = true, wrap = true } = {}) {
 function wear(seed) {
   const [c, g] = canvas(256, 256), r = rng(seed);
   g.fillStyle = '#d8d8d8'; g.fillRect(0, 0, 256, 256);
-  for (let i = 0; i < 9000; i++) { const v = 190 + r() * 60 | 0; g.fillStyle = `rgb(${v},${v},${v})`; g.fillRect(r() * 256, r() * 256, 1, 1); }
+  // M1.9: fewer, lower-contrast specks (the dense 1-px noise read as glitter on the stock in the hip view)
+  for (let i = 0; i < 2600; i++) { const v = 200 + r() * 40 | 0; g.fillStyle = `rgb(${v},${v},${v})`; g.fillRect(r() * 256, r() * 256, 1.5, 1.5); }
   g.globalAlpha = 0.5;
   for (let i = 0; i < 70; i++) { // scratches
     const x = r() * 256, y = r() * 256, a = r() * Math.PI, l = 6 + r() * 30;
