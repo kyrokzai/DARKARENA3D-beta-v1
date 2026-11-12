@@ -1,0 +1,2046 @@
+{
+ "note": "Chromium headless, software WebGL (SwiftShader), 1280x720 window, interleaved runs, frame ms. first: before the viewmodel-relief fix; final: after (PERFORMANCE without viewmodel normal maps).",
+ "first": {
+  "M18": [
+   {
+    "label": "M18",
+    "prof": "perf960",
+    "tReady": 3971,
+    "mapsLoadMs": 687,
+    "scenes": {
+     "0": {
+      "mean": 218.1,
+      "median": 209.9,
+      "p95": 304.4,
+      "calls": 39,
+      "tris": 25762,
+      "heapMB": 16.3,
+      "gpu": {
+       "geometries": 44,
+       "textures": 31
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "1": {
+      "mean": 239.7,
+      "median": 233.6,
+      "p95": 319.5,
+      "calls": 42,
+      "tris": 38212,
+      "heapMB": 16.3,
+      "gpu": {
+       "geometries": 47,
+       "textures": 32
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "3": {
+      "mean": 265.4,
+      "median": 252.9,
+      "p95": 385.3,
+      "calls": 48,
+      "tris": 50367,
+      "heapMB": 16.3,
+      "gpu": {
+       "geometries": 53,
+       "textures": 35
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "5": {
+      "mean": 241.7,
+      "median": 234.1,
+      "p95": 322.5,
+      "calls": 54,
+      "tris": 63222,
+      "heapMB": 16.3,
+      "gpu": {
+       "geometries": 56,
+       "textures": 39
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "attack": {
+      "mean": 362,
+      "median": 352.5,
+      "p95": 487.4,
+      "calls": 48,
+      "tris": 62424,
+      "heapMB": 16.3,
+      "gpu": {
+       "geometries": 62,
+       "textures": 39
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "reload": {
+      "mean": 258.4,
+      "median": 250.2,
+      "p95": 356.1,
+      "calls": 54,
+      "tris": 63222,
+      "heapMB": 16.3,
+      "gpu": {
+       "geometries": 62,
+       "textures": 39
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "melee": {
+      "mean": 302.9,
+      "median": 300.4,
+      "p95": 389.8,
+      "calls": 48,
+      "tris": 50367,
+      "heapMB": 16.3,
+      "gpu": {
+       "geometries": 62,
+       "textures": 39
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     }
+    },
+    "errs": []
+   },
+   {
+    "label": "M18",
+    "prof": "perf960",
+    "tReady": 4037,
+    "mapsLoadMs": 746,
+    "scenes": {
+     "0": {
+      "mean": 250.9,
+      "median": 238.8,
+      "p95": 360.9,
+      "calls": 39,
+      "tris": 25762,
+      "heapMB": 16.3,
+      "gpu": {
+       "geometries": 44,
+       "textures": 31
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "1": {
+      "mean": 253.7,
+      "median": 243.4,
+      "p95": 370.4,
+      "calls": 42,
+      "tris": 38212,
+      "heapMB": 16.3,
+      "gpu": {
+       "geometries": 47,
+       "textures": 32
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "3": {
+      "mean": 268.5,
+      "median": 247.9,
+      "p95": 383.3,
+      "calls": 48,
+      "tris": 50367,
+      "heapMB": 16.3,
+      "gpu": {
+       "geometries": 53,
+       "textures": 35
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "5": {
+      "mean": 322.4,
+      "median": 312.1,
+      "p95": 469.1,
+      "calls": 54,
+      "tris": 63222,
+      "heapMB": 16.3,
+      "gpu": {
+       "geometries": 56,
+       "textures": 39
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "attack": {
+      "mean": 372.6,
+      "median": 364.1,
+      "p95": 549.4,
+      "calls": 48,
+      "tris": 62424,
+      "heapMB": 16.3,
+      "gpu": {
+       "geometries": 62,
+       "textures": 39
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "reload": {
+      "mean": 253.1,
+      "median": 241.2,
+      "p95": 325.7,
+      "calls": 54,
+      "tris": 63222,
+      "heapMB": 16.3,
+      "gpu": {
+       "geometries": 62,
+       "textures": 39
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "melee": {
+      "mean": 318.3,
+      "median": 304.1,
+      "p95": 481.4,
+      "calls": 48,
+      "tris": 50367,
+      "heapMB": 16.3,
+      "gpu": {
+       "geometries": 62,
+       "textures": 39
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     }
+    },
+    "errs": []
+   },
+   {
+    "label": "M18",
+    "prof": "perf960",
+    "tReady": 4171,
+    "mapsLoadMs": 770,
+    "scenes": {
+     "0": {
+      "mean": 232.3,
+      "median": 217.9,
+      "p95": 331.9,
+      "calls": 39,
+      "tris": 25762,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 44,
+       "textures": 31
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "1": {
+      "mean": 245.1,
+      "median": 241.8,
+      "p95": 331.8,
+      "calls": 42,
+      "tris": 38212,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 47,
+       "textures": 32
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "3": {
+      "mean": 253.2,
+      "median": 246.6,
+      "p95": 349,
+      "calls": 48,
+      "tris": 50367,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 53,
+       "textures": 35
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "5": {
+      "mean": 251.8,
+      "median": 238.7,
+      "p95": 353.9,
+      "calls": 54,
+      "tris": 63222,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 56,
+       "textures": 39
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "attack": {
+      "mean": 383.4,
+      "median": 351.9,
+      "p95": 576.7,
+      "calls": 48,
+      "tris": 62424,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 39
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "reload": {
+      "mean": 269.3,
+      "median": 248.7,
+      "p95": 346.7,
+      "calls": 54,
+      "tris": 63222,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 39
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "melee": {
+      "mean": 290.5,
+      "median": 281.6,
+      "p95": 388,
+      "calls": 48,
+      "tris": 50367,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 39
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     }
+    },
+    "errs": []
+   }
+  ],
+  "M18def": [
+   {
+    "label": "M18def",
+    "prof": "baldefault",
+    "tReady": 5690,
+    "mapsLoadMs": 2579,
+    "scenes": {
+     "0": {
+      "mean": 768,
+      "median": 766.3,
+      "p95": 928.7,
+      "calls": 39,
+      "tris": 25762,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 44,
+       "textures": 34
+      },
+      "lights": 5,
+      "buffer": [
+       1280,
+       720
+      ],
+      "aa": true
+     },
+     "1": {
+      "mean": 801,
+      "median": 813.8,
+      "p95": 989.6,
+      "calls": 42,
+      "tris": 38212,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 47,
+       "textures": 35
+      },
+      "lights": 5,
+      "buffer": [
+       1280,
+       720
+      ],
+      "aa": true
+     },
+     "3": {
+      "mean": 808.3,
+      "median": 798.8,
+      "p95": 983.7,
+      "calls": 48,
+      "tris": 50367,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 53,
+       "textures": 38
+      },
+      "lights": 5,
+      "buffer": [
+       1280,
+       720
+      ],
+      "aa": true
+     },
+     "5": {
+      "mean": 875.5,
+      "median": 872.1,
+      "p95": 1018.1,
+      "calls": 54,
+      "tris": 63222,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 56,
+       "textures": 42
+      },
+      "lights": 5,
+      "buffer": [
+       1280,
+       720
+      ],
+      "aa": true
+     },
+     "attack": {
+      "mean": 1149.1,
+      "median": 1146.7,
+      "p95": 1362.4,
+      "calls": 48,
+      "tris": 62424,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 42
+      },
+      "lights": 5,
+      "buffer": [
+       1280,
+       720
+      ],
+      "aa": true
+     },
+     "reload": {
+      "mean": 856.3,
+      "median": 864.1,
+      "p95": 998.7,
+      "calls": 54,
+      "tris": 63222,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 42
+      },
+      "lights": 5,
+      "buffer": [
+       1280,
+       720
+      ],
+      "aa": true
+     },
+     "melee": {
+      "mean": 880,
+      "median": 868.5,
+      "p95": 1029.1,
+      "calls": 48,
+      "tris": 50367,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 42
+      },
+      "lights": 5,
+      "buffer": [
+       1280,
+       720
+      ],
+      "aa": true
+     }
+    },
+    "errs": []
+   }
+  ],
+  "M19": [
+   {
+    "label": "M19",
+    "prof": "perf960",
+    "tReady": 4142,
+    "mapsLoadMs": 788,
+    "scenes": {
+     "0": {
+      "mean": 220.9,
+      "median": 212,
+      "p95": 302.1,
+      "calls": 39,
+      "tris": 25066,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 44,
+       "textures": 37
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "1": {
+      "mean": 249.7,
+      "median": 245.3,
+      "p95": 347.8,
+      "calls": 42,
+      "tris": 37516,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 47,
+       "textures": 38
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "3": {
+      "mean": 248.9,
+      "median": 245.6,
+      "p95": 324.4,
+      "calls": 48,
+      "tris": 49671,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 53,
+       "textures": 41
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "5": {
+      "mean": 271.5,
+      "median": 260.6,
+      "p95": 352.7,
+      "calls": 54,
+      "tris": 62526,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 56,
+       "textures": 45
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "attack": {
+      "mean": 351.2,
+      "median": 340.1,
+      "p95": 451.9,
+      "calls": 48,
+      "tris": 61728,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 45
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "reload": {
+      "mean": 275.2,
+      "median": 259.9,
+      "p95": 411.2,
+      "calls": 54,
+      "tris": 62526,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 45
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "melee": {
+      "mean": 281.4,
+      "median": 270.6,
+      "p95": 393.8,
+      "calls": 45,
+      "tris": 49179,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 45
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     }
+    },
+    "errs": []
+   },
+   {
+    "label": "M19",
+    "prof": "perf960",
+    "tReady": 4625,
+    "mapsLoadMs": 695,
+    "scenes": {
+     "0": {
+      "mean": 256.9,
+      "median": 240.6,
+      "p95": 419.3,
+      "calls": 39,
+      "tris": 25066,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 44,
+       "textures": 37
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "1": {
+      "mean": 307.6,
+      "median": 275.6,
+      "p95": 677.8,
+      "calls": 42,
+      "tris": 37516,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 47,
+       "textures": 38
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "3": {
+      "mean": 337.8,
+      "median": 312.7,
+      "p95": 540.5,
+      "calls": 48,
+      "tris": 49671,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 53,
+       "textures": 41
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "5": {
+      "mean": 303.4,
+      "median": 280.1,
+      "p95": 417.2,
+      "calls": 54,
+      "tris": 62526,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 56,
+       "textures": 45
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "attack": {
+      "mean": 404.3,
+      "median": 388,
+      "p95": 522.2,
+      "calls": 48,
+      "tris": 61728,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 45
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "reload": {
+      "mean": 270.5,
+      "median": 261.8,
+      "p95": 369.2,
+      "calls": 54,
+      "tris": 62526,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 45
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "melee": {
+      "mean": 316.2,
+      "median": 291.9,
+      "p95": 449,
+      "calls": 48,
+      "tris": 49671,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 45
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     }
+    },
+    "errs": []
+   },
+   {
+    "label": "M19",
+    "prof": "perf960",
+    "tReady": 3922,
+    "mapsLoadMs": 727,
+    "scenes": {
+     "0": {
+      "mean": 265.2,
+      "median": 264.5,
+      "p95": 374.9,
+      "calls": 39,
+      "tris": 25066,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 44,
+       "textures": 37
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "1": {
+      "mean": 296.3,
+      "median": 284.7,
+      "p95": 461.4,
+      "calls": 42,
+      "tris": 37516,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 47,
+       "textures": 38
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "3": {
+      "mean": 270.7,
+      "median": 271.8,
+      "p95": 373.4,
+      "calls": 48,
+      "tris": 49671,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 53,
+       "textures": 41
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "5": {
+      "mean": 268.3,
+      "median": 257.1,
+      "p95": 345.8,
+      "calls": 54,
+      "tris": 62526,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 56,
+       "textures": 45
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "attack": {
+      "mean": 392.1,
+      "median": 378.5,
+      "p95": 546.6,
+      "calls": 48,
+      "tris": 61728,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 45
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "reload": {
+      "mean": 303.2,
+      "median": 294.1,
+      "p95": 433,
+      "calls": 54,
+      "tris": 62526,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 45
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "melee": {
+      "mean": 320.3,
+      "median": 309.4,
+      "p95": 433.5,
+      "calls": 45,
+      "tris": 49179,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 45
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     }
+    },
+    "errs": []
+   }
+  ],
+  "M19def": [
+   {
+    "label": "M19def",
+    "prof": "baldefault",
+    "tReady": 4956,
+    "mapsLoadMs": 1925,
+    "scenes": {
+     "0": {
+      "mean": 719.3,
+      "median": 709.6,
+      "p95": 866.1,
+      "calls": 39,
+      "tris": 25066,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 44,
+       "textures": 40
+      },
+      "lights": 5,
+      "buffer": [
+       1280,
+       720
+      ],
+      "aa": true
+     },
+     "1": {
+      "mean": 795.8,
+      "median": 781.7,
+      "p95": 980.9,
+      "calls": 42,
+      "tris": 37516,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 47,
+       "textures": 41
+      },
+      "lights": 5,
+      "buffer": [
+       1280,
+       720
+      ],
+      "aa": true
+     },
+     "3": {
+      "mean": 844.2,
+      "median": 834.4,
+      "p95": 1026.5,
+      "calls": 48,
+      "tris": 49671,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 53,
+       "textures": 44
+      },
+      "lights": 5,
+      "buffer": [
+       1280,
+       720
+      ],
+      "aa": true
+     },
+     "5": {
+      "mean": 864.9,
+      "median": 864.5,
+      "p95": 1048.5,
+      "calls": 54,
+      "tris": 62526,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 56,
+       "textures": 48
+      },
+      "lights": 5,
+      "buffer": [
+       1280,
+       720
+      ],
+      "aa": true
+     },
+     "attack": {
+      "mean": 1108.2,
+      "median": 1091.3,
+      "p95": 1344,
+      "calls": 48,
+      "tris": 61728,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 48
+      },
+      "lights": 5,
+      "buffer": [
+       1280,
+       720
+      ],
+      "aa": true
+     },
+     "reload": {
+      "mean": 961.3,
+      "median": 948.1,
+      "p95": 1169.6,
+      "calls": 54,
+      "tris": 62526,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 48
+      },
+      "lights": 5,
+      "buffer": [
+       1280,
+       720
+      ],
+      "aa": true
+     },
+     "melee": {
+      "mean": 998.5,
+      "median": 1000.3,
+      "p95": 1290.1,
+      "calls": 48,
+      "tris": 49671,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 48
+      },
+      "lights": 5,
+      "buffer": [
+       1280,
+       720
+      ],
+      "aa": true
+     }
+    },
+    "errs": []
+   }
+  ]
+ },
+ "final": {
+  "M18": [
+   {
+    "label": "M18",
+    "prof": "perf960",
+    "tReady": 4930,
+    "mapsLoadMs": 805,
+    "scenes": {
+     "0": {
+      "mean": 237,
+      "median": 219.1,
+      "p95": 337.1,
+      "calls": 39,
+      "tris": 25762,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 44,
+       "textures": 31
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "1": {
+      "mean": 243.7,
+      "median": 233.5,
+      "p95": 326.1,
+      "calls": 42,
+      "tris": 38212,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 47,
+       "textures": 32
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "3": {
+      "mean": 293.3,
+      "median": 269.2,
+      "p95": 427.6,
+      "calls": 48,
+      "tris": 50367,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 53,
+       "textures": 35
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "5": {
+      "mean": 273.9,
+      "median": 274.3,
+      "p95": 373.2,
+      "calls": 54,
+      "tris": 63222,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 56,
+       "textures": 39
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "attack": {
+      "mean": 366.1,
+      "median": 354.1,
+      "p95": 541.2,
+      "calls": 48,
+      "tris": 62424,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 39
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "reload": {
+      "mean": 286.2,
+      "median": 265,
+      "p95": 414.4,
+      "calls": 54,
+      "tris": 63222,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 39
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "melee": {
+      "mean": 308.9,
+      "median": 293.6,
+      "p95": 438.3,
+      "calls": 48,
+      "tris": 50367,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 39
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     }
+    },
+    "errs": []
+   },
+   {
+    "label": "M18",
+    "prof": "perf960",
+    "tReady": 4189,
+    "mapsLoadMs": 749,
+    "scenes": {
+     "0": {
+      "mean": 252,
+      "median": 232.6,
+      "p95": 430.1,
+      "calls": 39,
+      "tris": 25762,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 44,
+       "textures": 31
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "1": {
+      "mean": 271.4,
+      "median": 241.1,
+      "p95": 551.3,
+      "calls": 42,
+      "tris": 38212,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 47,
+       "textures": 32
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "3": {
+      "mean": 253.9,
+      "median": 241,
+      "p95": 378,
+      "calls": 48,
+      "tris": 50367,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 53,
+       "textures": 35
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "5": {
+      "mean": 258.6,
+      "median": 250.9,
+      "p95": 357.1,
+      "calls": 54,
+      "tris": 63222,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 56,
+       "textures": 39
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "attack": {
+      "mean": 343,
+      "median": 337.7,
+      "p95": 423.4,
+      "calls": 48,
+      "tris": 62424,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 39
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "reload": {
+      "mean": 247.6,
+      "median": 244.5,
+      "p95": 331,
+      "calls": 54,
+      "tris": 63222,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 39
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "melee": {
+      "mean": 296.8,
+      "median": 289.3,
+      "p95": 417.9,
+      "calls": 48,
+      "tris": 50367,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 39
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     }
+    },
+    "errs": []
+   },
+   {
+    "label": "M18",
+    "prof": "perf960",
+    "tReady": 3798,
+    "mapsLoadMs": 759,
+    "scenes": {
+     "0": {
+      "mean": 215.2,
+      "median": 213.8,
+      "p95": 285.6,
+      "calls": 39,
+      "tris": 25762,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 44,
+       "textures": 31
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "1": {
+      "mean": 230.9,
+      "median": 222.3,
+      "p95": 322.3,
+      "calls": 42,
+      "tris": 38212,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 47,
+       "textures": 32
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "3": {
+      "mean": 239,
+      "median": 235.7,
+      "p95": 313.3,
+      "calls": 48,
+      "tris": 50367,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 53,
+       "textures": 35
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "5": {
+      "mean": 252.9,
+      "median": 240.4,
+      "p95": 345.1,
+      "calls": 54,
+      "tris": 63222,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 56,
+       "textures": 39
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "attack": {
+      "mean": 350.5,
+      "median": 339.7,
+      "p95": 455.2,
+      "calls": 48,
+      "tris": 62424,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 39
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "reload": {
+      "mean": 257.5,
+      "median": 245.4,
+      "p95": 338,
+      "calls": 54,
+      "tris": 63222,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 39
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "melee": {
+      "mean": 295.2,
+      "median": 286.6,
+      "p95": 390.9,
+      "calls": 48,
+      "tris": 50367,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 39
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     }
+    },
+    "errs": []
+   }
+  ],
+  "M19": [
+   {
+    "label": "M19",
+    "prof": "perf960",
+    "tReady": 4101,
+    "mapsLoadMs": 685,
+    "scenes": {
+     "0": {
+      "mean": 217.5,
+      "median": 210.2,
+      "p95": 310.3,
+      "calls": 39,
+      "tris": 25066,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 44,
+       "textures": 29
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "1": {
+      "mean": 261.1,
+      "median": 234.8,
+      "p95": 428.8,
+      "calls": 42,
+      "tris": 37516,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 47,
+       "textures": 30
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "3": {
+      "mean": 269.8,
+      "median": 263,
+      "p95": 363.9,
+      "calls": 48,
+      "tris": 49671,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 53,
+       "textures": 33
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "5": {
+      "mean": 261.6,
+      "median": 249.1,
+      "p95": 398.1,
+      "calls": 54,
+      "tris": 62526,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 56,
+       "textures": 37
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "attack": {
+      "mean": 360.6,
+      "median": 341.7,
+      "p95": 539.7,
+      "calls": 48,
+      "tris": 61728,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 37
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "reload": {
+      "mean": 252.8,
+      "median": 237,
+      "p95": 369.5,
+      "calls": 54,
+      "tris": 62526,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 37
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "melee": {
+      "mean": 281.9,
+      "median": 265.9,
+      "p95": 412.9,
+      "calls": 45,
+      "tris": 49179,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 37
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     }
+    },
+    "errs": []
+   },
+   {
+    "label": "M19",
+    "prof": "perf960",
+    "tReady": 4066,
+    "mapsLoadMs": 668,
+    "scenes": {
+     "0": {
+      "mean": 246.9,
+      "median": 252.4,
+      "p95": 306.3,
+      "calls": 39,
+      "tris": 25066,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 44,
+       "textures": 29
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "1": {
+      "mean": 231.3,
+      "median": 218.3,
+      "p95": 338.3,
+      "calls": 42,
+      "tris": 37516,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 47,
+       "textures": 30
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "3": {
+      "mean": 233.5,
+      "median": 224.7,
+      "p95": 333,
+      "calls": 48,
+      "tris": 49671,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 53,
+       "textures": 33
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "5": {
+      "mean": 255.5,
+      "median": 242,
+      "p95": 374.2,
+      "calls": 54,
+      "tris": 62526,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 56,
+       "textures": 37
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "attack": {
+      "mean": 321.4,
+      "median": 308.3,
+      "p95": 425.6,
+      "calls": 48,
+      "tris": 61728,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 37
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "reload": {
+      "mean": 237,
+      "median": 228.7,
+      "p95": 318.4,
+      "calls": 54,
+      "tris": 62526,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 37
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "melee": {
+      "mean": 269.4,
+      "median": 269.8,
+      "p95": 341.8,
+      "calls": 45,
+      "tris": 49179,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 37
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     }
+    },
+    "errs": []
+   },
+   {
+    "label": "M19",
+    "prof": "perf960",
+    "tReady": 4139,
+    "mapsLoadMs": 621,
+    "scenes": {
+     "0": {
+      "mean": 209.4,
+      "median": 199.9,
+      "p95": 303.9,
+      "calls": 39,
+      "tris": 25066,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 44,
+       "textures": 29
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "1": {
+      "mean": 248.5,
+      "median": 238.1,
+      "p95": 347,
+      "calls": 42,
+      "tris": 37516,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 47,
+       "textures": 30
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "3": {
+      "mean": 256.3,
+      "median": 245.7,
+      "p95": 371.3,
+      "calls": 48,
+      "tris": 49671,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 53,
+       "textures": 33
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "5": {
+      "mean": 231.3,
+      "median": 229.4,
+      "p95": 300.1,
+      "calls": 54,
+      "tris": 62526,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 56,
+       "textures": 37
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "attack": {
+      "mean": 335.1,
+      "median": 317.3,
+      "p95": 441.7,
+      "calls": 48,
+      "tris": 61728,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 37
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "reload": {
+      "mean": 249.5,
+      "median": 237.2,
+      "p95": 326.1,
+      "calls": 54,
+      "tris": 62526,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 37
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     },
+     "melee": {
+      "mean": 279.3,
+      "median": 266.4,
+      "p95": 381.8,
+      "calls": 45,
+      "tris": 49179,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 37
+      },
+      "lights": 5,
+      "buffer": [
+       960,
+       540
+      ],
+      "aa": false
+     }
+    },
+    "errs": []
+   }
+  ],
+  "M19def": [
+   {
+    "label": "M19def",
+    "prof": "baldefault",
+    "tReady": 4798,
+    "mapsLoadMs": 2010,
+    "scenes": {
+     "0": {
+      "mean": 750.7,
+      "median": 739.6,
+      "p95": 928.5,
+      "calls": 39,
+      "tris": 25066,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 44,
+       "textures": 40
+      },
+      "lights": 5,
+      "buffer": [
+       1280,
+       720
+      ],
+      "aa": true
+     },
+     "1": {
+      "mean": 818.3,
+      "median": 788.1,
+      "p95": 1040.4,
+      "calls": 42,
+      "tris": 37516,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 47,
+       "textures": 41
+      },
+      "lights": 5,
+      "buffer": [
+       1280,
+       720
+      ],
+      "aa": true
+     },
+     "3": {
+      "mean": 815.1,
+      "median": 804.6,
+      "p95": 955.9,
+      "calls": 48,
+      "tris": 49671,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 53,
+       "textures": 44
+      },
+      "lights": 5,
+      "buffer": [
+       1280,
+       720
+      ],
+      "aa": true
+     },
+     "5": {
+      "mean": 871.4,
+      "median": 844,
+      "p95": 1071.4,
+      "calls": 54,
+      "tris": 62526,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 56,
+       "textures": 48
+      },
+      "lights": 5,
+      "buffer": [
+       1280,
+       720
+      ],
+      "aa": true
+     },
+     "attack": {
+      "mean": 1032.1,
+      "median": 1018.1,
+      "p95": 1214.4,
+      "calls": 48,
+      "tris": 61728,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 48
+      },
+      "lights": 5,
+      "buffer": [
+       1280,
+       720
+      ],
+      "aa": true
+     },
+     "reload": {
+      "mean": 843.6,
+      "median": 836.4,
+      "p95": 1048.2,
+      "calls": 54,
+      "tris": 62526,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 48
+      },
+      "lights": 5,
+      "buffer": [
+       1280,
+       720
+      ],
+      "aa": true
+     },
+     "melee": {
+      "mean": 973.2,
+      "median": 953.5,
+      "p95": 1202.9,
+      "calls": 48,
+      "tris": 49671,
+      "heapMB": 17.4,
+      "gpu": {
+       "geometries": 62,
+       "textures": 48
+      },
+      "lights": 5,
+      "buffer": [
+       1280,
+       720
+      ],
+      "aa": true
+     }
+    },
+    "errs": []
+   }
+  ]
+ }
+}

@@ -10,7 +10,7 @@ const ICONS = {
   reload: '<svg viewBox="0 0 24 24"><path d="M19 12a7 7 0 1 1-2.1-5"/><path d="M19 4v4h-4"/></svg>',
   jump: '<svg viewBox="0 0 24 24"><path d="M12 19V6M6 11l6-6 6 6"/></svg>',
   // M1.9 rifle-butt strike: stock silhouette + impact lines
-  melee: '<svg viewBox="0 0 24 24"><path d="M3 14l9-6h4l2 3-2 4h-5l-6 3z"/><path d="M19 5l2-2M20 9h3M17 3V0"/></svg>',
+  melee: '<svg viewBox="0 0 24 24"><path d="M2 20l8-8h5v5h-4l-6 6z"/><path d="M15 12l3-3"/><path d="M17 5l2-3M20 8l3-1M14 3l-1-2"/></svg>',
   look: '<svg viewBox="0 0 24 24"><path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/></svg>',
   cross: '<svg viewBox="0 0 24 24"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/></svg>',
   bullet: '<svg viewBox="0 0 24 24"><path d="M9 21V9c0-3 1.3-5.5 3-7 1.7 1.5 3 4 3 7v12z"/><path d="M9 17h6"/></svg>',
