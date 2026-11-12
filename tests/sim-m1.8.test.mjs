@@ -37,11 +37,13 @@ check('No profile ever exceeds its pixel budget on any device (5 devices × 3 pr
 }
 {
   const a = new AutoResolution({ window: 1 });
-  let changed = 0; for (let i = 0; i < 300; i++) if (a.sample(1 / 30, PROFILES.balanced.minAuto)) changed++; // 30 fps
+  let changed = 0; for (let i = 0; i < 1200; i++) if (a.sample(1 / 30, PROFILES.balanced.minAuto)) changed++; // 40 s at 30 fps (changes ≥ 4 s apart)
   const low = a.factor;
   check('Adaptive guard: sustained slow frames lower the resolution step by step, not below the profile minimum', changed >= 3 && low >= PROFILES.balanced.minAuto && low < 1, `factor ${low.toFixed(2)}`);
-  for (let i = 0; i < 2000; i++) a.sample(1 / 120, PROFILES.balanced.minAuto);                       // fast again
-  check('Adaptive guard: fast frames restore full resolution', a.factor === 1);
+  for (let i = 0; i < 4000; i++) a.sample(1 / 60, PROFILES.balanced.minAuto);                        // steady 60 Hz (iPhone)
+  check('Adaptive guard: steady 60 Hz (16.7 ms, the iPhone refresh) restores full resolution', a.factor === 1);
+  const h = new AutoResolution({ window: 1 }); for (let i = 0; i < 40; i++) h.sample(1 / 30, 0.65); for (let i = 0; i < 200; i++) h.sample(1 / 60, 0.65);
+  check('Adaptive guard: one short slow window (a hitch) does not lower the resolution', h.factor === 1);
   const b = new AutoResolution({ window: 1 }); for (let i = 0; i < 300; i++) b.sample(0.5, 0.65);
   check('Adaptive guard ignores hitches / background-tab gaps (> 250 ms)', b.factor === 1);
   const c = new AutoResolution({ window: 1 }); c.enabled = false; for (let i = 0; i < 300; i++) c.sample(1 / 20, 0.65);

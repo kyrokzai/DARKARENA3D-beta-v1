@@ -37,21 +37,25 @@ export function computePixelRatio(cssW, cssH, dpr, profileId, userScale = 1, aut
  * Keeps M1.7's smoothness even when a device cannot afford the profile's full resolution.
  */
 export class AutoResolution {
-  constructor({ window = 2.0, slowMs = 20, fastMs = 14, step = 0.08 } = {}) {
-    Object.assign(this, { window, slowMs, fastMs, step });
-    this.factor = 1; this.acc = 0; this.n = 0; this.t = 0; this.changes = 0; this.enabled = true;
+  // M1.8 review fix (C2): 60 Hz (16.7 ms) counts as fast → the resolution comes back on iPhones after a slow phase;
+  // lowering needs two slow windows in a row and changes are at least `cooldown` s apart (each one re-allocates MSAA).
+  constructor({ window = 2.0, slowMs = 20, fastMs = 17.8, step = 0.08, cooldown = 4 } = {}) {
+    Object.assign(this, { window, slowMs, fastMs, step, cooldown });
+    this.factor = 1; this.acc = 0; this.n = 0; this.t = 0; this.changes = 0; this.enabled = true; this.slowRun = 0; this.since = 1e9;
   }
-  reset() { this.factor = 1; this.acc = 0; this.n = 0; this.t = 0; }
+  reset() { this.factor = 1; this.acc = 0; this.n = 0; this.t = 0; this.slowRun = 0; this.since = 1e9; }
   /** dt in seconds; returns true when the factor changed (the caller then resizes). minAuto from the profile. */
   sample(dt, minAuto) {
     if (!this.enabled || !(dt > 0) || dt > 0.25) return false; // ignore hitches / background tabs
-    this.acc += dt; this.n++; this.t += dt;
+    this.acc += dt; this.n++; this.t += dt; this.since += dt;
     if (this.t < this.window) return false;
     const avgMs = this.acc / this.n * 1000; this.acc = 0; this.n = 0; this.t = 0;
+    this.slowRun = avgMs > this.slowMs ? this.slowRun + 1 : 0;
+    if (this.since < this.cooldown) return false;
     let f = this.factor;
-    if (avgMs > this.slowMs) f = Math.max(minAuto, f - this.step);
+    if (this.slowRun >= 2) f = Math.max(minAuto, f - this.step);
     else if (avgMs < this.fastMs && f < 1) f = Math.min(1, f + this.step / 2);
-    if (f !== this.factor) { this.factor = f; this.changes++; return true; }
+    if (f !== this.factor) { this.factor = f; this.changes++; this.since = 0; return true; }
     return false;
   }
 }

@@ -513,13 +513,16 @@ let loader = null;
 const mapStats = { requested: 0, loaded: 0, failed: 0 };
 export function getMapStats() { return { ...mapStats }; }
 function patchPackedNR(mat) {
+  // M1.8 fix (review C1): onBeforeCompile sees the shader BEFORE #include resolution, so the chunk bodies cannot be
+  // matched — patch the include directives themselves. Normal Z is rebuilt from XY by three's own packed-normal path
+  // (USE_PACKED_NORMALMAP); roughness comes from the B channel of the same texture.
+  mat.defines = { ...(mat.defines || {}), USE_PACKED_NORMALMAP: '' };
   mat.onBeforeCompile = (sh) => {
-    sh.fragmentShader = sh.fragmentShader
-      .replace('vec3 mapN = texture2D( normalMap, vNormalMapUv ).xyz * 2.0 - 1.0;',
-        'vec4 nrS = texture2D( normalMap, vNormalMapUv ); vec3 mapN = vec3( nrS.xy * 2.0 - 1.0, 0.0 ); mapN.z = sqrt( max( 0.0, 1.0 - dot( mapN.xy, mapN.xy ) ) );')
-      .replace('float roughnessFactor = roughness;', 'float roughnessFactor = roughness;\n#ifdef USE_NORMALMAP\n\troughnessFactor *= texture2D( normalMap, vNormalMapUv ).b;\n#endif');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <roughnessmap_fragment>',
+      'float roughnessFactor = roughness;\n#ifdef USE_NORMALMAP\n\troughnessFactor *= texture2D( normalMap, vNormalMapUv ).b;\n#endif');
+    mat.userData.patched = sh.fragmentShader.includes('texture2D( normalMap, vNormalMapUv ).b');
   };
-  mat.customProgramCacheKey = () => 'da-infected-nr';
+  mat.customProgramCacheKey = () => 'da-infected-nr2';
 }
 function bakedMaterial(variant, part, opts) {
   const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0, ...opts });
