@@ -71,3 +71,33 @@ export function reloadTimeline(r) {
   o.rightIndexOff = smooth(seg(r, 0.02, 0.1)) * (1 - smooth(seg(r, 0.9, 1)));
   return o;
 }
+
+// ---- M1.9 rifle-butt strike: ONE timeline driven by the sim's melee progress p ∈ [0, 1] (GameState.melee) ----
+//  p     what happens (duration 0.6 s, the blow lands at p = 0.32 — melee.hitAt in defs.js)
+//  0.00  grip pose
+//  0.20  wind-up: the rifle is pulled back and to the right, muzzle tips left (stock cocked)
+//  0.32  strike: the stock/receiver sweeps forward across the centre of the view (impact frame)
+//  0.42  short hold at full extension (impact reads clearly, no blur of motion)
+//  1.00  smooth return to the grip
+// Keys: [p, rig offsets] — rx pitch (+ = muzzle up), ry yaw (+ = muzzle left), rz roll, px/py/pz metres (−z = forward).
+export const MELEE_KEYS = [
+  [0.00, { rx: 0, ry: 0, rz: 0, px: 0, py: 0, pz: 0 }],
+  [0.20, { rx: 0.12, ry: 0.38, rz: -0.25, px: 0.06, py: -0.04, pz: 0.05 }],
+  [0.32, { rx: 0.38, ry: -1.55, rz: 0.30, px: 0.03, py: 0.035, pz: -0.19 }],
+  [0.42, { rx: 0.36, ry: -1.62, rz: 0.32, px: 0.025, py: 0.03, pz: -0.20 }],
+  [1.00, { rx: 0, ry: 0, rz: 0, px: 0, py: 0, pz: 0 }],
+];
+const meleeOut = { rx: 0, ry: 0, rz: 0, px: 0, py: 0, pz: 0, phase: 'none' };
+/** Evaluate the strike at progress p (< 0 = no strike). Returns a shared object (no allocations). */
+export function meleeTimeline(p) {
+  const o = meleeOut;
+  if (!(p >= 0)) { o.rx = o.ry = o.rz = o.px = o.py = o.pz = 0; o.phase = 'none'; return o; }
+  p = Math.min(1, p);
+  let k = 0; while (k < MELEE_KEYS.length - 2 && p >= MELEE_KEYS[k + 1][0]) k++;
+  const [p0, a] = MELEE_KEYS[k], [p1, b] = MELEE_KEYS[k + 1];
+  // wind-up and return eased; the strike itself is fast-in (ease-out) so the blow snaps
+  const u = seg(p, p0, p1), t = k === 1 ? 1 - (1 - u) * (1 - u) * (1 - u) : smooth(u);
+  for (const key of ['rx', 'ry', 'rz', 'px', 'py', 'pz']) o[key] = lerp(a[key], b[key], t);
+  o.phase = p < 0.2 ? 'windup' : p < 0.42 ? 'strike' : 'return';
+  return o;
+}

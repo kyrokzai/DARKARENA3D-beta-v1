@@ -33,7 +33,7 @@ export function createPose() {
   return {
     phase: 0, moveK: 0, runK: 0, alertK: 0, turn: 0,
     raise: 0, across: 0, lunge: 0,            // attack swing
-    hitK: 0, hitX: 0, hitZ: 0, hitHead: 0,    // hit reaction (X: + = pushed backwards, Z: + = to its left)
+    hitK: 0, hitX: 0, hitZ: 0, hitHead: 0, hitPow: 1, // hit reaction (X: + = pushed backwards, Z: + = to its left)
     // sagittal chain (written by solvePose)
     hipsY: 0.92, hipsPitch: 0, spinePitch: 0, chestPitch: 0, neckPitch: 0, headPitch: 0,
     // derived hit-zone centres: forward offset from the feet (m) and height (m)
@@ -80,14 +80,15 @@ export function stepPose(e, dt, cell = 2) {
     p.hitZ = clamp(e.hit.x * -fy + e.hit.y * fx, -1, 1);
     p.hitHead = e.hit.zone === 'head' ? 1 : 0;
   }
-  const ht = clamp(e.hit.t / 0.35, 0, 1);
+  const ht = clamp(e.hit.t / (e.hit.dur || 0.35), 0, 1);
+  p.hitPow = e.hit.pow || 1;                                     // M1.9: melee blows react harder (bullets = 1)
   p.hitK = ht > 0.8 ? (1 - ht) / 0.2 : smooth(ht / 0.8);       // 0 → 1 in 70 ms, then eases back
   solvePose(p);
 }
 
 /** Sagittal chain angles from the pose scalars + forward kinematics for the hit zones. */
 export function solvePose(p) {
-  const lean = 0.3 + p.runK * 0.3, hx = p.hitX * p.hitK;
+  const lean = 0.3 + p.runK * 0.3, hx = p.hitX * p.hitK * (p.hitPow || 1);
   p.hipsY = 0.97 - 0.05 - p.runK * 0.09 - Math.abs(Math.cos(p.phase)) * 0.03 * p.moveK - p.lunge * 0.05;
   p.hipsPitch = 0.05 + p.runK * 0.1 + p.lunge * 0.1;
   p.spinePitch = lean * 0.5 + p.lunge * 0.35 - 0.14 * hx;

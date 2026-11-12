@@ -8,8 +8,8 @@ export class InputState {
     this.lookYaw = 0;                // accumulated radians since last consume
     this.lookPitch = 0;
     // Action intents (held state + press counters). The sim reads them once mechanics exist (M1.3+).
-    this.actions = { fire: false, aim: false, reload: false, jump: false };
-    this.presses = { fire: 0, aim: 0, reload: 0, jump: 0 };
+    this.actions = { fire: false, aim: false, reload: false, jump: false, melee: false };
+    this.presses = { fire: 0, aim: 0, reload: 0, jump: 0, melee: 0 }; // melee: M1.9 rifle-butt strike (V / УДАР)
     // ADS: PC holds the right mouse button (aimHeld); touch toggles with one tap on ПРИЦЕЛ (aimToggle).
     this.aimHeld = false;
     this.aimToggle = false;

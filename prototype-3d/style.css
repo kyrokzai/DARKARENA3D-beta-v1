@@ -71,6 +71,11 @@ body.editing .hud-panel { pointer-events: auto; }
 .hud-fire svg { width: 42%; height: 42%; }
 .button.pressed { transform: scale(.92); opacity: 1; background: radial-gradient(circle at 50% 35%, #4a5570, #1c2230); }
 .hud-fire.pressed { background: radial-gradient(circle at 50% 35%, #ff5d70, #8f1d2c); }
+/* M1.9 melee button: a dark sector shrinks while the strike / cooldown runs (--cd 1 → 0) */
+.hud-melee::after { content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+  background: conic-gradient(rgba(0,0,0,.55) calc(var(--cd, 0) * 360deg), transparent 0); opacity: 0; transition: opacity .08s; }
+.hud-melee.cooling::after { opacity: 1; }
+.hud-melee.pressed { background: radial-gradient(circle at 50% 35%, #d0a060, #6a4a1e); }
 .hud-panel.hud-minimap { border-radius: 4px; border: 1px solid #aeb6c766; box-shadow: 0 4px 12px #0009; image-rendering: pixelated; }
 
 /* edit mode */

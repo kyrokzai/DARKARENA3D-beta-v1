@@ -194,6 +194,22 @@ export function createSfx(getSettings) {
       tone(t, { freq: 95 + Math.random() * 15, freqEnd: 42, dur: 0.14, gain: 0.55 });
       noiseBurst(t + 0.03, { dur: 0.35, gain: 0.08, type: 'bandpass', freq: 700, q: 0.6, decay: 0.33 }); // room tail
     },
+    /** M1.9 rifle-butt strike: a short cloth/air whoosh with the rifle's rattle (original synthesis). */
+    meleeSwing() {
+      count('meleeSwing'); if (!ready()) return;
+      const t = ctx.currentTime;
+      noiseBurst(t + 0.04, { dur: 0.16, gain: 0.16, type: 'bandpass', freq: 600, freqEnd: 2200, q: 1.1, decay: 0.15 });
+      noiseBurst(t + 0.02, { dur: 0.05, gain: 0.05, type: 'highpass', freq: 3800, decay: 0.04 }); // sling / parts rattle
+    },
+    /** M1.9 the blow connects: dull body thud + a hard knock of the polymer stock (a bit heavier on a kill). */
+    meleeHit(killed = false) {
+      count('meleeHit'); if (!ready()) return;
+      duck(0.25, 0.35);
+      const t = ctx.currentTime, k = killed ? 1.2 : 1;
+      tone(t, { freq: 120, freqEnd: 48, dur: 0.16, gain: 0.6 * k });
+      noiseBurst(t, { dur: 0.09, gain: 0.45 * k, type: 'lowpass', freq: 1400, freqEnd: 300, decay: 0.08 });
+      noiseBurst(t, { dur: 0.025, gain: 0.22, type: 'bandpass', freq: 2600, q: 1.5, decay: 0.02 });
+    },
     dry() { count('dry'); if (!ready()) return; const t = ctx.currentTime; click(t, 2400, 0.35); tone(t, { freq: 1400, dur: 0.03, gain: 0.08, type: 'square' }); },
     /** Reload: magazine out → magazine in → charging handle, timed to the 1.3 s animation. */
     reload(time = 1.3) {

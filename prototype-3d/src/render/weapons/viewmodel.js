@@ -8,7 +8,7 @@ import { getWeaponTextures } from './weapon-textures.js';
 import { PLAYER_SPEED } from '../../config.js';
 import { createHands } from './hands-model.js';
 import { createHandsController } from './hands-controller.js';
-import { reloadTimeline } from './weapon-anim.js';
+import { reloadTimeline, meleeTimeline } from './weapon-anim.js';
 
 const SUB = 1 / 240;
 export const VM_FOV = 64;
@@ -79,9 +79,10 @@ export function createViewmodel({ renderer, skin }) {
 
   // ---- springs: recoil (z, pitch, roll), sway (x, y, yaw), bob is analytic ----
   const sp = { kz: new Spring(150, 0.62), kp: new Spring(170, 0.6), kr: new Spring(140, 0.7), sx: new Spring(90, 0.85), sy: new Spring(90, 0.85), syaw: new Spring(90, 0.85) };
+  const impact = new Spring(220, 0.55); let meleePhase = 'none'; // M1.9 melee impact jolt
   let acc = 0, bobPhase = 0, bobAmp = 0, flashT = 0, lastYaw = null, lastPitch = null, sprayCount = 0;
   const tmpV = new THREE.Vector3(), tmpQ = new THREE.Quaternion();
-  const stats = { shots: 0, flashes: 0, smokeEmitted: 0, casings: 0 };
+  const stats = { shots: 0, flashes: 0, smokeEmitted: 0, casings: 0, meleeImpacts: 0 };
 
   function onShot(ev) {
     const a = ev.ads || 0, k = 1 - a * 0.5;
@@ -126,7 +127,7 @@ export function createViewmodel({ renderer, skin }) {
     acc += dt;
     while (acc >= SUB) {
       acc -= SUB;
-      sp.kz.step(0, SUB); sp.kp.step(0, SUB); sp.kr.step(0, SUB);
+      sp.kz.step(0, SUB); sp.kp.step(0, SUB); sp.kr.step(0, SUB); impact.step(0, SUB);
       sp.sx.step(swayX, SUB); sp.sy.step(swayY, SUB); sp.syaw.step(swayX * 2.2, SUB);
     }
     // pose blend hip ↔ ADS (smoothstep of the sim's ADS factor)
@@ -154,6 +155,13 @@ export function createViewmodel({ renderer, skin }) {
     const tl = reloadTimeline(rr);
     rig.rotation.x += tl.rig.rx; rig.rotation.y += tl.rig.ry; rig.rotation.z += tl.rig.rz;
     rig.position.x += tl.rig.px; rig.position.y += tl.rig.py; rig.position.z += tl.rig.pz;
+    // M1.9 rifle-butt strike (weapon-anim.js meleeTimeline, driven by the sim's GameState.melee.progress)
+    const mp = api.forceMelee ?? s.melee ?? -1;
+    const ml = meleeTimeline(mp); meleePhase = ml.phase;
+    rig.rotation.x += ml.rx; rig.rotation.y += ml.ry; rig.rotation.z += ml.rz;
+    rig.position.x += ml.px; rig.position.y += ml.py; rig.position.z += ml.pz;
+    // impact jolt (spring, from onMeleeImpact): the rifle stops short and recoils back a little
+    rig.position.z += impact.x * 0.05; rig.rotation.z += impact.x * 0.06;
     // weapon parts + hands from the same timeline (hands-controller.js)
     camera.updateMatrixWorld(true);
     invModel.copy(model.group.matrixWorld).invert();
@@ -192,6 +200,10 @@ export function createViewmodel({ renderer, skin }) {
   const api = {
     holdFlash: false, // test/screenshot aid (?debug=1): keep the muzzle flash on screen
     forceReload: null, // test/screenshot aid (?debug=1): show the reload animation frozen at this progress
+    forceMelee: null,  // test/screenshot aid (?debug=1): show the melee strike frozen at this progress (0..1)
+    /** M1.9: the blow connected — short jolt of the rifle (render only). */
+    onMeleeImpact(killed) { impact.v += killed ? 7 : 5.5; stats.meleeImpacts++; },
+    get meleePhase() { return meleePhase; },
     hands, spareMag,
     /** Current blended hand poses (model space) — for tests. */
     get handPoses() { return { right: ctl.rightPose, left: ctl.leftPose, offsets: ctl.offsets }; },

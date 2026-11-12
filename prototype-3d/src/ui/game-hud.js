@@ -106,6 +106,12 @@ export function createGameHud({ game, hud, getSettings = () => ({ alarmFx: 'full
     cross.style.setProperty('--gap', gapNow.toFixed(1) + 'px');
     cross.style.opacity = String(Math.max(0, 1 - (w.ads || 0) * 1.6));
     hud.els.aim.classList.toggle('toggled', (w.ads || 0) > 0.01);
+    // melee (M1.9): the button shows the strike / cooldown from GameState.melee (no own timer)
+    if (hud.els.melee) {
+      const m = st.melee, cd = m.available ? (m.active ? 1 : m.cooldown) : 0;
+      const v = cd.toFixed(2); if (hud.els.melee.style.getPropertyValue('--cd') !== v) hud.els.melee.style.setProperty('--cd', v);
+      if (hud.els.melee.classList.contains('cooling') !== cd > 0) hud.els.melee.classList.toggle('cooling', cd > 0);
+    }
     // alarm (M1.7): polled from GameState — the red edge follows k (scaled by the user's setting) with a slow
     // 0.8 Hz breathing, the warning text shows during the 'warn' window. No strobe.
     const a = st.alarm, fx = getSettings().alarmFx;

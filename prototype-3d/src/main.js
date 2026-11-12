@@ -163,6 +163,14 @@ updateFpsVisibility();
 game.on('fire', e => { view.onShot(e); sfx.shot(e.ads); });
 game.on('impact', e => { view.onImpact(e); if (Math.random() < 0.5) sfx.impact(); });
 game.on('dryFire', () => sfx.dry());
+// M1.9 rifle-butt strike: swing whoosh at the start; on a hit — impact, blood (same effect as a bullet hit), camera punch
+game.on('meleeStart', () => sfx.meleeSwing());
+game.on('meleeHit', e => {
+  const en = game.enemies.find(x => x.id === e.id);
+  view.onMeleeHit(e); sfx.meleeHit(e.killed);
+  view.infected.onHit(e.point, e.dir, 'body');
+  if (en && !e.killed) { const r = rel(en.x, en.y); sfx.infected('hurt', r.pan, r.dist); }
+});
 game.on('reloadStart', e => sfx.reload(e.time));
 game.on('adsChange', e => { if (e.ads) sfx.adsIn(); });
 game.on('hit', e => sfx.hit(e.headshot, e.kill));
@@ -225,7 +233,7 @@ startLoop({
     const w = game.state.weapon;
     // alarm between waves (M1.7): GameState → siren / ambience (audio) and beacons / red light (render)
     sfx.frame({ playing: state === 'play', siren: game.state.alarm.siren, fx: settings.alarmFx, dt });
-    view.render(game.player, state === 'play' ? alpha : 1, { dt, alarm: alarmVisual(game.state.alarm.k, settings.alarmFx), ads: w.ads, fovMult: game.weapon.def.ads.fovMult, reload: w.reloading ? w.reloadProgress : -1, triggerDown: game.weapon.triggerDown, targets: game.targets, enemies: game.enemies, enemyDt: (state === 'play' || state === 'dead' || state === 'victory') ? dt : 0, showWeapon: state !== 'menu' && state !== 'about' && state !== 'dead' && state !== 'victory' });
+    view.render(game.player, state === 'play' ? alpha : 1, { dt, alarm: alarmVisual(game.state.alarm.k, settings.alarmFx), ads: w.ads, fovMult: game.weapon.def.ads.fovMult, reload: w.reloading ? w.reloadProgress : -1, melee: game.state.melee.active ? game.state.melee.progress : -1, triggerDown: game.weapon.triggerDown, targets: game.targets, enemies: game.enemies, enemyDt: (state === 'play' || state === 'dead' || state === 'victory') ? dt : 0, showWeapon: state !== 'menu' && state !== 'about' && state !== 'dead' && state !== 'victory' });
     gameHud.frame(view.camera.fov);
     if (state === 'play' || state === 'edit') hud.drawMinimap(game.player);
     const ms = performance.now() - t0;

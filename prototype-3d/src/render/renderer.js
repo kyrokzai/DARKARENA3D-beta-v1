@@ -121,6 +121,8 @@ export function createRenderer({ container, world, getSettings, skin }) {
       flashT = 0.045;
     },
     onImpact(ev) { impacts.impact(ev); },
+    /** M1.9 melee: the rifle butt connects — a light camera punch (render only) and the rifle jolt. */
+    onMeleeHit(ev) { vm.onMeleeImpact(ev.killed); kick.v += 0.35; kick.rv += 0.35; },
     /** M1.8: real frame time while playing → adaptive resolution guard (resizes only when the factor changes). */
     sampleFrame(dt) { if (autoRes.sample(dt, getProfile(getSettings().graphicsProfile).minAuto)) resize(true); },
     /** Current render resolution facts (tests / FPS overlay). */
@@ -156,7 +158,7 @@ export function createRenderer({ container, world, getSettings, skin }) {
       renderer.render(scene, camera);
       lastInfo.world = { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
       if (w.showWeapon !== false) {
-        vm.update({ ads, reload: w.reload ?? -1, player, dt, aspect: camera.aspect, triggerDown: !!w.triggerDown });
+        vm.update({ ads, reload: w.reload ?? -1, melee: w.melee ?? -1, player, dt, aspect: camera.aspect, triggerDown: !!w.triggerDown });
         renderer.info.reset();
         renderer.autoClear = false;
         renderer.clearDepth();

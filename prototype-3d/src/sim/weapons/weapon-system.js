@@ -53,8 +53,9 @@ export class WeaponSystem {
     // ---- reload request (edge counter, so a tap is never lost between ticks) ----
     if (input.presses.reload !== this.lastReloadPress) { this.lastReloadPress = input.presses.reload; this.startReload(); }
 
-    // ---- ADS: held (PC right mouse) or toggled (touch button); not while reloading ----
-    const wantAds = (input.aimHeld || input.aimToggle) && !this.reloading;
+    // ---- ADS: held (PC right mouse) or toggled (touch button); not while reloading or striking (M1.9 melee) ----
+    const meleeBusy = !!(this.game.melee && this.game.melee.busy);
+    const wantAds = (input.aimHeld || input.aimToggle) && !this.reloading && !meleeBusy;
     if (wantAds !== this.adsWanted) { this.adsWanted = wantAds; this.game.emit('adsChange', { ads: wantAds }); }
     const k = dt / def.ads.time;
     this.adsT = wantAds ? Math.min(1, this.adsT + k) : Math.max(0, this.adsT - k);
@@ -80,7 +81,7 @@ export class WeaponSystem {
     let firedThisTick = false;
     const wantsShot = () => def.fireMode === 'auto' ? (trig || tapShot) : def.fireMode === 'burst' ? this.burstLeft > 0 : pulled && !firedThisTick;
     while (this.cooldown <= 1e-6 && wantsShot()) { // epsilon: 6 × (1/60) must equal 0.1 s exactly
-      if (this.reloading || w.reloading) break;
+      if (this.reloading || w.reloading || meleeBusy) break; // never a shot in the same moment as a strike
       if (w.mag <= 0) {
         tapShot = false;
         if (!this.dryLatched) { this.dryLatched = true; this.game.emit('dryFire', {}); if (def.autoReloadOnEmpty) this.startReload(); }
@@ -111,8 +112,12 @@ export class WeaponSystem {
     st.setAim({ spread: this.currentSpread(), ads: this.adsT });
   }
 
+  /** M1.9: a melee strike starts — the spray ends (recoil recovery and bloom continue normally). */
+  interruptForMelee() { this.burstLeft = 0; this.shotsInSpray = 0; }
+
   startReload() {
     const w = this.game.state.weapon;
+    if (this.game.melee && this.game.melee.busy) return false;
     if (this.reloading || w.reloading || w.mag >= w.magSize || w.reserve <= 0) return false;
     this.reloadT = 0; this.adsWanted = false;
     this.game.state.setReload(true, 0);

@@ -32,11 +32,13 @@ export function setupDesktopInput({ input, canvas, getSettings, isPlaying, onLoc
 
   // Weapon: LMB fires only while the mouse is captured (the click that captures it never fires);
   // RMB = aim down sights while held. F also fires (keyboard / drag-fallback mode). R reloads.
+  // M1.9: V (or the middle mouse button) = rifle-butt strike — one strike per press.
   const locked = () => document.pointerLockElement === canvas;
   document.addEventListener('mousedown', e => {
     if (!isPlaying()) return;
     if (e.button === 0 && locked()) input.setAction('fire', true);
     if (e.button === 2 && (locked() || dragFallback)) input.aimHeld = true;
+    if (e.button === 1 && (locked() || dragFallback)) { e.preventDefault(); input.setAction('melee', true); input.setAction('melee', false); }
   });
   document.addEventListener('mouseup', e => {
     if (e.button === 0) input.setAction('fire', false);
@@ -47,6 +49,7 @@ export function setupDesktopInput({ input, canvas, getSettings, isPlaying, onLoc
     if (e.repeat || !isPlaying()) return;
     if (e.code === 'KeyR') { input.setAction('reload', true); input.setAction('reload', false); }
     if (e.code === 'KeyF') input.setAction('fire', true);
+    if (e.code === 'KeyV') { input.setAction('melee', true); input.setAction('melee', false); }
   });
   addEventListener('keyup', e => { if (e.code === 'KeyF') input.setAction('fire', false); });
 

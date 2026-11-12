@@ -47,7 +47,8 @@ export class Infected {
     this.stuckT = 0; this.stuckX = x; this.stuckY = y;
     // attack
     this.attackT = 0; this.cooldown = 0; this.blowDealt = false; this.swings = 0; this.blows = 0;
-    this.stun = 0; this.hit = { t: 0, x: 0, y: 0, zone: null, n: 0 }; // last hit (drives the hit reaction)
+    this.stun = 0; this.hit = { t: 0, x: 0, y: 0, zone: null, n: 0, pow: 1, dur: 0.35 }; // last hit (drives the hit reaction)
+    this.push = { x: 0, y: 0 }; this.meleeHits = 0; this.interrupted = 0; // M1.9 melee knockback (cells/s) and counters
     // death
     this.deathT = 0; this.killCounted = false; this.killDir = { x: 0, y: 0 }; this.fall = null; // {kind: back|front|crumple, facing}
     // animated pose (shared with the renderer) and hit zones rebuilt in place (no allocation per shot)
@@ -76,7 +77,8 @@ export class Infected {
   applyDamage(n, zone, info = null) {
     if (!this.alive) return { killed: false };
     this.hp = Math.max(0, this.hp - n);
-    this.hit.t = 0.35; this.hit.zone = zone; this.hit.n++;
+    this.hit.pow = (info && info.pow) || 1; this.hit.dur = (info && info.dur) || 0.35;
+    this.hit.t = this.hit.dur; this.hit.zone = zone; this.hit.n++;
     if (info && info.dir) { this.hit.x = info.dir.x; this.hit.y = info.dir.y; }
     this.stun = this.def.hitStun;
     this.pain = true; // being shot reveals the shooter (handled in step, where the player is known)
@@ -86,6 +88,23 @@ export class Infected {
       return { killed: true };
     }
     return { killed: false };
+  }
+
+  /**
+   * M1.9 melee blow (rifle butt): damage + a stronger hit reaction, a short stagger (slowed, no new swing), a knockback
+   * away from the player and — if the infected's own swing has not landed yet — that swing is cancelled.
+   * dir = unit vector player → infected; m = the weapon's melee definition. Returns {killed}.
+   */
+  applyMelee(n, dir, m) {
+    if (!this.alive) return { killed: false };
+    this.meleeHits++;
+    const r = this.applyDamage(n, 'body', { dir, pow: m.reactPower, dur: m.reactTime });
+    if (r.killed) { this.push.x = this.push.y = 0; return r; }
+    this.stun = Math.max(this.stun, m.stagger);
+    this.cooldown = Math.max(this.cooldown, m.stagger);
+    this.push.x = dir.x * m.knockback * M; this.push.y = dir.y * m.knockback * M;
+    if (m.interruptAttack && this.state === S.ATTACK && !this.blowDealt) { this.interrupted++; this.setState(S.RECOVER); }
+    return r;
   }
 
   /** A loud noise (gunfire) at (px, py): go and look there unless already fighting what it sees. */
@@ -247,6 +266,12 @@ export class Infected {
       this.turnTo(Math.atan2(gy / gl, gx / gl), dt);
     }
     // speed ramps (no instant start/stop), stun slows, then move along the facing with wall collision
+    // M1.9 melee knockback: a decaying push away from the player, with wall collision (no tunnelling: ≤ 0.02 cells/tick)
+    if (this.push.x || this.push.y) {
+      moveEntity(ctx.world, this, this.push.x * dt, this.push.y * dt, this.k.r);
+      const k = Math.exp(-dt * 6); this.push.x *= k; this.push.y *= k;
+      if (Math.hypot(this.push.x, this.push.y) < 0.02) this.push.x = this.push.y = 0;
+    }
     if (this.stun > 0) want *= 0.25;
     const a = this.k.accel * dt;
     this.speed = this.speed < want ? Math.min(want, this.speed + a) : Math.max(want, this.speed - a * 1.6);

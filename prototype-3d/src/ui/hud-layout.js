@@ -13,6 +13,7 @@ export const HUD_ELEMENTS = {
   aim:     { label: 'Прицел',      kind: 'button', shape: 'circle', w: 62, h: 62, action: 'aim', touchOnly: true },
   reload:  { label: 'Перезарядка', kind: 'button', shape: 'circle', w: 60, h: 60, action: 'reload', touchOnly: true },
   jump:    { label: 'Прыжок',      kind: 'button', shape: 'circle', w: 62, h: 62, action: 'jump', touchOnly: true },
+  melee:   { label: 'Удар прикладом', kind: 'button', shape: 'circle', w: 62, h: 62, action: 'melee', touchOnly: true }, // M1.9
   minimap: { label: 'Мини-карта',  kind: 'map',    shape: 'rect',   w: 112, h: 112 },
   health:  { label: 'Здоровье',    kind: 'info',   shape: 'rect',   w: 196, h: 40 },
   ammo:    { label: 'Патроны',     kind: 'info',   shape: 'rect',   w: 148, h: 52 },
@@ -29,6 +30,7 @@ export const DEFAULT_LAYOUTS = Object.freeze({
     reload:  { x: 0.74, y: 0.86, s: 1 },
     jump:    { x: 0.91, y: 0.40, s: 1 },
     aim:     { x: 0.75, y: 0.57, s: 1 },
+    melee:   { x: 0.76, y: 0.35, s: 1 }, // M1.9: above ПРИЦЕЛ, left of ПРЫЖОК — reachable with the right thumb, clear of ОГОНЬ
     look:    { x: 0.58, y: 0.60, s: 1 },
     minimap: { x: 0.09, y: 0.33, s: 1 },
     health:  { x: 0.13, y: 0.07, s: 1 },
