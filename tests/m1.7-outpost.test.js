@@ -15,7 +15,7 @@ const { results, check } = makeChecker();
 const DA = (page, fn, arg) => page.evaluate(fn, arg);
 const shoot = async (page, file) => { if (SHOTS) await page.screenshot({ path: path.join(SHOTS, file) }); };
 const ticks = (page, n) => DA(page, n => new Promise(res => { const t0 = __DA3.game.tick, s0 = performance.now(); const f = () => (__DA3.game.tick - t0 >= n || performance.now() - s0 > 6000 ? res() : requestAnimationFrame(f)); f(); }), n); // capped: never hangs
-const WAVES = '/prototype-3d/?debug=1&waves=1';
+const WAVES = '/prototype-3d/?debug=1&waves=1&gfx=performance'; // M1.7-level render cost (see tests/lib/harness.js)
 const VARIANTS = ['guard', 'technician', 'worker'];
 
 (async () => {
@@ -90,10 +90,11 @@ const VARIANTS = ['guard', 'technician', 'worker'];
       const out = { created: {}, meshes: {}, geo: {}, mats: {}, err: {}, hits: {}, dead: {} };
       const es = VARIANTS.map((vr, i) => g.spawnInfected('hollow', 9 + i * 0.01, 7.6 + i * 0.9, Math.PI, { variant: vr })); // clear line of sight (the comm column is at x 7, y 5–7)
       v.update(g.enemies, 0, 1);
-      for (const [i, e] of es.entries()) { const grp = v.groupOf(e), m = grp.children.filter(o => o.isSkinnedMesh); out.created[VARIANTS[i]] = v.variantOf(e); out.meshes[VARIANTS[i]] = m.length; out.geo[VARIANTS[i]] = m.map(x => x.geometry.uuid).join(); out.mats[VARIANTS[i]] = m.map(x => x.material.uuid).join(); }
+      // M1.8: 3 LOD levels per infected, one drawn at a time; each variant has its own baked skin / outfit materials
+      for (const [i, e] of es.entries()) { const grp = v.groupOf(e), m = grp.children.filter(o => o.isSkinnedMesh && o.visible); out.created[VARIANTS[i]] = v.variantOf(e); out.meshes[VARIANTS[i]] = m.length; out.geo[VARIANTS[i]] = m.map(x => x.geometry.uuid).join(); out.mats[VARIANTS[i]] = m.map(x => x.material.uuid).join(); out.eyes = (out.eyes || new Set()).add(m.find(x => x.material === m[2].material).material.uuid); }
       // a second GUARD shares the GUARD geometry
       const g2 = g.spawnInfected('hollow', 12, 12, Math.PI, { variant: 'guard' }); v.update(g.enemies, 0, 1);
-      out.sharedGuard = v.groupOf(g2).children.filter(o => o.isSkinnedMesh).map(x => x.geometry.uuid).join() === out.geo.guard;
+      const g2m = v.groupOf(g2).children.filter(o => o.isSkinnedMesh && o.visible); out.sharedGuard = g2m.map(x => x.geometry.uuid).join() === out.geo.guard && g2m.map(x => x.material.uuid).join() === out.mats.guard; out.eyes = out.eyes.size;
       g.removeInfected(g2);
       // animation ↔ hit zones while chasing (each variant): max head-zone error over 2 s
       for (const e of es) e.senseT = 0;
@@ -127,7 +128,7 @@ const VARIANTS = ['guard', 'technician', 'worker'];
       return out;
     }, { VARIANTS });
     check('9. All three variants are created and rendered with their own look (GUARD / TECHNICIAN / WORKER)', VARIANTS.every(v => r.created[v] === v) && new Set(Object.values(r.geo)).size === 3, JSON.stringify(r.created));
-    check('9. Each variant = 3 draw calls (skin / outfit / eyes); geometry shared per variant, materials shared by all', VARIANTS.every(v => r.meshes[v] === 3) && r.sharedGuard && new Set(Object.values(r.mats)).size === 1);
+    check('9. Each variant = 3 draw calls (skin / outfit / eyes); geometry + materials shared by every infected of a variant (M1.8: own baked materials per variant, eyes material shared by all)', VARIANTS.every(v => r.meshes[v] === 3) && r.sharedGuard && new Set(Object.values(r.mats)).size === 3 && r.eyes === 1);
     check('12. Animation in sync with the sim hit zones for every variant (head bone within 6 cm while chasing)', VARIANTS.every(v => r.err[v] < 0.06) && r.states.every(s => s !== 'IDLE'), JSON.stringify(r.err));
     check('13. Hit reaction: a real hitscan ray hits each variant, 25 damage, hit effect shown', VARIANTS.every(v => r.hits[v].type === 'entity' && r.hits[v].same && r.hits[v].hp === 75 && r.hits[v].burst), JSON.stringify(r.hits));
     check('15. Death: every variant falls (DEAD, body still drawn), then the corpse is removed and the instance returns to its pool', r.deadStates.every(s => s === 'DEAD:true') && r.afterCorpse.enemies === 0 && r.afterCorpse.active === 0 && r.afterCorpse.pool >= 3, JSON.stringify({ d: r.deadStates, a: r.afterCorpse }));
@@ -139,8 +140,9 @@ const VARIANTS = ['guard', 'technician', 'worker'];
   {
     const ctx = await browser.newContext(desktop); const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(e.message));
     await page.goto(base + '/prototype-3d/tools/infected-viewer.html?lineup=1&anim=walk&t=0.8'); await page.waitForFunction(() => window.__iv, null, { timeout: 20000 });
-    const tri = await DA(page, () => Object.fromEntries(__iv.variants.map(v => [v, __iv.trisOf(v)])));
-    check('Variant triangle budget: each ≤ 1.45× the M1.6 HOLLOW (≤ 8.5k tris)', VARIANTS.every(v => tri[v] <= 8500 && tri[v] <= tri.hollow * 1.45), JSON.stringify(tri));
+    const tri = await DA(page, async () => { const M = await import('/prototype-3d/src/render/enemies/hollow-model.js'); return Object.fromEntries(__iv.variants.map(v => [v, M.getHollowAssets(v).trisLod])); });
+    // M1.8 budget (higher-detail models with LOD): LOD0 ≤ 14k and ≤ 1.3× the HOLLOW of the same build, LOD2 ≤ 5k
+    check('Variant triangle budget (M1.8): LOD0 ≤ 14k and ≤ 1.3× the HOLLOW, far LOD2 ≤ 5k', VARIANTS.every(v => tri[v][0] <= 14000 && tri[v][0] <= tri.hollow[0] * 1.3 && tri[v][2] <= 5000), JSON.stringify(tri));
     await shoot(page, 'm17_lineup.png');
     check('No JS errors (viewer line-up)', !errors.length, errors.join(' | '));
     await ctx.close();

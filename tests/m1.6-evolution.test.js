@@ -12,7 +12,7 @@ const { results, check } = makeChecker();
 const DA = (page, fn, arg) => page.evaluate(fn, arg);
 const shoot = async (page, file) => { if (SHOTS) await page.screenshot({ path: path.join(SHOTS, file) }); };
 const ticks = (page, n) => DA(page, n => new Promise(res => { const t0 = __DA3.game.tick; const f = () => (__DA3.game.tick - t0 >= n ? res() : requestAnimationFrame(f)); f(); }), n);
-const WAVES = '/prototype-3d/?debug=1&waves=1';
+const WAVES = '/prototype-3d/?debug=1&waves=1&gfx=performance'; // M1.7-level render cost (see tests/lib/harness.js)
 const visibleButtons = (page, id) => DA(page, id => [...document.getElementById(id).querySelectorAll('button')].filter(b => b.offsetParent !== null).map(b => b.textContent.trim()), id);
 
 (async () => {
@@ -35,7 +35,7 @@ const visibleButtons = (page, id) => DA(page, id => [...document.getElementById(
     const f2 = await page.evaluate(() => document.activeElement.id);
     await page.keyboard.press('Enter'); await sleep(80);
     const about = await page.evaluate(() => ({ vis: !document.getElementById('about').classList.contains('hidden'), ver: document.getElementById('aboutVersion').textContent, text: document.getElementById('about').innerText }));
-    check('Keyboard: ↓ ↓ Enter opens ОБ ИГРЕ with the description and the current version (M1.7)', f2 === 'aboutBtn' && about.vis && about.ver === 'M1.7' && /DARK ARENA/.test(about.text) && /три волны/.test(about.text), JSON.stringify({ f2, ver: about.ver }));
+    check('Keyboard: ↓ ↓ Enter opens ОБ ИГРЕ with the description and the current version (M1.8)', f2 === 'aboutBtn' && about.vis && about.ver === 'M1.8' && /DARK ARENA/.test(about.text) && /три волны/.test(about.text), JSON.stringify({ f2, ver: about.ver }));
     await shoot(page, 'm16_about.png');
     await page.keyboard.press('Escape'); await sleep(50);
     check('Esc returns from ОБ ИГРЕ to the menu', await page.isVisible('#menu') && !(await page.isVisible('#about')));

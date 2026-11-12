@@ -5,9 +5,9 @@
 // M1.7 rendered min(DPR, 2) × 0.75 → 56 % of the pixels on DPR-2 iPhones and 25 % on DPR-3 ones, stretched with
 // nearest-neighbour (see docs/M1.8-DIAGNOSTIC.md). The profiles fix that while bounding the GPU cost.
 export const PROFILES = Object.freeze({
-  performance: Object.freeze({ id: 'performance', name: 'Производительность', maxDpr: 2, scale: 0.8, maxPixels: 0.85e6, msaa: false, anisotropy: 2, minAuto: 0.7 }),
-  balanced: Object.freeze({ id: 'balanced', name: 'Баланс', maxDpr: 3, scale: 1.0, maxPixels: 1.6e6, msaa: true, anisotropy: 4, minAuto: 0.65 }),
-  quality: Object.freeze({ id: 'quality', name: 'Качество', maxDpr: 3, scale: 1.0, maxPixels: 2.8e6, msaa: true, anisotropy: 8, minAuto: 0.6 }),
+  performance: Object.freeze({ id: 'performance', name: 'Производительность', maxDpr: 2, scale: 0.8, maxPixels: 0.85e6, msaa: false, anisotropy: 1, floorAnisotropy: 1, bump: false, minAuto: 0.7 }),
+  balanced: Object.freeze({ id: 'balanced', name: 'Баланс', maxDpr: 3, scale: 1.0, maxPixels: 1.6e6, msaa: true, anisotropy: 2, floorAnisotropy: 4, bump: true, minAuto: 0.65 }),
+  quality: Object.freeze({ id: 'quality', name: 'Качество', maxDpr: 3, scale: 1.0, maxPixels: 2.8e6, msaa: true, anisotropy: 8, floorAnisotropy: 8, bump: true, minAuto: 0.6 }),
 });
 export const PROFILE_IDS = Object.keys(PROFILES);
 export const DEFAULT_PROFILE = 'balanced';

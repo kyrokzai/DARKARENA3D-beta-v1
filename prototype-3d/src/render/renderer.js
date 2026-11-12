@@ -50,11 +50,33 @@ export function createRenderer({ container, world, getSettings, skin }) {
   renderer.domElement.addEventListener('webglcontextlost', e => { e.preventDefault(); contextLost = true; document.body.classList.add('ctx-lost'); });
   renderer.domElement.addEventListener('webglcontextrestored', () => { contextLost = false; document.body.classList.remove('ctx-lost'); });
 
+  // M1.8: per-profile texture cost — anisotropic filtering (floor gets more: it is seen at grazing angles) and the
+  // environment bump maps. Measured as the biggest per-pixel costs of the new environment (docs/M1.8-REPORT.md).
+  const bumps = new Map(); scene.traverse(o => { if (o.material && !Array.isArray(o.material) && o.material.bumpMap) bumps.set(o.material, o.material.bumpMap); });
+  let texKey = '';
+  function applyTextureQuality() {
+    const P = getProfile(getSettings().graphicsProfile), maxA = renderer.capabilities.getMaxAnisotropy();
+    const key = P.id; if (key === texKey) return; texKey = key;
+    scene.traverse(o => {
+      const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
+      for (const m of ms) {
+        for (const k of ['map', 'bumpMap', 'normalMap', 'emissiveMap']) {
+          const t = m[k] || (k === 'bumpMap' && bumps.get(m)); if (!t || t.magFilter === THREE.NearestFilter) continue;
+          const want = Math.min(maxA, o.name === 'floor' ? P.floorAnisotropy : P.anisotropy);
+          if (t.anisotropy !== want) { t.anisotropy = want; t.needsUpdate = true; }
+        }
+        if (bumps.has(m)) { const b = P.bump ? bumps.get(m) : null; if (m.bumpMap !== b) { m.bumpMap = b; m.needsUpdate = true; } }
+      }
+    });
+  }
+  applyTextureQuality();
+
   let lastKey = '';
   function resize(force) {
     const s = getSettings();
     const w = Math.max(1, innerWidth), h = Math.max(1, innerHeight);
     autoRes.enabled = s.autoResolution !== false;
+    applyTextureQuality();
     res = computePixelRatio(w, h, devicePixelRatio || 1, s.graphicsProfile, s.renderScale, autoRes.enabled ? autoRes.factor : 1);
     const pr = res.ratio;
     const key = `${w}x${h}@${pr}`;

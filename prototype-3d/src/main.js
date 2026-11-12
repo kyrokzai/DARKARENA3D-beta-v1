@@ -20,9 +20,12 @@ import { getHollowAssets, VARIANT_IDS } from './render/enemies/hollow-model.js';
 
 const $ = id => document.getElementById(id);
 const settings = loadSettings();
+// Test hook (rule 7, ?debug=1 only): &gfx=performance|balanced|quality picks the graphics profile for this session
+// without saving it — the older timing-based browser suites run with M1.7-level render cost under software WebGL.
+{ const q = new URLSearchParams(location.search), gfx = q.get('gfx'); if (q.get('debug') === '1' && ['performance', 'balanced', 'quality'].includes(gfx)) settings.graphicsProfile = gfx; }
 // ?debug=1&map=training keeps the original 16×16 Training Grounds for comparisons; the game uses the M1.6 arena.
 const map = /[?&]debug=1(&|$)/.test(location.search) && /[?&]map=training(&|$)/.test(location.search) ? training : arena;
-const VERSION = 'M1.7';
+const VERSION = 'M1.8';
 const game = new Game(map);
 const input = new InputState();
 const gameEl = $('game');

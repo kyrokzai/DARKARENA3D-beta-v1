@@ -28,7 +28,12 @@ function makeChecker() {
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-async function open(browser, base, contextOpts, { play = true, init = null, ctx: existing = null, path = '/prototype-3d/?debug=1' } = {}) {
+// gfx: graphics profile for the session (M1.8 debug hook &gfx=…). The M0–M1.7 suites measure input / HUD / animation
+// timing in REAL time; under software WebGL the M1.8 default profile (MSAA, anisotropic filtering, bump maps) renders
+// ~2.5× slower and the sim falls behind (loop catch-up cap), so these suites run at the M1.7-level cost profile.
+// gfx: null keeps the saved / default profile (the M1.8 tests).
+async function open(browser, base, contextOpts, { play = true, init = null, ctx: existing = null, path = '/prototype-3d/?debug=1', gfx = 'performance' } = {}) {
+  if (gfx && path.includes('?') && !/[?&]gfx=/.test(path)) path += '&gfx=' + gfx;
   const ctx = existing || await browser.newContext(contextOpts);
   if (init) await ctx.addInitScript(init);
   const page = await ctx.newPage();

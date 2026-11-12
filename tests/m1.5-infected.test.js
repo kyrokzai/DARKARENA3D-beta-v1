@@ -13,7 +13,7 @@ const DA = (page, fn, arg) => page.evaluate(fn, arg);
 const shoot = async (page, file) => { if (SHOTS) await page.screenshot({ path: path.join(SHOTS, file) }); };
 const ticks = (page, n) => DA(page, n => new Promise(res => { const t0 = __DA3.game.tick; const f = () => (__DA3.game.tick - t0 >= n ? res() : requestAnimationFrame(f)); f(); }), n);
 const frames = (page, n) => DA(page, n => new Promise(res => { let k = 0; const f = () => (++k >= n ? res() : requestAnimationFrame(f)); f(); }), n);
-const WAVES = '/prototype-3d/?debug=1&waves=1';
+const WAVES = '/prototype-3d/?debug=1&waves=1&gfx=performance'; // M1.7-level render cost (see tests/lib/harness.js)
 // aim the player exactly at an infected's zone and fire one round through the real input path
 const fireAt = (page, idx, zone) => DA(page, ([i, z]) => {
   const g = __DA3.game, e = g.enemies[i], p = g.player, hb = e.hitboxes(), h = z === 'head' ? hb[0] : hb[1];

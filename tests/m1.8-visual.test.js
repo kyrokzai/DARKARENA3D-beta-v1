@@ -65,7 +65,7 @@ const VARIANTS = ['guard', 'technician', 'worker'];
 
   // ---------- 3. Infected: baked maps, materials, LOD, animation ↔ hit zones, all animations ----------
   {
-    const { ctx, page, errors } = await open(browser, base, { viewport: { width: 1280, height: 720 } }, {});
+    const { ctx, page, errors } = await open(browser, base, { viewport: { width: 1280, height: 720 } }, { gfx: null });
     await DA(page, () => __DA3.show('paused'));
     const r = await DA(page, async ({ VARIANTS }) => {
       const THREE = await import('three'); const M = await import('/prototype-3d/src/render/enemies/hollow-model.js'); const { InputState } = await import('/prototype-3d/src/input/input.js');
@@ -114,7 +114,7 @@ const VARIANTS = ['guard', 'technician', 'worker'];
 
   // ---------- 4. Environment textures, WebGL errors, leaks across restarts ----------
   {
-    const { ctx, page, errors } = await open(browser, base, { viewport: { width: 1280, height: 720 } }, { path: '/prototype-3d/?debug=1&waves=1' });
+    const { ctx, page, errors } = await open(browser, base, { viewport: { width: 1280, height: 720 } }, { path: '/prototype-3d/?debug=1&waves=1', gfx: null });
     const env = await DA(page, () => {
       const out = {}; __DA3.view.scene.traverse(o => { if (o.name === 'floor' || o.name.startsWith('walls-panel')) { const t = o.material.map; out[o.name] = { w: t.image.width, h: t.image.height, mag: t.magFilter, min: t.minFilter, aniso: t.anisotropy, bump: !!o.material.bumpMap }; } });
       return out;
