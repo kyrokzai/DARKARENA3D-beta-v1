@@ -15,7 +15,11 @@ export class GameState {
   constructor(emit = () => {}) {
     this.emit = emit;
     this.health = { hp: 100, max: 100 };
-    this.weapon = { ...DEFAULT_WEAPON, name: '', reloading: false, reloadProgress: 0, spread: 0, ads: 0 };
+    this.weapon = { ...DEFAULT_WEAPON, name: '', id: '', short: '', reloading: false, reloadProgress: 0, spread: 0, ads: 0, cycle: 1, shellPhase: null, shellT: 0 };
+    // M2.0 arsenal (written by sim/weapons/arsenal.js, read by the HUD slots / viewmodel): slots [{id, short, mag, reserve}],
+    // active slot, switching phase ('ready' | 'holster' | 'draw') and its progress 0..1. 'arsenal' event on any change.
+    this.arsenal = { active: 0, slots: [], phase: 'ready', progress: 0 };
+    this.flashlight = false; // M2.0 tactical light (toggled by the player; render / HUD read it); 'flashlight' event
     // phase: idle (before the wave) | active | cleared (intermission) | victory. `of` = waves in the match,
     // `countdown` = whole seconds until the wave starts (0 = none), `remaining` includes infected not spawned yet.
     this.wave = { number: 1, of: 1, remaining: 0, total: 0, phase: 'idle', countdown: 0 };
@@ -41,13 +45,21 @@ export class GameState {
 
   // ---- weapon / ammo ----
   /** Equip a weapon definition (from sim/weapons/defs.js): magazine, reserve, reload time, name. */
-  setWeapon(def) {
-    Object.assign(this.weapon, { name: def.name, magSize: def.magSize, mag: def.magSize, reserve: def.reserve, reloadTime: def.reloadTime, reloading: false, reloadProgress: 0 });
+  setWeapon(def, ammo = null) {
+    Object.assign(this.weapon, { name: def.name, id: def.id, short: def.short || def.name, magSize: def.magSize, mag: ammo ? ammo.mag : def.magSize, reserve: ammo ? ammo.reserve : def.reserve, reloadTime: def.reloadTime, reloading: false, reloadProgress: 0, cycle: 1, shellPhase: null, shellT: 0 });
     this.emit('weapon', { name: def.name });
     this.emit('ammo', { mag: this.weapon.mag, reserve: this.weapon.reserve, magSize: this.weapon.magSize });
   }
   /** Per-tick aim info for the crosshair (spread in degrees, ADS 0..1). Polled by the HUD — no event spam. */
   setAim({ spread, ads }) { this.weapon.spread = spread; this.weapon.ads = ads; }
+  /** Per tick: action cycle 0..1 since the last shot (pump / bolt animation) and the shell-reload phase. Polled. */
+  setCycle(cycle, shellPhase = null, shellT = 0) { const w = this.weapon; w.cycle = cycle; w.shellPhase = shellPhase; w.shellT = shellT; }
+  setArsenal(a) {
+    const o = this.arsenal, changed = o.active !== a.active || o.phase !== a.phase || o.slots.length !== a.slots.length || a.slots.some((s, i) => !o.slots[i] || o.slots[i].mag !== s.mag || o.slots[i].reserve !== s.reserve);
+    o.active = a.active; o.phase = a.phase; o.progress = a.progress; o.slots = a.slots;
+    if (changed) this.emit('arsenal', { active: o.active, phase: o.phase });
+  }
+  setFlashlight(on) { on = !!on; if (on !== this.flashlight) { this.flashlight = on; this.emit('flashlight', { on }); } }
   setAmmo(mag, reserve = this.weapon.reserve) {
     const w = this.weapon;
     w.mag = clampInt(mag, 0, w.magSize);
@@ -104,7 +116,7 @@ export class GameState {
   // ---- hit confirmation (from hit detection in M1.3) ----
   registerHit({ kill = false, headshot = false, melee = false } = {}) { this.emit('hit', { kill, headshot, melee }); }
 
-  snapshot() { return { health: { ...this.health }, weapon: { ...this.weapon }, wave: { ...this.wave }, kills: this.kills, alarm: { ...this.alarm }, melee: { ...this.melee } }; }
+  snapshot() { return { health: { ...this.health }, weapon: { ...this.weapon }, wave: { ...this.wave }, kills: this.kills, alarm: { ...this.alarm }, melee: { ...this.melee }, arsenal: { ...this.arsenal, slots: this.arsenal.slots.map(s => ({ ...s })) }, flashlight: this.flashlight }; }
 }
 
 function clampInt(v, a, b) { v = Math.round(Number(v) || 0); return Math.max(a, Math.min(b, v)); }

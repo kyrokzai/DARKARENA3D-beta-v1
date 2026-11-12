@@ -34,7 +34,7 @@ export class WaveDirector {
     this.spawned = 0; this.t = delay; this.phase = 'countdown'; this.lastCountdown = -1;
     const st = this.game.state;
     if (index > 0) { // between waves: resupply
-      if (this.match.resupplyReserve) st.setAmmo(st.weapon.mag, this.game.weapon.def.reserve);
+      if (this.match.resupplyReserve) { if (this.game.arsenal) this.game.arsenal.resupply(); else st.setAmmo(st.weapon.mag, this.game.weapon.def.reserve); } // M2.0: every weapon of the loadout
       if (this.match.healBetweenWaves > 0 && st.health.hp > 0) st.heal(this.match.healBetweenWaves);
     }
     st.setWave({ number: w.number, of: this.waves.length, total: this.queue.length, remaining: this.queue.length, phase: 'idle', countdown: Math.ceil(delay) });

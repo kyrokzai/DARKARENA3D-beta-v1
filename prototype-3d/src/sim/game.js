@@ -7,6 +7,7 @@ import { createPlayer, stepPlayer, applyLook } from './player.js';
 import { GameState } from './game-state.js';
 import { WeaponSystem } from './weapons/weapon-system.js';
 import { MeleeSystem } from './weapons/melee-system.js';
+import { Arsenal } from './weapons/arsenal.js';
 import { getWeaponDef } from './weapons/defs.js';
 import { TrainingTarget, TRAINING_TARGET_SPOTS } from './targets.js';
 import { Infected } from './enemies/infected.js';
@@ -40,6 +41,10 @@ export class Game {
     this.lastJumpPress = 0; this.jumpResync = true; // first step (and after a pause) adopts the counter
     this.weapon = new WeaponSystem(this, getWeaponDef(opts.weapon), { rng: opts.rng || Math.random });
     this.melee = new MeleeSystem(this, this.weapon.def); // M1.9 rifle-butt strike (data: weapon def `melee`)
+    // M2.0 arsenal: RAVEN / AK-47 / KRAIT with separate ammo and holster→draw switching. A test may ask for one weapon
+    // only (opts.loadout = ['raven']) — the older suites then see exactly the M1.9 game.
+    this.arsenal = new Arsenal(this, opts.loadout, 0);
+    this.lastLightPress = 0; this.lightResync = false;
     this.on('fire', () => { this.noise = true; }); // gunfire is heard by infected in range (handled in step)
   }
   /** Test mode only: place training targets on the range. */
@@ -89,14 +94,14 @@ export class Game {
     const s = this.map.playerStart, p = this.player;
     Object.assign(p, { x: s.x, y: s.y, prevX: s.x, prevY: s.y, z: 0, prevZ: 0, vz: 0, onGround: true, jumpBuffer: 0, yaw: s.yaw || 0, pitch: 0, dead: false });
     this.state.resetRun();
-    this.weapon.equip(this.weapon.def); this.melee.equip(this.weapon.def);
+    this.arsenal.reset(); this.state.setFlashlight(false);
     this.flow.tx = this.flow.ty = -1;
     this.jumpResync = true; this.matchOver = false; this.noise = false;
     this.waves.reset(); if (waves) this.startWaves(1);
     this.emit('restart', {});
   }
   /** Pause / focus loss / menus: stop firing, leave ADS. */
-  releaseCombat() { this.weapon.release(); this.melee.release(); this.jumpResync = true; } // a press made just before pausing is dropped
+  releaseCombat() { this.weapon.release(); this.melee.release(); this.arsenal.release(); this.jumpResync = true; this.lightResync = true; } // a press made just before pausing is dropped
   /** Fixed-step update. cmd = InputState snapshot {move:{x,y}} */
   step(cmd, dt) {
     const jp = cmd.presses ? cmd.presses.jump : 0;
@@ -105,7 +110,13 @@ export class Game {
     const alive = !this.player.dead;
     if (alive) {
       stepPlayer(this.world, this.player, cmd.move, dt, jumpPressed);
-      if (cmd.actions) { this.melee.step(cmd, dt); this.weapon.step(cmd, dt); } // melee first: a strike blocks this tick's shot
+      if (cmd.actions) {
+        this.arsenal.step(cmd, dt);                         // M2.0: weapon change first (blocks fire / strike while switching)
+        this.melee.step(cmd, dt); this.weapon.step(cmd, dt); // melee before the weapon: a strike blocks this tick's shot
+        const lp = cmd.presses ? cmd.presses.light || 0 : 0;  // M2.0 flashlight toggle (one press = on / off)
+        if (this.lightResync) { this.lastLightPress = lp; this.lightResync = false; }
+        if (lp !== this.lastLightPress) { this.lastLightPress = lp; this.state.setFlashlight(!this.state.flashlight); }
+      }
     } else { this.player.prevX = this.player.x; this.player.prevY = this.player.y; this.player.prevZ = this.player.z; }
     for (const t of this.targets) t.step(dt);
     // infected: shared flow field (rebuilt only when the player changes cell), then each FSM

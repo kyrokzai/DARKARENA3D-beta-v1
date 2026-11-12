@@ -39,7 +39,8 @@ export class MeleeSystem {
     const w = this.game.weapon, st = this.game.state;
     if (this.t < 0) {
       this.cooldown = Math.max(0, this.cooldown - dt);
-      if (pressed && this.cooldown <= 0 && !(w && (w.reloading || st.weapon.reloading))) this.start();
+      const switching = !!(this.game.arsenal && this.game.arsenal.switching); // M2.0: not while changing weapons
+      if (pressed && this.cooldown <= 0 && !switching && !(w && (w.reloading || st.weapon.reloading))) this.start();
     } else {
       this.t += dt;
       if (!this.dealt && this.t >= d.duration * d.hitAt) { this.dealt = true; this.resolve(); }
