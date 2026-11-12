@@ -34,8 +34,8 @@ export const DEFAULT_LAYOUTS = Object.freeze({
     jump:    { x: 0.91, y: 0.40, s: 1 },
     aim:     { x: 0.75, y: 0.57, s: 1 },
     melee:   { x: 0.76, y: 0.35, s: 1 }, // M1.9: above ПРИЦЕЛ, left of ПРЫЖОК — reachable with the right thumb, clear of ОГОНЬ
-    weapons: { x: 0.30, y: 0.28, s: 1 }, // M2.0: left, right of the minimap — keeps the top band free for the editor toolbar
-    light:   { x: 0.26, y: 0.48, s: 1 }, // M2.0: left thumb, above the move stick (an occasional toggle)
+    weapons: { x: 0.32, y: 0.40, s: 1 }, // M2.0: left of centre, below the band the HUD editor toolbar uses (clean on all target iPhones)
+    light:   { x: 0.29, y: 0.60, s: 1 }, // M2.0: left thumb, right of the move stick (an occasional toggle)
     look:    { x: 0.58, y: 0.60, s: 1 },
     minimap: { x: 0.09, y: 0.33, s: 1 },
     health:  { x: 0.13, y: 0.07, s: 1 },
