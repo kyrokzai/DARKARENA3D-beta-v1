@@ -71,6 +71,8 @@ export function setupTouchInput({ input, layer, hud, getSettings, isPlaying }) {
       el.classList.remove('active'); el.style.transform = ''; knobOf(r.id).style.transform = '';
       if (r.role === 'move') { input.stickMove.x = input.stickMove.y = 0; input.update(); }
       else { lookStick.x = lookStick.y = 0; }
+    } else if (r.role === 'slots') {
+      hud.els.weapons.classList.remove('pressed');
     } else if (r.role === 'button') {
       hud.els[r.id].classList.remove('pressed');
       if (r.id !== 'aim') input.setAction(HUD_ELEMENTS[r.id].action, false);
@@ -95,6 +97,15 @@ export function setupTouchInput({ input, layer, hud, getSettings, isPlaying }) {
     const id = hit && hit.dataset.hud;
     const capture = () => layer.setPointerCapture(e.pointerId);
 
+    // M2.0 weapon slots: a tap on a slot selects that weapon (the finger is held by the slots, never becomes look)
+    if (id && HUD_ELEMENTS[id].kind === 'slots') {
+      if (roleTaken('slots')) return;
+      const slot = e.target.closest('[data-slot]'), i = slot ? Number(slot.dataset.slot) : Math.min(2, Math.floor((e.clientX - hit.getBoundingClientRect().left) / hit.getBoundingClientRect().width * 3));
+      roles.set(e.pointerId, { role: 'slots', tag: 'slots', id, lastX: e.clientX, lastY: e.clientY });
+      hit.classList.add('pressed'); input.selectWeapon(i);
+      capture();
+      return;
+    }
     if (id && HUD_ELEMENTS[id].kind === 'button') {
       if (roleTaken('btn:' + id)) return;
       roles.set(e.pointerId, { role: 'button', tag: 'btn:' + id, id, lastX: e.clientX, lastY: e.clientY });

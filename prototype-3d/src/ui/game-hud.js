@@ -95,8 +95,23 @@ export function createGameHud({ game, hud, getSettings = () => ({ alarmFx: 'full
   game.on('kills', () => { if (wv.kills) { wv.kills.textContent = st.kills; pulse(hud.els.wave, 'kill-pulse'); } });
   game.on('hit', onHit);
   game.on('weapon', renderAmmo);
+  // M2.0 weapon slots + flashlight button — read from GameState.arsenal / GameState.flashlight (rule 8)
+  const slotEls = hud.els.weapons ? [...hud.els.weapons.querySelectorAll('.slot')] : [];
+  function renderArsenal() {
+    const a = st.arsenal, w = st.weapon;
+    slotEls.forEach((el, i) => {
+      const sl = a.slots[i]; el.style.display = sl ? '' : 'none'; if (!sl) return;
+      const n = el.querySelector('.sn'), am = el.querySelector('.sa'), mag = i === a.active ? w.mag : sl.mag;
+      if (n.textContent !== sl.short) n.textContent = sl.short;
+      const txt = `${mag}/${i === a.active ? w.reserve : sl.reserve}`; if (am.textContent !== txt) am.textContent = txt;
+      el.classList.toggle('active', i === a.active);
+      el.classList.toggle('empty', mag === 0);
+    });
+  }
+  function renderLight() { if (hud.els.light) hud.els.light.classList.toggle('toggled', !!st.flashlight); }
+  game.on('arsenal', renderArsenal); game.on('ammo', renderArsenal); game.on('flashlight', renderLight);
 
-  renderHealth(); renderAmmo(); renderWave();
+  renderHealth(); renderAmmo(); renderWave(); renderArsenal(); renderLight();
   // ---- dynamic crosshair: the gap shows the real spread cone; hidden while aiming down sights ----
   let gapNow = 6;
   function frame(fovDeg) {
@@ -127,5 +142,5 @@ export function createGameHud({ game, hud, getSettings = () => ({ alarmFx: 'full
       if (on) { const txt = `ВОЛНА ${Math.min(st.wave.of, st.wave.number + 1)} · ПРОРЫВ ПЕРИМЕТРА`; if (alarmSub.textContent !== txt) alarmSub.textContent = txt; }
     }
   }
-  return { renderAll() { renderHealth(); renderAmmo(); renderWave(); }, frame, get alarmEdgeOpacity() { return alarmEdge ? Number(alarmEdge.style.opacity || 0) : 0; }, get alarmWarnShown() { return !!alarmWarn && alarmWarn.classList.contains('show'); }, CRITICAL_HP, get crosshairGap() { return gapNow; } };
+  return { renderAll() { renderHealth(); renderAmmo(); renderWave(); renderArsenal(); renderLight(); }, frame, get alarmEdgeOpacity() { return alarmEdge ? Number(alarmEdge.style.opacity || 0) : 0; }, get alarmWarnShown() { return !!alarmWarn && alarmWarn.classList.contains('show'); }, CRITICAL_HP, get crosshairGap() { return gapNow; } };
 }

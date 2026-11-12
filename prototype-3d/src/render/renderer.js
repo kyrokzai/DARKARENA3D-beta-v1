@@ -39,6 +39,14 @@ export function createRenderer({ container, world, getSettings, skin }) {
   const worldFlash = new THREE.PointLight(0xffa850, 0, 9, 1.8);
   worldFlash.position.set(0.25, -0.15, -0.8);
   camera.add(worldFlash);
+  // M2.0 tactical flashlight: a spot light carried by the camera (mounted low-right like the weapon light), always present
+  // with intensity 0 when off → toggling never recompiles shaders. No shadows (cost measured in the M2.0 report).
+  const FLASH_POWER = 70;
+  const flashlight = new THREE.SpotLight(0xfff1d8, 0, 26, 0.36, 0.6, 1.3);
+  flashlight.position.set(0.16, -0.14, 0.05);
+  const flashTarget = new THREE.Object3D(); flashTarget.position.set(0.02, -0.03, -6);
+  flashlight.target = flashTarget; camera.add(flashlight, flashTarget);
+  let flashK = 0;
   scene.add(camera);
 
   const level = buildLevel(scene, world);
@@ -111,7 +119,7 @@ export function createRenderer({ container, world, getSettings, skin }) {
   }
 
   return {
-    renderer, scene, camera, level, resize, vm, impacts, targets, infected,
+    renderer, scene, camera, level, resize, vm, impacts, targets, infected, flashlight,
     /** Player hurt: short camera jolt away from the attacker (render only). */
     onHurt() { kick.v -= 0.5; kick.rv += (Math.random() - 0.5) * 0.9; },
     /** Weapon feedback hooks (called from weapon events). */
@@ -153,6 +161,9 @@ export function createRenderer({ container, world, getSettings, skin }) {
       if (w.enemies) infected.update(w.enemies, w.enemyDt ?? dt, alpha, camera.position);
       { const k = infected.stats.created * 1000 + mapsLoaded(); if (k !== texCreated) { texCreated = k; texKey = ''; applyTextureQuality(); } } // new pooled infected / maps just loaded: profile filtering for them too // enemyDt = 0 while paused → animation frozen
       if (w.alarm !== undefined) level.setAlarm(w.alarm);
+      // flashlight: a short fade (a bulb, not a strobe); follows the view exactly (child of the camera)
+      flashK += ((w.flashlight ? 1 : 0) - flashK) * Math.min(1, dt * 18);
+      flashlight.intensity = flashK < 0.01 ? 0 : FLASH_POWER * flashK;
       level.update(camera.position, dt, w.enemyDt ?? dt);
       renderer.info.reset();
       renderer.toneMapping = THREE.NoToneMapping;

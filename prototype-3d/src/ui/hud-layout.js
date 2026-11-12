@@ -14,6 +14,9 @@ export const HUD_ELEMENTS = {
   reload:  { label: 'Перезарядка', kind: 'button', shape: 'circle', w: 60, h: 60, action: 'reload', touchOnly: true },
   jump:    { label: 'Прыжок',      kind: 'button', shape: 'circle', w: 62, h: 62, action: 'jump', touchOnly: true },
   melee:   { label: 'Удар прикладом', kind: 'button', shape: 'circle', w: 62, h: 62, action: 'melee', touchOnly: true }, // M1.9
+  // M2.0: weapon slots (touch: tap a slot to switch; desktop: info panel showing 1 / 2 / 3) and the flashlight toggle
+  weapons: { label: 'Оружие',      kind: 'slots',  shape: 'rect',   w: 156, h: 46, action: 'weapon' },
+  light:   { label: 'Фонарик',     kind: 'button', shape: 'circle', w: 52, h: 52, action: 'light', touchOnly: true },
   minimap: { label: 'Мини-карта',  kind: 'map',    shape: 'rect',   w: 112, h: 112 },
   health:  { label: 'Здоровье',    kind: 'info',   shape: 'rect',   w: 196, h: 40 },
   ammo:    { label: 'Патроны',     kind: 'info',   shape: 'rect',   w: 148, h: 52 },
@@ -31,6 +34,8 @@ export const DEFAULT_LAYOUTS = Object.freeze({
     jump:    { x: 0.91, y: 0.40, s: 1 },
     aim:     { x: 0.75, y: 0.57, s: 1 },
     melee:   { x: 0.76, y: 0.35, s: 1 }, // M1.9: above ПРИЦЕЛ, left of ПРЫЖОК — reachable with the right thumb, clear of ОГОНЬ
+    weapons: { x: 0.77, y: 0.08, s: 1 }, // M2.0: top right, between the wave panel and the pause button
+    light:   { x: 0.25, y: 0.30, s: 1 }, // M2.0: left thumb, right of the minimap (an occasional toggle)
     look:    { x: 0.58, y: 0.60, s: 1 },
     minimap: { x: 0.09, y: 0.33, s: 1 },
     health:  { x: 0.13, y: 0.07, s: 1 },
@@ -42,6 +47,7 @@ export const DEFAULT_LAYOUTS = Object.freeze({
     health:  { x: 0.11, y: 0.94, s: 1.1 },
     wave:    { x: 0.50, y: 0.06, s: 1 },
     ammo:    { x: 0.91, y: 0.93, s: 1.1 },
+    weapons: { x: 0.90, y: 0.83, s: 1 },  // M2.0: 1 / 2 / 3 above the ammo panel
   }),
 });
 /** @deprecated M1.1 name — the touch profile defaults. */
@@ -54,7 +60,7 @@ const GAP = 6;               // px kept between elements
 const clone = o => JSON.parse(JSON.stringify(o));
 export function cloneDefaultLayout(profile = 'touch') { return clone(DEFAULT_LAYOUTS[profile]); }
 export function cloneDefaultLayouts() { return clone(DEFAULT_LAYOUTS); }
-const isControl = id => !!HUD_ELEMENTS[id] && (HUD_ELEMENTS[id].kind === 'stick' || HUD_ELEMENTS[id].kind === 'button');
+const isControl = id => !!HUD_ELEMENTS[id] && (HUD_ELEMENTS[id].kind === 'stick' || HUD_ELEMENTS[id].kind === 'button' || HUD_ELEMENTS[id].kind === 'slots');
 
 /** Which elements are shown for a profile, from settings. */
 export function activeIds(settings, profile = 'touch') {

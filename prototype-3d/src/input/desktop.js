@@ -45,11 +45,22 @@ export function setupDesktopInput({ input, canvas, getSettings, isPlaying, onLoc
     if (e.button === 2) input.aimHeld = false;
   });
   canvas.addEventListener('contextmenu', e => e.preventDefault());
+  // M2.0: mouse wheel cycles the weapons (one step per notch, throttled — trackpads send bursts of small deltas)
+  let lastWheel = 0;
+  document.addEventListener('wheel', e => {
+    if (!isPlaying() || !(locked() || dragFallback)) return;
+    const now = performance.now(); if (Math.abs(e.deltaY) < 4 || now - lastWheel < 150) return;
+    lastWheel = now; input.selectWeapon(e.deltaY > 0 ? 'next' : 'prev');
+  }, { passive: true });
   addEventListener('keydown', e => {
     if (e.repeat || !isPlaying()) return;
     if (e.code === 'KeyR') { input.setAction('reload', true); input.setAction('reload', false); }
     if (e.code === 'KeyF') input.setAction('fire', true);
     if (e.code === 'KeyV') { input.setAction('melee', true); input.setAction('melee', false); }
+    // M2.0: 1 / 2 / 3 select the weapon (also on the numpad), L toggles the flashlight (F is already the keyboard fire key)
+    const slot = { Digit1: 0, Digit2: 1, Digit3: 2, Numpad1: 0, Numpad2: 1, Numpad3: 2 }[e.code];
+    if (slot !== undefined) input.selectWeapon(slot);
+    if (e.code === 'KeyL') { input.setAction('light', true); input.setAction('light', false); }
   });
   addEventListener('keyup', e => { if (e.code === 'KeyF') input.setAction('fire', false); });
 
