@@ -379,7 +379,8 @@ const OUTFITS = {
     boots: garment([0.13, 0.095, 0.07], { weave: 'leather', dirt: 0.6, blood: 0, wear: 0.4, tears: 0, seams: false }),
     gloves: garment([0.17, 0.13, 0.09], { weave: 'leather', dirt: 0.5, blood: 0.6, bloodT: 0.55, wear: 0.5, tears: 0.2, seams: false }),
     pads: [0.09, 0.09, 0.08], tear: 1, shoulder: 0.012, hand: 1.18,
-    cap: { theta: 1.32, scale: 1.12, tall: 0.9, dy: 0.0, brim: false, lumpy: 0.004, color: garment([0.19, 0.15, 0.11], { weave: 'knit', dirt: 0.6, blood: 0.2, tears: 0, seams: false }) },
+    // M1.8: hard hat instead of the beanie — a domed shell with a full brim (silhouette read at 12 m, not only colour)
+    cap: { theta: 1.45, scale: 1.2, tall: 1.0, dy: 0.012, brim: true, fullBrim: true, lumpy: 0.001, color: garment([0.62, 0.42, 0.12], { weave: 'rubber', dirt: 0.55, blood: 0.15, tears: 0, seams: false, wear: 0.3 }) },
   },
 };
 function buildOutfit(id, rags, { torsoRings, armRings, legRings, hole, W, hc, HR }) {
@@ -426,7 +427,7 @@ function buildOutfit(id, rags, { torsoRings, armRings, legRings, hole, W, hc, HR
     rags.add(sole, { weights: W(['foot' + s, 1]), color: plain([0.04, 0.04, 0.04]) });
   }
   if (O.vest) { // plate carrier: thick shell over the chest + shoulder straps + magazine pouches
-    const V = torsoRings.slice(6, 11).map(R => ({ c: [R.c[0], R.c[1], R.c[2]], ru: R.ru * 1.04 + 0.03, rv: R.rv * 1.0 + 0.036, w: R.w }));
+    const V = torsoRings.slice(6, 11).map(R => ({ c: [R.c[0], R.c[1], R.c[2]], ru: R.ru * 1.06 + 0.038, rv: R.rv * 1.0 + 0.046, w: R.w })); // M1.8: bulkier plate carrier
     rags.loft(V, { seg: 22, color: O.vest, uvRep: [6, 6], capStart: true, capEnd: true, displace: noise(0.006, 7), skip: (r, s) => (r === 3 && (s >= 4 && s <= 6 || s >= 16 && s <= 18) ? 1 : 0) });
     for (const sx of [-1, 1]) {
       for (const [y, h] of [[1.25, 0.1]]) {
@@ -473,7 +474,11 @@ function buildOutfit(id, rags, { torsoRings, armRings, legRings, hole, W, hc, HR
       P.setXYZ(i, hc[0] + x * HR[0] * O.cap.scale, hc[1] + O.cap.dy + y * HR[1] * O.cap.scale * O.cap.tall, hc[2] - 0.004 + z * HR[2] * O.cap.scale * back);
     }
     rags.add(g, { weights: W(['head', 1]), color: O.cap.color, displace: noise(O.cap.lumpy, 26) });
-    if (O.cap.brim) { // patrol-cap visor
+    if (O.cap.fullBrim) { // hard-hat brim all around (wider at the front)
+      const b = new THREE.CylinderGeometry(1, 1, 0.006, 24, 1, true); b.scale(HR[0] * O.cap.scale * 1.25, 1, HR[2] * O.cap.scale * 1.3);
+      b.translate(hc[0], hc[1] + O.cap.dy + HR[1] * 0.12, hc[2] + 0.012);
+      rags.add(b, { weights: W(['head', 1]), color: O.cap.color });
+    } else if (O.cap.brim) { // patrol-cap visor
       const b = new THREE.CylinderGeometry(1, 1, 0.006, 16, 1, false, -0.9, 1.8); b.scale(0.07, 1, 0.06);
       b.translate(hc[0], hc[1] + O.cap.dy + HR[1] * 0.3, hc[2] + HR[2] * 0.86);
       rags.add(b, { weights: W(['head', 1]), color: O.cap.color });
@@ -496,7 +501,7 @@ function getCommon() {
   const mats = {
     skin: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.74, metalness: 0.0, normalMap: maps.skin, normalScale: new THREE.Vector2(0.75, 0.75) }),
     rags: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.96, metalness: 0.0, side: THREE.DoubleSide, normalMap: maps.cloth, normalScale: new THREE.Vector2(0.5, 0.5) }),
-    eyes: new THREE.MeshStandardMaterial({ vertexColors: true, color: 0xffffff, emissive: 0xff2a14, emissiveIntensity: 0.05, roughness: 0.22 }), // wet eyeballs / teeth / gums, faint red glow
+    eyes: new THREE.MeshStandardMaterial({ vertexColors: true, color: 0xffffff, emissive: 0xff2a14, emissiveIntensity: 0.16, roughness: 0.22 }), // wet eyeballs / teeth / gums, faint red glow (threat cue at distance)
   };
   common = { maps, mats };
   return common;
@@ -512,6 +517,8 @@ const MAP_URL = new URL('../../../assets/infected/', import.meta.url);
 let loader = null;
 const mapStats = { requested: 0, loaded: 0, failed: 0 };
 export function getMapStats() { return { ...mapStats }; }
+/** Number of loaded maps (cheap, no allocation — polled by the renderer every frame). */
+export function mapsLoaded() { return mapStats.loaded; }
 function patchPackedNR(mat) {
   // M1.8 fix (review C1): onBeforeCompile sees the shader BEFORE #include resolution, so the chunk bodies cannot be
   // matched — patch the include directives themselves. Normal Z is rebuilt from XY by three's own packed-normal path
@@ -530,7 +537,7 @@ function bakedMaterial(variant, part, opts) {
   loader = loader || new THREE.TextureLoader();
   const load = (suffix, srgb) => new Promise((res) => {
     mapStats.requested++;
-    loader.load(new URL(`${variant}_${part}_${suffix}.jpg`, MAP_URL).href, (t) => { mapStats.loaded++; t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace; t.anisotropy = 1; t.flipY = true; res(t); /* characters are seen face-on: no anisotropy needed */ }, undefined, () => { mapStats.failed++; res(null); });
+    loader.load(new URL(`${variant}_${part}_${suffix}.jpg`, MAP_URL).href, (t) => { mapStats.loaded++; t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace; t.anisotropy = 1; t.userData.noAniso = true; t.flipY = true; res(t); /* characters are seen face-on: no anisotropy needed */ }, undefined, () => { mapStats.failed++; res(null); });
   });
   m.userData.ready = Promise.all([load('color', true), load('nr', false)]).then(([c, nr]) => {
     if (!c || !nr) return false;

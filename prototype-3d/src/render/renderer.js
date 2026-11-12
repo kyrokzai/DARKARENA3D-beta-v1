@@ -2,7 +2,7 @@
 // Reads simulation state; never writes it.
 import * as THREE from 'three';
 import { computePixelRatio, getProfile, AutoResolution } from './quality.js';
-import { getMapStats } from './enemies/hollow-model.js';
+import { mapsLoaded } from './enemies/hollow-model.js';
 import { CELL_SIZE as S, EYE_HEIGHT } from '../config.js';
 import { buildLevel } from './level.js';
 import { createViewmodel } from './weapons/viewmodel.js';
@@ -63,6 +63,7 @@ export function createRenderer({ container, world, getSettings, skin }) {
       for (const m of ms) {
         for (const k of ['map', 'bumpMap', 'normalMap', 'emissiveMap']) {
           const t = m[k] || (k === 'bumpMap' && bumps.get(m)); if (!t || t.magFilter === THREE.NearestFilter) continue;
+          if (t.userData.noAniso) { if (t.userData.minFilter0 === undefined) t.userData.minFilter0 = t.minFilter; const mf = getProfile(getSettings().graphicsProfile).trilinear ? THREE.LinearMipmapLinearFilter : THREE.LinearMipmapNearestFilter; if (t.minFilter !== mf) { t.minFilter = mf; t.needsUpdate = true; } continue; } // character maps: no anisotropy (seen face-on)
           const want = Math.min(maxA, o.name === 'floor' ? P.floorAnisotropy : P.anisotropy);
           if (t.anisotropy !== want) { t.anisotropy = want; t.needsUpdate = true; }
           // PERFORMANCE: bilinear with the nearest mip level instead of trilinear (measured: most of the extra
@@ -147,7 +148,7 @@ export function createRenderer({ container, world, getSettings, skin }) {
       impacts.update(dt);
       targets.update(w.targets || w.hittables || [], dt, camera.position);
       if (w.enemies) infected.update(w.enemies, w.enemyDt ?? dt, alpha, camera.position);
-      { const k = infected.stats.created * 1000 + getMapStats().loaded; if (k !== texCreated) { texCreated = k; texKey = ''; applyTextureQuality(); } } // new pooled infected / maps just loaded: profile filtering for them too // enemyDt = 0 while paused → animation frozen
+      { const k = infected.stats.created * 1000 + mapsLoaded(); if (k !== texCreated) { texCreated = k; texKey = ''; applyTextureQuality(); } } // new pooled infected / maps just loaded: profile filtering for them too // enemyDt = 0 while paused → animation frozen
       if (w.alarm !== undefined) level.setAlarm(w.alarm);
       level.update(camera.position, dt, w.enemyDt ?? dt);
       renderer.info.reset();

@@ -96,7 +96,11 @@ $('aboutBtn').onclick = () => show('about');
 $('aboutBack').onclick = () => show('menu');
 // M1.7: build the variants' shared geometry one at a time while the player is still in the menu (no stall mid-wave;
 // materials are shared, so no extra shader compile). Stops as soon as play starts — anything left is built lazily.
-{ const todo = [...VARIANT_IDS]; const next = () => { if (!todo.length || state !== 'menu') return; getHollowAssets(todo.shift()); setTimeout(next, 120); }; setTimeout(next, 600); }
+{ const todo = [...VARIANT_IDS]; const next = () => { if (!todo.length || state !== 'menu') return;
+    const A = getHollowAssets(todo.shift());
+    // review S2: upload the baked maps to the GPU while still in the menu (no first-sight hitch mid-wave)
+    for (const m of [A.mats.skin, A.mats.rags]) if (m.userData.ready) m.userData.ready.then(ok => { if (ok) for (const t of [m.map, m.normalMap]) if (t) view.renderer.initTexture(t); });
+    setTimeout(next, 120); }; setTimeout(next, 600); }
 $('aboutVersion').textContent = VERSION;
 $('pauseSettings').onclick = () => { settingsReturn = 'paused'; show('settings'); };
 $('settingsBack').onclick = () => show(settingsReturn);
