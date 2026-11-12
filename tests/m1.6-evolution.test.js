@@ -35,7 +35,7 @@ const visibleButtons = (page, id) => DA(page, id => [...document.getElementById(
     const f2 = await page.evaluate(() => document.activeElement.id);
     await page.keyboard.press('Enter'); await sleep(80);
     const about = await page.evaluate(() => ({ vis: !document.getElementById('about').classList.contains('hidden'), ver: document.getElementById('aboutVersion').textContent, text: document.getElementById('about').innerText }));
-    check('Keyboard: ↓ ↓ Enter opens ОБ ИГРЕ with the description and the current version (M1.8)', f2 === 'aboutBtn' && about.vis && about.ver === 'M1.8' && /DARK ARENA/.test(about.text) && /три волны/.test(about.text), JSON.stringify({ f2, ver: about.ver }));
+    check('Keyboard: ↓ ↓ Enter opens ОБ ИГРЕ with the description and the current version (M1.9)', f2 === 'aboutBtn' && about.vis && about.ver === 'M1.9' && /DARK ARENA/.test(about.text) && /три волны/.test(about.text), JSON.stringify({ f2, ver: about.ver }));
     await shoot(page, 'm16_about.png');
     await page.keyboard.press('Escape'); await sleep(50);
     check('Esc returns from ОБ ИГРЕ to the menu', await page.isVisible('#menu') && !(await page.isVisible('#about')));
