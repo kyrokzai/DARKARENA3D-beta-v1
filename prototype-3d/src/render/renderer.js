@@ -2,6 +2,7 @@
 // Reads simulation state; never writes it.
 import * as THREE from 'three';
 import { computePixelRatio, getProfile, AutoResolution } from './quality.js';
+import { getMapStats } from './enemies/hollow-model.js';
 import { CELL_SIZE as S, EYE_HEIGHT } from '../config.js';
 import { buildLevel } from './level.js';
 import { createViewmodel } from './weapons/viewmodel.js';
@@ -53,7 +54,7 @@ export function createRenderer({ container, world, getSettings, skin }) {
   // M1.8: per-profile texture cost — anisotropic filtering (floor gets more: it is seen at grazing angles) and the
   // environment bump maps. Measured as the biggest per-pixel costs of the new environment (docs/M1.8-REPORT.md).
   const bumps = new Map(); scene.traverse(o => { if (o.material && !Array.isArray(o.material) && o.material.bumpMap) bumps.set(o.material, o.material.bumpMap); });
-  let texKey = '';
+  let texKey = '', texCreated = 0;
   function applyTextureQuality() {
     const P = getProfile(getSettings().graphicsProfile), maxA = renderer.capabilities.getMaxAnisotropy();
     const key = P.id; if (key === texKey) return; texKey = key;
@@ -145,7 +146,8 @@ export function createRenderer({ container, world, getSettings, skin }) {
       syncCamera(player, alpha);
       impacts.update(dt);
       targets.update(w.targets || w.hittables || [], dt, camera.position);
-      if (w.enemies) infected.update(w.enemies, w.enemyDt ?? dt, alpha, camera.position); // enemyDt = 0 while paused → animation frozen
+      if (w.enemies) infected.update(w.enemies, w.enemyDt ?? dt, alpha, camera.position);
+      { const k = infected.stats.created * 1000 + getMapStats().loaded; if (k !== texCreated) { texCreated = k; texKey = ''; applyTextureQuality(); } } // new pooled infected / maps just loaded: profile filtering for them too // enemyDt = 0 while paused → animation frozen
       if (w.alarm !== undefined) level.setAlarm(w.alarm);
       level.update(camera.position, dt, w.enemyDt ?? dt);
       renderer.info.reset();
