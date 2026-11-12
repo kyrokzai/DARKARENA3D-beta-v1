@@ -527,7 +527,7 @@ function bakedMaterial(variant, part, opts) {
   loader = loader || new THREE.TextureLoader();
   const load = (suffix, srgb) => new Promise((res) => {
     mapStats.requested++;
-    loader.load(new URL(`${variant}_${part}_${suffix}.jpg`, MAP_URL).href, (t) => { mapStats.loaded++; t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace; t.anisotropy = 1; t.flipY = true; res(t); // characters are seen face-on: no anisotropy needed }, undefined, () => { mapStats.failed++; res(null); });
+    loader.load(new URL(`${variant}_${part}_${suffix}.jpg`, MAP_URL).href, (t) => { mapStats.loaded++; t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace; t.anisotropy = 1; t.flipY = true; res(t); /* characters are seen face-on: no anisotropy needed */ }, undefined, () => { mapStats.failed++; res(null); });
   });
   m.userData.ready = Promise.all([load('color', true), load('nr', false)]).then(([c, nr]) => {
     if (!c || !nr) return false;
