@@ -306,7 +306,7 @@ const audit = page => DA(page, () => {
       const el = document.querySelector(sel), r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2, out = [];
       const spy = e => out.push(e.defaultPrevented); addEventListener('touchend', spy);
       const mk = (type, id) => { const t = new Touch({ identifier: id, target: el, clientX: x, clientY: y }); el.dispatchEvent(new TouchEvent(type, { bubbles: true, cancelable: true, touches: type === 'touchend' ? [] : [t], changedTouches: [t] })); };
-      mk('touchstart', 1); mk('touchend', 1); setTimeout(() => { mk('touchstart', 2); mk('touchend', 2); removeEventListener('touchend', spy); setTimeout(() => res(out), 400); }, 120);
+      mk('touchstart', 1); mk('touchend', 1); { const t0 = performance.now(); while (performance.now() - t0 < 120) {} /* 120 ms real gap: no frame can interleave */ } mk('touchstart', 2); mk('touchend', 2); removeEventListener('touchend', spy); setTimeout(() => res(out), 400);
     }), sel);
     const v = await probe('#view'), f = await probe('.hud-fire'), m = await probe('.hud-minimap');
     check('Double tap on 3D view / FIRE / minimap: second tap blocked', v[1] && f[1] && m[1], JSON.stringify({ v, f, m }));

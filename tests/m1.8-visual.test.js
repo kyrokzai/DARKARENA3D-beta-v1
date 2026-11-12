@@ -120,7 +120,12 @@ const VARIANTS = ['guard', 'technician', 'worker'];
       return out;
     });
     const wall = env['walls-panel'], floor = env.floor;
-    check('Environment: walls 256×384 px per 2×3 m face (M1.7: 32×48), floor 256 px per cell (M1.7: 16), linear + anisotropic filtering, bump maps', wall && wall.w === 256 && wall.h === 384 && wall.mag === 1006 && wall.min === 1008 && wall.aniso >= 4 && wall.bump && floor.w === 256 && floor.aniso >= 8 && floor.bump, JSON.stringify(env));
+    check('Environment: walls 256×384 px per 2×3 m face (M1.7: 32×48), floor 256 px per cell (M1.7: 16), linear + anisotropic filtering (balanced: walls ×2, floor ×4), bump maps', wall && wall.w === 256 && wall.h === 384 && wall.mag === 1006 && wall.min === 1008 && wall.aniso >= 2 && wall.bump && floor.w === 256 && floor.aniso >= 4 && floor.bump, JSON.stringify(env));
+    // profile switch at runtime: PERFORMANCE drops anisotropy and bump maps (the measured per-pixel costs), BALANCED restores them
+    const sw = await DA(page, async () => { const pick = () => { const o = {}; __DA3.view.scene.traverse(m => { if (m.name === 'floor') o.floor = [m.material.map.anisotropy, !!m.material.bumpMap]; if (m.name === 'walls-panel') o.wall = [m.material.map.anisotropy, !!m.material.bumpMap]; }); return o; };
+      __DA3.settings.graphicsProfile = 'performance'; window.dispatchEvent(new Event('resize')); __DA3.view.resize(true); const perf = pick();
+      __DA3.settings.graphicsProfile = 'balanced'; __DA3.view.resize(true); return { perf, bal: pick() }; });
+    check('Profile switch applies live: PERFORMANCE = no anisotropy, no bump maps; BALANCED restores them', sw.perf.floor[0] === 1 && !sw.perf.floor[1] && !sw.perf.wall[1] && sw.bal.floor[0] >= 4 && sw.bal.floor[1] && sw.bal.wall[1], JSON.stringify(sw));
     // restart cycles: memory must not grow; WebGL error flag clean
     const mem = await DA(page, async () => {
       const info = () => ({ g: __DA3.view.renderer.info.memory.geometries, t: __DA3.view.renderer.info.memory.textures });

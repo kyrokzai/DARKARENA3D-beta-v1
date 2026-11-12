@@ -79,8 +79,10 @@ const audit = page => DA(page, () => {
     check('?debug=1: debug panel present', await DA(page, () => !!document.getElementById('debugPanel') && !!__DA3.dbg));
     await dbg(page, 'hp-10');
     // Wait until the main bar has reached 90 % (0.18 s CSS transition; slower frames under load), then read the trail.
-    await page.waitForFunction(() => { const e = document.querySelector('.hp-fill'); return e.getBoundingClientRect().width / e.parentElement.getBoundingClientRect().width < 0.905; }, null, { timeout: 2000, polling: 'raf' });
-    const t0 = { num: await txt(page, '[data-v=hp]'), fill: await widthPct(page, '.hp-fill'), trail: await widthPct(page, '.hp-trail') };
+    // read fill AND trail in the same frame the bar reaches 90 % (separate round-trips under slow software frames
+    // used to arrive after the trail's 0.35 s delay — the check itself is unchanged)
+    const t0 = await DA(page, () => new Promise((res, rej) => { const t = performance.now(), pct = s => { const e = document.querySelector(s); return e.getBoundingClientRect().width / e.parentElement.getBoundingClientRect().width * 100; };
+      const f = () => { if (pct('.hp-fill') < 90.5) res({ num: document.querySelector('[data-v=hp]').textContent, fill: pct('.hp-fill'), trail: pct('.hp-trail') }); else if (performance.now() - t > 2000) rej(new Error('bar did not reach 90 %')); else requestAnimationFrame(f); }; f(); }));
     await sleep(1400);
     const t1 = { fill: await widthPct(page, '.hp-fill'), trail: await widthPct(page, '.hp-trail') };
     check('Damage −10 → "90", bar 90 %', t0.num === '90' && Math.abs(t1.fill - 90) < 1, JSON.stringify(t1));

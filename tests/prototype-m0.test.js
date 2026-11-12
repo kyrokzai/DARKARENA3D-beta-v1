@@ -212,7 +212,7 @@ async function holdKey(page, code, ms) {
       const el = document.querySelector(sel), r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2, out = [];
       const spy = e => out.push(e.defaultPrevented); addEventListener('touchend', spy);
       const mk = (type, id) => { const t = new Touch({ identifier: id, target: el, clientX: x, clientY: y }); el.dispatchEvent(new TouchEvent(type, { bubbles: true, cancelable: true, touches: type === 'touchend' ? [] : [t], changedTouches: [t] })); };
-      mk('touchstart', 1); mk('touchend', 1); setTimeout(() => { mk('touchstart', 2); mk('touchend', 2); removeEventListener('touchend', spy); res(out); }, 120);
+      mk('touchstart', 1); mk('touchend', 1); { const t0 = performance.now(); while (performance.now() - t0 < 120) {} /* 120 ms real gap: no frame can interleave */ } mk('touchstart', 2); mk('touchend', 2); removeEventListener('touchend', spy); res(out);
     }), '#view');
     check('Double tap on 3D view: second tap blocked (no zoom)', dbl[0] === false && dbl[1] === true, JSON.stringify(dbl));
     const ta = await page.evaluate(() => ({ game: getComputedStyle(document.getElementById('game')).touchAction, menu: getComputedStyle(document.querySelector('.screen')).touchAction }));
@@ -249,8 +249,8 @@ async function holdKey(page, code, ms) {
     }
     check('Resize: canvas fills window, aspect correct, internal resolution = quality profile (DPR cap, scale, pixel budget)', ok, log.join(' '));
     await page.evaluate(() => { __DA3.settings.renderScale = 0.75; }); await sleep(150);
-    const rs = await page.evaluate(() => __DA3.canvas);
-    check('Render-resolution setting applies live', Math.abs(rs.w - 768) <= 1, `${rs.w}x${rs.h} @1024 css`);
+    const rs = await page.evaluate(async () => { const q = await import('/prototype-3d/src/render/quality.js'); const s = __DA3.settings; return { ...__DA3.canvas, exp: q.computePixelRatio(1024, 768, devicePixelRatio, s.graphicsProfile, 0.75, 1).width }; });
+    check('Render-resolution setting applies live (fine-tune 75 % of the profile resolution)', Math.abs(rs.w - rs.exp) <= 1 && rs.w < 1024, `${rs.w}x${rs.h} @1024 css (expected ${rs.exp})`);
     await ctx.close();
     const m = await open(browser, base, iphone14);
     await m.page.setViewportSize({ width: 430, height: 932 }); await sleep(250);
