@@ -129,7 +129,9 @@ export function createRenderer({ container, world, getSettings, skin }) {
       kick.v += 0.55 * k; kick.rv += (Math.random() - 0.5) * 0.25 * k;
       flashT = 0.045;
     },
-    onImpact(ev) { impacts.impact(ev); },
+    onImpact(ev) { impacts.impact({ ...ev, surface: ev.kind === 'wall' && ev.cell && level.isPropCell(ev.cell.x, ev.cell.y) ? 'metal' : 'concrete' }); },
+    /** M2.0: blood on the floor (kills: larger; headshots: small) at sim (x, y). */
+    bloodSplat(x, y, size) { impacts.bloodSplat(x, y, size); },
     /** M1.9 melee: the rifle butt connects — a light camera punch (render only) and the rifle jolt. */
     onMeleeHit(ev) { vm.onMeleeImpact(ev.killed); kick.v += 0.35; kick.rv += 0.35; },
     /** M1.8: real frame time while playing → adaptive resolution guard (resizes only when the factor changes). */

@@ -160,7 +160,13 @@ function updateFpsVisibility() { fpsEl.classList.toggle('hidden', !settings.show
 updateFpsVisibility();
 
 // ---- weapon feedback: viewmodel, effects, sound (all from sim events) ----
-game.on('fire', e => { view.onShot(e); sfx.shot(e.ads); });
+game.on('fire', e => { view.onShot(e); sfx.shot(e.ads, e.weapon); });
+// M2.0 arsenal sounds: pump after each shotgun shot, shells loaded one by one, weapon change, flashlight
+game.on('pumpStart', e => sfx.pump(e.after));
+game.on('shellLoaded', () => sfx.shellIn());
+game.on('weaponSwitch', () => sfx.switchOut());
+game.on('weaponReady', () => sfx.switchIn());
+game.on('flashlight', e => sfx.lightClick(e.on));
 game.on('impact', e => { view.onImpact(e); if (Math.random() < 0.5) sfx.impact(); });
 game.on('dryFire', () => sfx.dry());
 // M1.9 rifle-butt strike: swing whoosh at the start; on a hit — impact, blood (same effect as a bullet hit), camera punch
@@ -171,7 +177,7 @@ game.on('meleeHit', e => {
   view.infected.onHit(e.point, e.dir, 'body');
   if (en && !e.killed) { const r = rel(en.x, en.y); sfx.infected('hurt', r.pan, r.dist); }
 });
-game.on('reloadStart', e => sfx.reload(e.time));
+game.on('reloadStart', e => { if (e.kind !== 'shell') sfx.reload(e.time, e.weapon); }); // shells: one sound per shell
 game.on('adsChange', e => { if (e.ads) sfx.adsIn(); });
 game.on('hit', e => sfx.hit(e.headshot, e.kill));
 // ---- infected (M1.5): effects + positional sounds + death screen ----
@@ -181,11 +187,11 @@ const rel = (x, y) => { // pan (−1..1) and distance (m) of a sim point relativ
   const right = (dx * -Math.sin(p.yaw) + dy * Math.cos(p.yaw)) / (Math.hypot(dx, dy) || 1);
   relOut.pan = Math.max(-1, Math.min(1, right)); relOut.dist = d; return relOut;
 };
-game.on('shot', e => { if (e.hit.type === 'entity' && e.hit.entity.type) view.infected.onHit(e.hit.point, e.dir, e.hit.zone); });
-game.on('targetHit', e => { const en = game.enemies.find(x => x.id === e.id); if (en && !e.killed) { const r = rel(en.x, en.y); sfx.infected('hurt', r.pan, r.dist); } });
+game.on('shot', e => { if (e.hit.type === 'entity' && e.hit.entity.type) { view.infected.onHit(e.hit.point, e.dir, e.hit.zone); if (e.hit.zone === 'head' && Math.random() < 0.6) view.bloodSplat(e.hit.point.x + e.dir.x * 0.4, e.hit.point.y + e.dir.y * 0.4, 0.45); } });
+game.on('targetHit', e => { const en = game.enemies.find(x => x.id === e.id); if (en && !e.killed && e.first !== false) { /* KRAIT: one pain sound per shot, not per pellet */ const r = rel(en.x, en.y); sfx.infected('hurt', r.pan, r.dist); } });
 game.on('infectedAlert', e => { const r = rel(e.x, e.y); sfx.infected('alert', r.pan, r.dist); });
 game.on('infectedAttack', e => { const r = rel(e.x, e.y); sfx.infected('attack', r.pan, r.dist); });
-game.on('infectedKilled', e => { const en = game.enemies.find(x => x.id === e.id); if (en) view.infected.onDeath(en); const r = rel(e.x, e.y); sfx.infected('death', r.pan, r.dist); });
+game.on('infectedKilled', e => { const en = game.enemies.find(x => x.id === e.id); if (en) view.infected.onDeath(en); view.bloodSplat(e.x + e.dir.x * 0.25, e.y + e.dir.y * 0.25, 1.1); /* M2.0 blood pool where it falls */ const r = rel(e.x, e.y); sfx.infected('death', r.pan, r.dist); });
 game.on('playerHurt', () => { view.onHurt(); sfx.playerHurt(); });
 game.on('victory', e => {
   $('winStats').textContent = `Все ${e.waves} волны пройдены · убито заражённых: ${e.kills}`;

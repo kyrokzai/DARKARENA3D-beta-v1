@@ -23,7 +23,11 @@ export function createSfx(getSettings) {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return null;
       ctx = new AC();
-      master = ctx.createGain(); master.connect(ctx.destination);
+      // M2.0: a limiter on the master bus (the shotgun boom over an AK burst must never clip); transparent below −6 dB
+      const limiter = ctx.createDynamicsCompressor();
+      limiter.threshold.value = -6; limiter.knee.value = 4; limiter.ratio.value = 14; limiter.attack.value = 0.002; limiter.release.value = 0.12;
+      limiter.connect(ctx.destination);
+      master = ctx.createGain(); master.connect(limiter);
       ambDuck = ctx.createGain(); ambDuck.connect(master); ambBus = ctx.createGain(); ambBus.gain.value = 0; ambBus.connect(ambDuck);
       alarmDuck = ctx.createGain(); alarmDuck.connect(master); alarmBus = ctx.createGain(); alarmBus.connect(alarmDuck);
       // 1 s of white noise reused by every sound
@@ -185,10 +189,26 @@ export function createSfx(getSettings) {
     /** Current bus gains (tests / debug): master volume, ambience on/off gain, duck levels. */
     get levels() { return ctx ? { master: master.gain.value, amb: ambBus.gain.value, ambDuck: ambDuck.gain.value, alarmDuck: alarmDuck.gain.value, siren: siren ? siren.out.gain.value : 0 } : null; },
     /** Rifle shot: sharp crack + body + low thump + short tail; random variation so sprays don't sound looped. */
-    shot(ads = 0) {
-      count('shot'); if (!ready()) return;
+    shot(ads = 0, weapon = 'raven') {
+      count('shot'); count('shot_' + weapon); if (!ready()) return;
       duck(0.3, 0.55);
       const t = ctx.currentTime, v = 0.9 + Math.random() * 0.2;
+      if (weapon === 'ak47') { // M2.0: heavier, lower bark with a long low tail and a metallic slap of the action
+        noiseBurst(t, { dur: 0.04, gain: 0.42 * v, type: 'highpass', freq: 1300 + Math.random() * 300, decay: 0.04 });
+        noiseBurst(t, { dur: 0.3, gain: 0.75 * v, type: 'lowpass', freq: 1900 - ads * 400, freqEnd: 300, decay: 0.27 });
+        tone(t, { freq: 72 + Math.random() * 10, freqEnd: 34, dur: 0.2, gain: 0.62 });
+        noiseBurst(t + 0.012, { dur: 0.05, gain: 0.12, type: 'bandpass', freq: 3100, q: 4, decay: 0.04 }); // bolt carrier slap
+        noiseBurst(t + 0.04, { dur: 0.45, gain: 0.1, type: 'bandpass', freq: 520, q: 0.6, decay: 0.42 });
+        return;
+      }
+      if (weapon === 'krait') { // M2.0: short powerful boom, deep body, long room tail
+        duck(0.18, 0.4);
+        noiseBurst(t, { dur: 0.05, gain: 0.5 * v, type: 'highpass', freq: 900, decay: 0.05 });
+        noiseBurst(t, { dur: 0.42, gain: 0.85 * v, type: 'lowpass', freq: 1500 - ads * 300, freqEnd: 220, decay: 0.38 });
+        tone(t, { freq: 58 + Math.random() * 6, freqEnd: 26, dur: 0.32, gain: 0.78 });
+        noiseBurst(t + 0.05, { dur: 0.7, gain: 0.12, type: 'bandpass', freq: 380, q: 0.5, decay: 0.66 });
+        return;
+      }
       noiseBurst(t, { dur: 0.05, gain: 0.55 * v, type: 'highpass', freq: 1800 + Math.random() * 500, decay: 0.045 });
       noiseBurst(t, { dur: 0.22, gain: 0.7 * v, type: 'lowpass', freq: 2600 - ads * 500, freqEnd: 500, decay: 0.2 });
       tone(t, { freq: 95 + Math.random() * 15, freqEnd: 42, dur: 0.14, gain: 0.55 });
@@ -212,8 +232,32 @@ export function createSfx(getSettings) {
     },
     dry() { count('dry'); if (!ready()) return; const t = ctx.currentTime; click(t, 2400, 0.35); tone(t, { freq: 1400, dur: 0.03, gain: 0.08, type: 'square' }); },
     /** Reload: magazine out → magazine in → charging handle, timed to the 1.3 s animation. */
-    reload(time = 1.3) {
+    /** M2.0 KRAIT: forend racked back (shell out) and slammed forward — `after` s from now. */
+    pump(after = 0) {
+      count('pump'); if (!ready()) return;
+      const t = ctx.currentTime + after;
+      noiseBurst(t, { dur: 0.12, gain: 0.22, type: 'bandpass', freq: 1500, freqEnd: 800, q: 1.4, decay: 0.11 }); // slide back
+      click(t + 0.12, 2200, 0.35);                                                                             // shell out
+      noiseBurst(t + 0.24, { dur: 0.06, gain: 0.32, type: 'lowpass', freq: 1300, decay: 0.05 });                // forward slam
+      click(t + 0.25, 3400, 0.4);
+    },
+    /** M2.0 KRAIT: one shell pushed into the tube. */
+    shellIn() { count('shellIn'); if (!ready()) return; const t = ctx.currentTime; click(t, 2600, 0.22); noiseBurst(t + 0.01, { dur: 0.05, gain: 0.12, type: 'lowpass', freq: 900, decay: 0.04 }); },
+    /** M2.0 weapon change: cloth + sling rattle while putting away, a clack when the new one is up. */
+    switchOut() { count('switch'); if (!ready()) return; const t = ctx.currentTime; noiseBurst(t, { dur: 0.18, gain: 0.07, type: 'bandpass', freq: 900, freqEnd: 1800, q: 0.9, decay: 0.17 }); click(t + 0.12, 2000, 0.12); },
+    switchIn() { if (!ready()) return; const t = ctx.currentTime; click(t, 2800, 0.28); noiseBurst(t + 0.01, { dur: 0.04, gain: 0.1, type: 'lowpass', freq: 1200, decay: 0.035 }); },
+    /** M2.0 flashlight switch. */
+    lightClick(on) { count('light'); if (!ready()) return; const t = ctx.currentTime; click(t, on ? 4200 : 3600, 0.16); },
+    reload(time = 1.3, weapon = 'raven') {
       count('reload'); if (!ready()) return;
+      if (weapon === 'ak47') { // M2.0 AK: mag rocked out (heavy clack), new mag rocked in, bolt pulled and released
+        const t = ctx.currentTime, k = time / 1.8;
+        click(t + 0.30 * k, 2400, 0.3); noiseBurst(t + 0.32 * k, { dur: 0.1, gain: 0.12, type: 'bandpass', freq: 900, q: 1 });
+        noiseBurst(t + 0.62 * 1.8 * k * 0.55, { dur: 0.09, gain: 0.38, type: 'lowpass', freq: 700 }); click(t + 0.63 * 1.8 * k * 0.55, 2600, 0.4);
+        noiseBurst(t + 0.80 * 1.8 * k * 0.98, { dur: 0.11, gain: 0.26, type: 'bandpass', freq: 1700, q: 1.2, freqEnd: 700 });
+        click(t + 0.87 * 1.8 * k, 2900, 0.45); noiseBurst(t + 0.875 * 1.8 * k, { dur: 0.05, gain: 0.25, type: 'lowpass', freq: 1100 });
+        return;
+      }
       const t = ctx.currentTime, k = time / 1.3;
       click(t + 0.16 * k, 3800, 0.22); click(t + 0.19 * k, 2600, 0.2);                     // release + mag slides out
       noiseBurst(t + 0.2 * k, { dur: 0.12, gain: 0.08, type: 'bandpass', freq: 1200, q: 1 });

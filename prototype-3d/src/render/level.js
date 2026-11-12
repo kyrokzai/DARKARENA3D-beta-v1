@@ -113,5 +113,7 @@ export function buildLevel(scene, world) {
   }
   scene.add(group);
   void tint;
-  return { group, wallCount, update, setAlarm, dressing, hemi, daylight, get lightCount() { return pool.length; }, get lampCount() { return lamps.length; }, get alarm() { return alarmK; } };
+  // M2.0: hit effects ask whether a solid cell is a piece of (metal) equipment or a concrete wall
+  const isPropCell = (x, y) => propCells.has(x + ',' + y);
+  return { group, wallCount, update, setAlarm, dressing, hemi, daylight, isPropCell, get lightCount() { return pool.length; }, get lampCount() { return lamps.length; }, get alarm() { return alarmK; } };
 }
