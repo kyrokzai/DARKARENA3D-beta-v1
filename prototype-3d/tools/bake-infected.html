@@ -4,7 +4,8 @@
 <style>body{background:#111;color:#ccc;font:13px monospace} canvas{width:256px;height:256px;margin:4px;border:1px solid #333}</style></head>
 <body><p>Инструмент разработчика (M1.8): запекание PBR-карт заражённых. Не часть игры. Запуск: <code>node scripts/bake-infected.js</code>.</p><div id="out"></div>
 <script type="module">
-import { getHollowAssets, ATLAS } from '../src/render/enemies/hollow-model.js';
+import { getHollowAssets, ATLAS, keepBakeData } from '../src/render/enemies/hollow-model.js';
+keepBakeData(true);
 import { bakeGeometry } from '../src/tools/bake-infected.js';
 window.__bake = (variant, part) => {
   const A = getHollowAssets(variant, { bake: true });

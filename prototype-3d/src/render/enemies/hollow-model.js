@@ -558,11 +558,17 @@ export function getHollowAssets(variant = 'hollow') {
       rags: bakedMaterial(LK.id, 'rags', { roughness: 0.96, side: THREE.DoubleSide }),
       eyes: shared.eyes,
     } : shared;
+    // the per-vertex bake data (chart ids, chart coordinates, surface functions) is only needed by the offline bake
+    // tool (tools/bake-infected) — free it at runtime
+    if (!KEEP_BAKE) for (const L of lods) for (const g of Object.values(L)) delete g.userData.bake;
     const tri = (g) => Object.values(g).reduce((s, x) => s + x.index.count / 3, 0);
     return (sets[variant] = { variant: LK.id, geo: L0.geo, lods, mats, maps, tris: tri(L0.geo), trisLod: lods.map(tri), headCentre: L0.hc });
   } finally { LK = prevLook; LOD_SEG = prevSeg; }
 }
 export const LOD_LEVELS = [1, 0.55, 0.32];
+let KEEP_BAKE = false;
+/** Dev tool only: keep the bake data on the geometries (tools/bake-infected). */
+export function keepBakeData(on = true) { KEEP_BAKE = on; }
 function buildVariant({ lod = 1, presets = null } = {}) {
   LOD_SEG = lod;
   const skin = new Builder('skin', presets && presets.skin), rags = new Builder('rags', presets && presets.rags), eyes = new Builder('eyes');

@@ -64,6 +64,10 @@ export function createRenderer({ container, world, getSettings, skin }) {
           const t = m[k] || (k === 'bumpMap' && bumps.get(m)); if (!t || t.magFilter === THREE.NearestFilter) continue;
           const want = Math.min(maxA, o.name === 'floor' ? P.floorAnisotropy : P.anisotropy);
           if (t.anisotropy !== want) { t.anisotropy = want; t.needsUpdate = true; }
+          // PERFORMANCE: bilinear with the nearest mip level instead of trilinear (measured: most of the extra
+          // per-pixel cost at equal resolution; still smooth, unlike M1.7's nearest-neighbour)
+          if (t.userData.minFilter0 === undefined) t.userData.minFilter0 = t.minFilter;
+          if (t.userData.minFilter0 === THREE.LinearMipmapLinearFilter) { const mf = P.trilinear ? THREE.LinearMipmapLinearFilter : THREE.LinearMipmapNearestFilter; if (t.minFilter !== mf) { t.minFilter = mf; t.needsUpdate = true; } }
         }
         if (bumps.has(m)) { const b = P.bump ? bumps.get(m) : null; if (m.bumpMap !== b) { m.bumpMap = b; m.needsUpdate = true; } }
       }
