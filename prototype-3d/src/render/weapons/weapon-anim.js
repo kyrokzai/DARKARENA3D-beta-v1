@@ -35,7 +35,7 @@ const out = {
 };
 
 /** Evaluate the timeline at reload progress r (−1 = not reloading). Returns a shared object (no allocations). */
-export function reloadTimeline(r) {
+export function reloadTimeline(r, { chargeTravel = 0.055 } = {}) { // M2.0: chargeTravel per weapon (AK bolt 0.075)
   const o = out;
   if (r < 0) {
     Object.assign(o.rig, { rx: 0, ry: 0, rz: 0, px: 0, py: 0, pz: 0 });
@@ -62,7 +62,7 @@ export function reloadTimeline(r) {
   const up = smooth(seg(r, 0.43, 0.54)), ins = smooth(seg(r, 0.54, 0.62));
   o.spare.y = lerp(lerp(-0.36, -0.10, up), 0, ins); o.spare.x = lerp(-0.05, 0, up); o.spare.z = lerp(-0.02, -0.01, up) * (1 - ins);
   // charging handle
-  o.charging = 0.055 * smooth(seg(r, 0.79, 0.86)) * (1 - smooth(seg(r, 0.865, 0.885)));
+  o.charging = chargeTravel * smooth(seg(r, 0.79, 0.86)) * (1 - smooth(seg(r, 0.865, 0.885)));
   // left hand keys
   let k = 0; while (k < LEFT_KEYS.length - 2 && r >= LEFT_KEYS[k + 1][0]) k++;
   const [r0, a] = LEFT_KEYS[k], [r1, b] = LEFT_KEYS[k + 1];
@@ -99,5 +99,45 @@ export function meleeTimeline(p) {
   const u = seg(p, p0, p1), t = k === 1 ? 1 - (1 - u) * (1 - u) * (1 - u) : smooth(u);
   for (const key of ['rx', 'ry', 'rz', 'px', 'py', 'pz']) o[key] = lerp(a[key], b[key], t);
   o.phase = p < 0.2 ? 'windup' : p < 0.42 ? 'strike' : 'return';
+  return o;
+}
+
+// ---- M2.0 DA-S12 KRAIT: pump cycle after a shot + shell-by-shell reload (driven by the sim's cycle / shell phase) ----
+const kOut = { rig: { rx: 0, ry: 0, rz: 0, px: 0, py: 0, pz: 0 }, pump: 0, left: { a: 'leftPump', b: 'leftPump', t: 0 }, shell: { visible: false, k: 0 }, rightIndexOff: 0, ejectNow: false };
+/**
+ * s = { cycle 0..1 since the shot, interval s, pump {start, back, forward} s, shellPhase, shellT, shellPump (closing
+ * pump because it was empty), reload def {start, perShell, end, endPump}, travel m }. Returns a shared object.
+ */
+export function kraitTimeline(s) {
+  const o = kOut, P = s.pump, R = s.reload;
+  Object.assign(o.rig, { rx: 0, ry: 0, rz: 0, px: 0, py: 0, pz: 0 }); o.pump = 0; o.left.a = o.left.b = 'leftPump'; o.left.t = 0; o.shell.visible = false; o.rightIndexOff = 0;
+  const rack = t => { // forend travel at t seconds after the start of a racking motion
+    if (t < P.start || t > P.forward) return 0;
+    if (t < P.back) return s.travel * smooth(seg(t, P.start, P.back));
+    return s.travel * (1 - smooth(seg(t, P.back, P.forward)));
+  };
+  if (!s.shellPhase) { // firing: the pump goes back and forward after the shot
+    const t = s.cycle * s.interval; o.pump = s.cycle < 1 ? rack(t) : 0;
+    o.rig.rx = s.cycle < 1 ? 0.05 * Math.sin(Math.min(1, seg(t, P.start, P.forward)) * Math.PI) : 0; // the gun dips a little while racking
+    return o;
+  }
+  // reloading: the gun rolls to show the loading port; the left hand leaves the pump, brings shells one by one
+  const tilt = s.shellPhase === 'end' ? 1 - smooth(seg(s.shellT, 0, s.shellPump ? R.endPump * 0.5 : R.end)) : s.shellPhase === 'start' ? smooth(seg(s.shellT, 0, R.start * 0.8)) : 1;
+  Object.assign(o.rig, { rx: 0.12 * tilt, ry: -0.10 * tilt, rz: -0.55 * tilt, px: -0.02 * tilt, py: 0.04 * tilt, pz: 0.02 * tilt });
+  o.rightIndexOff = 1;
+  if (s.shellPhase === 'start') { const u = seg(s.shellT, 0, R.start); o.left.a = 'leftPump'; o.left.b = 'leftLoadLow'; o.left.t = smooth(u); return o; }
+  if (s.shellPhase === 'shell') {
+    const u = seg(s.shellT, 0, R.perShell);
+    if (u < 0.35) { o.left.a = 'leftLoadLow'; o.left.b = 'leftLoadReach'; o.left.t = smooth(u / 0.35); }
+    else if (u < 0.6) { o.left.a = 'leftLoadReach'; o.left.b = 'leftLoadPush'; o.left.t = smooth((u - 0.35) / 0.25); }
+    else { o.left.a = 'leftLoadPush'; o.left.b = 'leftLoadLow'; o.left.t = smooth((u - 0.6) / 0.4); }
+    o.shell.visible = u > 0.08 && u < 0.6; o.shell.k = seg(u, 0.35, 0.6); // k: how far the shell is pushed into the port
+    return o;
+  }
+  // end: back to the pump; if it was empty, rack it once (chambers the first shell)
+  const dur = s.shellPump ? R.endPump : R.end, u = seg(s.shellT, 0, dur);
+  o.left.a = 'leftLoadLow'; o.left.b = 'leftPump'; o.left.t = smooth(Math.min(1, u / (s.shellPump ? 0.45 : 1)));
+  if (s.shellPump && u > 0.45) o.pump = rack(P.start + (u - 0.45) / 0.55 * (P.forward - P.start));
+  o.rightIndexOff = 1 - smooth(seg(u, 0.6, 1));
   return o;
 }

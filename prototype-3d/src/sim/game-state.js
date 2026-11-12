@@ -53,7 +53,7 @@ export class GameState {
   /** Per-tick aim info for the crosshair (spread in degrees, ADS 0..1). Polled by the HUD — no event spam. */
   setAim({ spread, ads }) { this.weapon.spread = spread; this.weapon.ads = ads; }
   /** Per tick: action cycle 0..1 since the last shot (pump / bolt animation) and the shell-reload phase. Polled. */
-  setCycle(cycle, shellPhase = null, shellT = 0) { const w = this.weapon; w.cycle = cycle; w.shellPhase = shellPhase; w.shellT = shellT; }
+  setCycle(cycle, shellPhase = null, shellT = 0, shellPump = false) { const w = this.weapon; w.cycle = cycle; w.shellPhase = shellPhase; w.shellT = shellT; w.shellPump = shellPump; }
   setArsenal(a) {
     const o = this.arsenal, changed = o.active !== a.active || o.phase !== a.phase || o.slots.length !== a.slots.length || a.slots.some((s, i) => !o.slots[i] || o.slots[i].mag !== s.mag || o.slots[i].reserve !== s.reserve);
     o.active = a.active; o.phase = a.phase; o.progress = a.progress; o.slots = a.slots;

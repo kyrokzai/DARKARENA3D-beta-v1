@@ -249,3 +249,6 @@ export function createRavenModel(skin = DEFAULT_SKIN) {
     sharedGeometry: merged,
   };
 }
+
+// M2.0: the profile helpers are shared by the other long guns (AK-47 MOD, DA-S12 KRAIT) — same frame and conventions.
+export { shapeFrom, side, front, tube, box, makeMaterials as makeRavenMaterials };

@@ -159,7 +159,8 @@ export function createRenderer({ container, world, getSettings, skin }) {
       renderer.render(scene, camera);
       lastInfo.world = { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
       if (w.showWeapon !== false) {
-        vm.update({ ads, reload: w.reload ?? -1, melee: w.melee ?? -1, player, dt, aspect: camera.aspect, triggerDown: !!w.triggerDown });
+        vm.update({ ads, reload: w.reload ?? -1, melee: w.melee ?? -1, player, dt, aspect: camera.aspect, triggerDown: !!w.triggerDown,
+          weaponId: w.weaponId, cycle: w.cycle, shellPhase: w.shellPhase, shellT: w.shellT, shellPump: w.shellPump, switchPhase: w.switchPhase, switchProgress: w.switchProgress }); // M2.0
         renderer.info.reset();
         renderer.autoClear = false;
         renderer.clearDepth();

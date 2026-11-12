@@ -26,6 +26,10 @@ export const PROXIES = [
   box('mag', [0, -0.115, -0.152], [0.013, 0.097, 0.034], [[1, 0, 0], magAxis, magFwd], 'mag'),
   box('spare', [0, -0.115, -0.152], [0.013, 0.097, 0.034], [[1, 0, 0], magAxis, magFwd], 'spare'),
 ];
+// M2.0: the solver works on the CURRENT proxy set (RAVEN by default); AK-47 / KRAIT poses are solved against their own
+// volumes with withProxies(list, fn). RAVEN's poses are computed exactly as before.
+let PX = PROXIES;
+export function withProxies(list, fn) { const prev = PX; PX = list; try { return fn(); } finally { PX = prev; } }
 const _p = new THREE.Vector3(), _q = new THREE.Vector3();
 /** Signed distance from point (model space) to a proxy; offsets = {mag, spare, charging} Vector3 or null (inactive). */
 export function proxyDistance(pt, b, offsets) {
@@ -37,9 +41,9 @@ export function proxyDistance(pt, b, offsets) {
   const outside = Math.hypot(Math.max(_q.x, 0), Math.max(_q.y, 0), Math.max(_q.z, 0));
   return outside + Math.min(Math.max(_q.x, _q.y, _q.z), 0);
 }
-export function sceneDistance(pt, offsets, ignore = null) {
+export function sceneDistance(pt, offsets, ignore = null, list = PX) {
   let d = Infinity, who = null;
-  for (const b of PROXIES) { if (ignore && ignore.includes(b.name)) continue; const x = proxyDistance(pt, b, offsets); if (x < d) { d = x; who = b.name; } }
+  for (const b of list) { if (ignore && ignore.includes(b.name)) continue; const x = proxyDistance(pt, b, offsets); if (x < d) { d = x; who = b.name; } }
   return { d, who };
 }
 
@@ -92,7 +96,7 @@ function solveFinger(Hm, side, f, start, max, spread, offsets, gap, ignore) {
 }
 /** Wrap fingers listed in `wrap` around the proxies (pose is in `frame`; offsets put that frame at rest). */
 function solve(p, side, wrap, { start = [0.15, 0.1, 0.05], max = [1.55, 1.75, 1.25], gap = 0.0015, ignore = null } = {}) {
-  const offsets = { mag: new THREE.Vector3(), spare: new THREE.Vector3(), charging: new THREE.Vector3() };
+  const offsets = { mag: new THREE.Vector3(), spare: new THREE.Vector3(), charging: new THREE.Vector3(), pump: new THREE.Vector3() };
   // a pose in the 'mag' frame should only see the magazine proxy at rest; others are irrelevant there
   H.compose(p.pos, p.quat, ONE);
   for (const f of wrap) p.f[f] = solveFinger(H, side, f, start, max, p.spread[FINGERS.indexOf(f)], offsets, gap, ignore);
@@ -109,7 +113,7 @@ function thumbClearance(Hm, side, th, offsets, ignore) {
 }
 /** Grid search: put a fingertip on `target` (pose frame) while keeping ≥ `gap` clearance from the weapon. */
 function reachFinger(p, side, f, target, { ignore = null, gap = 0.001, r1 = [-0.4, 1.1], r2 = [0, 1.6], r3 = [0.1, 0.7] } = {}) {
-  const offsets = { mag: new THREE.Vector3(), spare: null, charging: new THREE.Vector3() };
+  const offsets = { mag: new THREE.Vector3(), spare: null, charging: new THREE.Vector3(), pump: new THREE.Vector3() };
   H.compose(p.pos, p.quat, ONE);
   const t = new THREE.Vector3(...target), sp = p.spread[FINGERS.indexOf(f)];
   let best = null;
@@ -124,7 +128,7 @@ function reachFinger(p, side, f, target, { ignore = null, gap = 0.001, r1 = [-0.
   p.f[f] = best.c; return p;
 }
 function reachThumb(p, side, target, { ignore = null, gap = 0.001 } = {}) {
-  const offsets = { mag: new THREE.Vector3(), spare: null, charging: new THREE.Vector3() };
+  const offsets = { mag: new THREE.Vector3(), spare: null, charging: new THREE.Vector3(), pump: new THREE.Vector3() };
   H.compose(p.pos, p.quat, ONE);
   const t = new THREE.Vector3(...target);
   let best = null;
@@ -223,10 +227,10 @@ const _H2 = new THREE.Matrix4(), _pp = new THREE.Vector3();
  * Deepest penetration of a hand (already blended into model space) into the weapon proxies.
  * Returns { depth (m, ≥ 0 = inside), part, proxy }. offsets: {mag, spare, charging} (null = proxy inactive).
  */
-export function measurePenetration(p, side, offsets, ignore = null) {
+export function measurePenetration(p, side, offsets, ignore = null, list = PROXIES) {
   _H2.compose(p.pos, p.quat, ONE);
   let worst = { depth: -Infinity, part: '', proxy: '' };
-  const consider = (pt, r, part) => { const { d, who } = sceneDistance(pt, offsets, ignore); const depth = r - d; if (depth > worst.depth) worst = { depth, part, proxy: who }; };
+  const consider = (pt, r, part) => { const { d, who } = sceneDistance(pt, offsets, ignore, list); const depth = r - d; if (depth > worst.depth) worst = { depth, part, proxy: who }; };
   FINGERS.forEach((f, k) => {
     fingerChain(_H2, side, f, p.f[f], p.spread ? p.spread[k] : 0, mats, pts);
     for (let s = 0; s < 3; s++) for (let q = 1; q <= 4; q++) { seg.lerpVectors(pts[s], pts[s + 1], q / 4); consider(seg, fingerRadius(f, s), f + (s + 1)); }
@@ -235,4 +239,108 @@ export function measurePenetration(p, side, offsets, ignore = null) {
   for (let s = 0; s < 3; s++) for (let q = 1; q <= 4; q++) { seg.lerpVectors(pts[s], pts[s + 1], q / 4); consider(seg, fingerRadius('thumb', s), 'thumb' + (s + 1)); }
   for (const x of [-0.028, 0, 0.028]) for (const y of [0.012, 0.045, 0.08]) { _pp.set(x, y, 0).applyMatrix4(_H2); consider(_pp, 0.0125, 'palm'); }
   return worst;
+}
+
+// ================================================================ M2.0: AK-47 MOD and DA-S12 KRAIT
+// Proxy volumes of the two new guns (model space, same frame as RAVEN; see ak47-model.js / krait-model.js).
+const akMagAxis = [0, -0.94, -0.34], akMagFwd = [0, 0.34, -0.94];
+export const AK_PROXIES = [
+  box('grip', [0, -0.082, -0.0095], [0.0165, 0.064, 0.0175], [[1, 0, 0], gripAxis, gripFwd]),
+  box('lower', [0, 0.023, -0.105], [0.023, 0.040, 0.140]),
+  box('magwell', [0, -0.022, -0.165], [0.014, 0.008, 0.036]),
+  box('guardBar', [0, -0.0575, -0.070], [0.005, 0.0035, 0.040]),
+  box('upper', [0, 0.071, -0.095], [0.020, 0.010, 0.123]),
+  box('handguard', [0, 0.025, -0.389], [0.026, 0.030, 0.097]),
+  box('handguardUp', [0, 0.075, -0.366], [0.018, 0.015, 0.066]),
+  box('barrel', [0, 0.042, -0.600], [0.010, 0.010, 0.140]),
+  box('rearSight', [0, 0.075, -0.266], [0.010, 0.012, 0.034]),
+  box('sight', [0, 0.112, -0.091], [0.020, 0.025, 0.022]),
+  box('mount', [-0.030, 0.060, -0.090], [0.006, 0.030, 0.045]),
+  box('stock', [0, -0.020, 0.150], [0.020, 0.050, 0.120]),
+  box('charging', [0.0345, 0.052, -0.168], [0.010, 0.0065, 0.0065], null, 'charging'),
+  box('mag', [0, -0.118, -0.198], [0.013, 0.112, 0.030], [[1, 0, 0], akMagAxis, akMagFwd], 'mag'),
+  box('spare', [0, -0.118, -0.198], [0.013, 0.112, 0.030], [[1, 0, 0], akMagAxis, akMagFwd], 'spare'),
+];
+export const KRAIT_PROXIES = [
+  box('grip', [0, -0.082, -0.0095], [0.0165, 0.064, 0.0175], [[1, 0, 0], gripAxis, gripFwd]),
+  box('lower', [0, 0.022, -0.088], [0.024, 0.052, 0.118]),
+  box('guardBar', [0, -0.0595, -0.070], [0.006, 0.0035, 0.040]),
+  box('rail', [0, 0.082, -0.105], [0.010, 0.006, 0.085]),
+  box('ring', [0, 0.104, -0.014], [0.012, 0.012, 0.006]),
+  box('saddle', [-0.030, 0.032, -0.095], [0.012, 0.026, 0.048]),
+  box('barrel', [0, 0.055, -0.420], [0.013, 0.013, 0.215]),
+  box('tube', [0, 0.020, -0.400], [0.0125, 0.0125, 0.195]),
+  box('stock', [0, -0.010, 0.160], [0.019, 0.070, 0.090]),
+  box('pump', [0, 0.015, -0.351], [0.028, 0.029, 0.089], null, 'pump'),
+];
+const AK_MAG_D = new THREE.Vector3(0, -0.003, -0.046);  // AK magazine vs RAVEN's (centre of its volume)
+
+let akPoses = null, kraitPoses = null;
+/** AK-47 poses: same names as RAVEN's (the shared reload timeline uses them), solved against the AK volumes. */
+export function getAkPoses() {
+  if (akPoses) return akPoses;
+  akPoses = withProxies(AK_PROXIES, () => {
+    const P = {};
+    P.rightGrip = solve(pose({ mcp: [0.031, -0.074, 0.001], X: [0, 0.955, -0.296], Y: [0, -0.296, -0.955], spread: [0.36, 0, -0.03, -0.08] }), R, ['middle', 'ring', 'pinky'], { ignore: ['spare', 'mag'] });
+    reachFinger(P.rightGrip, R, 'index', TRIGGER_POINT, { ignore: ['spare', 'mag'] });
+    reachThumb(P.rightGrip, R, [0.031, 0.004, -0.012], { ignore: ['spare', 'mag'] });
+    P.rightGripPull = clonePose(P.rightGrip); P.rightGripPull.f.index = P.rightGrip.f.index.map((c, i) => c + [0.06, 0.12, 0.08][i]);
+    P.rightIndexOff = clonePose(P.rightGrip); P.rightIndexOff.f.index = [-0.8, 0.1, 0.05];
+    // support hand under the wooden handguard (lower than RAVEN's), fingers up its right side, thumb along the left
+    P.leftGuard = solve(pose({ mcp: [0.0405, -0.018, -0.360], X: [0, 0, 1], Y: [1, 0, 0], spread: [0.38, 0.30, 0.22, 0.14] }), L, FINGERS, { ignore: ['mag', 'spare'], max: [1.6, 1.5, 1.15] });
+    reachThumb(P.leftGuard, L, [-0.034, 0.020, -0.405], { ignore: ['mag', 'spare'] });
+    P.leftRelease = clonePose(P.leftGuard); P.leftRelease.pos.add(new THREE.Vector3(-0.055, -0.045, 0.03)); P.leftRelease.f = { ...open };
+    const MAGS = ['spare', 'grip', 'lower', 'magwell', 'guardBar', 'upper', 'handguard', 'handguardUp', 'barrel', 'rearSight', 'sight', 'mount', 'stock', 'charging'];
+    const at = (v, d = AK_MAG_D) => v.map((x, i) => x + [d.x, d.y, d.z][i]);
+    P.leftMagHold = solve(pose({ frame: 'mag', mcp: at([-0.027, -0.138, -0.118]), X: [0, 1, 0], Y: [0, -0.34, 0.94] }), L, FINGERS, { ignore: MAGS });
+    reachThumb(P.leftMagHold, L, at([-0.017, -0.085, -0.165]), { ignore: MAGS });
+    P.leftMagReach = clonePose(P.leftMagHold); P.leftMagReach.pos.add(new THREE.Vector3(-0.07, -0.03, -0.012)); P.leftMagReach.f = { ...open };
+    P.leftReachWay = clonePose(P.leftMagReach); P.leftReachWay.frame = 'model'; P.leftReachWay.pos.add(new THREE.Vector3(-0.045, -0.01, -0.09)); P.leftReachWay.f = { ...curled };
+    P.leftSpareHold = clonePose(P.leftMagHold); P.leftSpareHold.frame = 'spare';
+    P.leftMagLetGo = clonePose(P.leftMagHold); P.leftMagLetGo.pos.add(new THREE.Vector3(-0.035, -0.015, 0)); P.leftMagLetGo.f = { ...open };
+    P.leftMagSlap = solve(pose({ frame: 'mag', mcp: [0.0, -0.262, -0.266], X: [1, 0, 0], Y: [0, 0, -1] }), L, FINGERS, { ignore: MAGS, max: [1.1, 1.1, 0.8] });
+    P.leftMagSlap.thumb = { yaw: 0.6, pitch: 0.2, roll: 0, c: [0.2, 0.2] };
+    // AK charging handle is on the RIGHT: the left hand reaches over the dust cover, palm towards the receiver's right
+    // side, fingers hook the knob and pull it back
+    P.leftCharge = solve(pose({ frame: 'charging', mcp: [0.056, 0.080, -0.170], X: [0, 0, -1], Y: [0.12, -0.99, 0], spread: [0, 0, 0, 0] }), L, FINGERS, { ignore: ['spare', 'mag'], max: [1.4, 1.5, 1.1] });
+    P.leftCharge.thumb = { yaw: 0.5, pitch: 0.4, roll: 0, c: [0.3, 0.3] };
+    const flat = { index: [0.15, 0.2, 0.1], middle: [0.15, 0.2, 0.1], ring: [0.18, 0.22, 0.1], pinky: [0.2, 0.25, 0.1] };
+    const side = (mcp, f = flat) => pose({ mcp, X: [0, -1, 0], Y: [0, 0, -1], f: { ...f }, thumb: { yaw: 0.3, pitch: -0.2, roll: 0, c: [0.1, 0.1] } });
+    P.leftSlapPre = clonePose(P.leftMagSlap); P.leftSlapPre.pos.add(new THREE.Vector3(-0.05, -0.085, 0)); P.leftSlapPre.f = { ...open };
+    P.leftChargeOpen = clonePose(P.leftCharge); P.leftChargeOpen.pos.add(new THREE.Vector3(0.035, 0.03, 0.0)); P.leftChargeOpen.f = { ...open };
+    P.leftChargePre = clonePose(P.leftChargeOpen); P.leftChargePre.pos.add(new THREE.Vector3(0, 0, -0.02));
+    P.leftChargeHigh = clonePose(P.leftChargePre); P.leftChargeHigh.pos.add(new THREE.Vector3(0.0, 0.05, 0)); P.leftChargeHigh.f = { ...curled };
+    // the hand travels up the LEFT side, over the top to the right-side knob, and back the same way
+    P.leftWayUp = clonePose(P.leftChargePre); P.leftWayUp.frame = 'model'; P.leftWayUp.pos.set(-0.10, 0.07, -0.14); P.leftWayUp.f = { ...curled };
+    P.leftWayTop = clonePose(P.leftChargeOpen); P.leftWayTop.frame = 'model'; P.leftWayTop.pos.set(-0.06, 0.12, -0.20); P.leftWayTop.f = { ...curled };
+    P.leftWayLow = clonePose(P.leftWayUp); P.leftWayLow.pos.set(-0.17, -0.32, -0.12);
+    P.leftWayTop2 = side([-0.145, 0.0, -0.25], curled);
+    P.leftWayBack = side([-0.08, -0.04, -0.34]);
+    P.leftGuardPre = clonePose(P.leftGuard); P.leftGuardPre.pos.add(new THREE.Vector3(-0.03, -0.055, 0.01)); P.leftGuardPre.f = { ...open };
+    return P;
+  });
+  return akPoses;
+}
+/** KRAIT poses: firing grip (same grip volume), support hand on the pump (frame 'pump'), shell loading under the port. */
+export function getKraitPoses() {
+  if (kraitPoses) return kraitPoses;
+  kraitPoses = withProxies(KRAIT_PROXIES, () => {
+    const P = {};
+    P.rightGrip = solve(pose({ mcp: [0.031, -0.074, 0.001], X: [0, 0.955, -0.296], Y: [0, -0.296, -0.955], spread: [0.36, 0, -0.03, -0.08] }), R, ['middle', 'ring', 'pinky']);
+    reachFinger(P.rightGrip, R, 'index', TRIGGER_POINT);
+    reachThumb(P.rightGrip, R, [0.031, 0.004, -0.012]);
+    P.rightGripPull = clonePose(P.rightGrip); P.rightGripPull.f.index = P.rightGrip.f.index.map((c, i) => c + [0.06, 0.12, 0.08][i]);
+    P.rightIndexOff = clonePose(P.rightGrip); P.rightIndexOff.f.index = [-0.8, 0.1, 0.05];
+    // support hand wrapped around the pump (follows it when it is racked)
+    P.leftPump = solve(pose({ frame: 'pump', mcp: [0.0425, -0.030, -0.345], X: [0, 0, 1], Y: [1, 0, 0], spread: [0.38, 0.30, 0.22, 0.14] }), L, FINGERS, { max: [1.6, 1.5, 1.15] });
+    reachThumb(P.leftPump, L, [-0.034, 0.020, -0.385]);
+    P.leftPumpOff = clonePose(P.leftPump); P.leftPumpOff.pos.add(new THREE.Vector3(-0.04, -0.06, 0.02)); P.leftPumpOff.f = { ...open };
+    // shell loading: palm up under the loading port, the thumb pushes the shell in
+    const hold = { index: [0.55, 0.6, 0.35], middle: [0.6, 0.65, 0.35], ring: [0.65, 0.7, 0.35], pinky: [0.7, 0.75, 0.35] };
+    P.leftLoadPush = pose({ mcp: [0.0, -0.058, -0.165], X: [1, 0, 0], Y: [0, 0, -1], f: { ...hold }, thumb: { yaw: 0.9, pitch: 0.6, roll: 0, c: [0.4, 0.3] } });
+    P.leftLoadReach = clonePose(P.leftLoadPush); P.leftLoadReach.pos.add(new THREE.Vector3(-0.01, -0.05, 0.01));
+    P.leftLoadLow = clonePose(P.leftLoadPush); P.leftLoadLow.pos.add(new THREE.Vector3(-0.07, -0.20, 0.03)); P.leftLoadLow.f = { ...curled };
+    return P;
+  });
+  return kraitPoses;
 }

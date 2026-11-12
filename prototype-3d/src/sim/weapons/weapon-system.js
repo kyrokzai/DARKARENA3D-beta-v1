@@ -127,7 +127,7 @@ export class WeaponSystem {
     }
     st.setAim({ spread: this.currentSpread(), ads: this.adsT });
     // action cycle for the view (pump of the shotgun, bolt of the rifles): 0 at the shot → 1 when ready again
-    st.setCycle(Math.min(1, this.sinceShot / this.interval), this.shell ? this.shell.phase : null, this.shell ? this.shell.t : 0);
+    st.setCycle(Math.min(1, this.sinceShot / this.interval), this.shell ? this.shell.phase : null, this.shell ? this.shell.t : 0, this.shell ? this.shell.wasEmpty : false);
   }
 
   /** M2.0 shell-by-shell reload: open (start) → one shell per perShell → close (end; a pump stroke if it was empty). */

@@ -233,7 +233,7 @@ startLoop({
     const w = game.state.weapon;
     // alarm between waves (M1.7): GameState → siren / ambience (audio) and beacons / red light (render)
     sfx.frame({ playing: state === 'play', siren: game.state.alarm.siren, fx: settings.alarmFx, dt });
-    view.render(game.player, state === 'play' ? alpha : 1, { dt, alarm: alarmVisual(game.state.alarm.k, settings.alarmFx), ads: w.ads, fovMult: game.weapon.def.ads.fovMult, reload: w.reloading ? w.reloadProgress : -1, melee: game.state.melee.active ? game.state.melee.progress : -1, triggerDown: game.weapon.triggerDown, targets: game.targets, enemies: game.enemies, enemyDt: (state === 'play' || state === 'dead' || state === 'victory') ? dt : 0, showWeapon: state !== 'menu' && state !== 'about' && state !== 'dead' && state !== 'victory' });
+    view.render(game.player, state === 'play' ? alpha : 1, { dt, alarm: alarmVisual(game.state.alarm.k, settings.alarmFx), ads: w.ads, fovMult: game.weapon.def.ads.fovMult, reload: w.reloading ? w.reloadProgress : -1, melee: game.state.melee.active ? game.state.melee.progress : -1, weaponId: w.id, cycle: w.cycle, shellPhase: w.shellPhase, shellT: w.shellT, shellPump: w.shellPump, switchPhase: game.state.arsenal.phase, switchProgress: game.state.arsenal.progress, triggerDown: game.weapon.triggerDown, targets: game.targets, enemies: game.enemies, enemyDt: (state === 'play' || state === 'dead' || state === 'victory') ? dt : 0, showWeapon: state !== 'menu' && state !== 'about' && state !== 'dead' && state !== 'victory' });
     gameHud.frame(view.camera.fov);
     if (state === 'play' || state === 'edit') hud.drawMinimap(game.player);
     const ms = performance.now() - t0;

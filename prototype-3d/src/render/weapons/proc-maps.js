@@ -164,3 +164,23 @@ export function getWeaponSurfaceMaps() {
   };
   return weaponMaps;
 }
+
+// ------------------------------------------------------------------ M2.0 wood (AK-47 MOD furniture)
+/** Laminated birch / walnut look: long grain lines along U with gentle waves + darker growth rings; colour + relief. */
+let woodMaps = null;
+export function getWoodMaps() {
+  if (woodMaps) return woodMaps;
+  const n = 256, h = new Float32Array(n * n), w = tileNoise(n, 4, 71, 3), f = tileNoise(n, 64, 72, 1);
+  const c = document.createElement('canvas'); c.width = c.height = n; const g = c.getContext('2d'), img = g.createImageData(n, n), d = img.data;
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    const k = y * n + x, v = y / n + w[k] * 0.07;                       // grain runs along U (the length of the part)
+    const ring = 0.5 + 0.5 * Math.sin(v * Math.PI * 2 * 14), fine = 0.5 + 0.5 * Math.sin(v * Math.PI * 2 * 90 + f[k] * 3);
+    const t = ring * 0.65 + fine * 0.2 + f[k] * 0.15;
+    h[k] = ring * 0.25 + fine * 0.08 - f[k] * 0.05;
+    // warm walnut-brown, darker in the rings (sRGB)
+    d[k * 4] = 72 - t * 30; d[k * 4 + 1] = 40 - t * 18; d[k * 4 + 2] = 24 - t * 11; d[k * 4 + 3] = 255; // (the viewmodel is lit brightly: keep it dark)
+  }
+  g.putImageData(img, 0, 0);
+  woodMaps = { color: dataTexture(c, { repeat: [11, 11], srgb: true }), normal: dataTexture(heightToNormal(h, n, 1.4), { repeat: [11, 11] }) };
+  return woodMaps;
+}
