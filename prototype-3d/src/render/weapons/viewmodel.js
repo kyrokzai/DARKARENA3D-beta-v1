@@ -197,6 +197,18 @@ export function createViewmodel({ renderer, skin }) {
     camera.updateProjectionMatrix();
   }
 
+  // M1.9: per-pixel relief (normal maps) of the hands and the rifle follows the graphics profile — measured ≈ +10 % frame
+  // time at equal resolution in software WebGL, so PERFORMANCE drops it (like the environment bump maps since M1.8).
+  // Geometry, colours, two-tone glove and roughness stay in every profile.
+  let surfaceDetail = true;
+  const detailMats = () => [...Object.values(hands.mats), ...['body', 'polymer', 'grip', 'accent', 'steel'].map(k => model.mats[k])];
+  function applySurfaceDetail() {
+    for (const m of detailMats()) {
+      if (m.normalMap) m.userData.nmFull = m.normalMap;        // remember the full relief (the skin may have changed it)
+      const want = surfaceDetail ? m.userData.nmFull || null : null;
+      if (m.normalMap !== want) { m.normalMap = want; m.needsUpdate = true; }
+    }
+  }
   const api = {
     holdFlash: false, // test/screenshot aid (?debug=1): keep the muzzle flash on screen
     forceReload: null, // test/screenshot aid (?debug=1): show the reload animation frozen at this progress
@@ -216,7 +228,10 @@ export function createViewmodel({ renderer, skin }) {
       scene.clear();
     },
     scene, camera, rig, model, stats, onShot, update,
-    setSkin(id) { model.setSkin(id); },
+    setSkin(id) { model.setSkin(id); for (const m of detailMats()) if (m.normalMap) m.userData.nmFull = m.normalMap; if (!surfaceDetail) applySurfaceDetail(); },
+    /** Graphics profile: relief maps on (BALANCED / QUALITY) or off (PERFORMANCE). */
+    setSurfaceDetail(on) { surfaceDetail = !!on; applySurfaceDetail(); },
+    get surfaceDetail() { return surfaceDetail; },
     get skin() { return model.skin; },
     get flashVisible() { return flash.visible; },
     get smokeActive() { return smoke.filter(s => s.visible).length; },

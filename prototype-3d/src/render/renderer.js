@@ -58,6 +58,7 @@ export function createRenderer({ container, world, getSettings, skin }) {
   function applyTextureQuality() {
     const P = getProfile(getSettings().graphicsProfile), maxA = renderer.capabilities.getMaxAnisotropy();
     const key = P.id; if (key === texKey) return; texKey = key;
+    vm.setSurfaceDetail(P.bump); // M1.9: viewmodel relief follows the profile (PERFORMANCE: off — measured per-pixel cost)
     scene.traverse(o => {
       const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
       for (const m of ms) {

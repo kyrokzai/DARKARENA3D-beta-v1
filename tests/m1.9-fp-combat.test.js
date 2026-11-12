@@ -27,9 +27,9 @@ const waitReady = (page, ms = 20000) => page.waitForFunction(() => __DA3.game.st
   const base = 'http://127.0.0.1:' + srv.address().port;
   const browser = await chromium.launch();
 
-  // ---------- 1. Hands, gloves, sleeves ----------
+  // ---------- 1. Hands, gloves, sleeves (BALANCED: the profile with the full relief) ----------
   {
-    const { ctx, page, errors } = await open(browser, base, { viewport: { width: 1280, height: 720 } });
+    const { ctx, page, errors } = await open(browser, base, { viewport: { width: 1280, height: 720 } }, { gfx: 'balanced' });
     const h = await DA(page, async () => {
       const THREE = await import('three'); const vm = __DA3.view.vm, hands = vm.hands, out = { mats: {} };
       for (const [k, m] of Object.entries(hands.mats)) out.mats[k] = { nm: !!m.normalMap, nmSize: m.normalMap && m.normalMap.image && m.normalMap.image.width, ncs: m.normalMap && m.normalMap.colorSpace, metal: m.metalness, rough: m.roughness, vc: m.vertexColors };
@@ -64,6 +64,12 @@ const waitReady = (page, ms = 20000) => page.waitForFunction(() => __DA3.game.st
     });
     check('RAVEN: every material slot has a relief (machined metal / stippled polymer / carbon weave) and a soft roughness map', ['body', 'polymer', 'grip', 'accent', 'steel'].every(k => w[k].nm && w[k].rough), JSON.stringify(w.skins));
     check('Skins stay cosmetic: switching OBSIDIAN / BLOODLINE / NEON GHOST changes the relief of the accent panel only, weapon data unchanged', w.statsSame && w.skins.every(s => s[1]) && w.skins[0][2] === 'carbon' && w.skins[1][2] === 'metal');
+    // the relief follows the graphics profile (measured ≈ +10 % frame time in software WebGL): PERFORMANCE off, BALANCED on
+    const prof = await DA(page, () => { const vm = __DA3.view.vm, all = () => [...Object.values(vm.hands.mats), ...['body', 'polymer', 'grip', 'accent', 'steel'].map(k => vm.model.mats[k])];
+      const set = p => { __DA3.settings.graphicsProfile = p; __DA3.view.resize(true); return all().filter(m => m.normalMap).length; };
+      const perf = set('performance'); __DA3.setSkin('bloodline'); const perfSkin = all().filter(m => m.normalMap).length; __DA3.setSkin('obsidian');
+      const bal = set('balanced'); return { perf, perfSkin, bal, total: all().length }; });
+    check('Relief follows the graphics profile: PERFORMANCE drops the viewmodel normal maps (also after a skin change), BALANCED restores all of them', prof.perf === 0 && prof.perfSkin === 0 && prof.bal === prof.total, JSON.stringify(prof));
     // the reload / ADS still work with the new hands (poses applied, no NaN)
     const anim = await DA(page, () => { const vm = __DA3.view.vm, out = [];
       for (const r of [-1, 0.2, 0.5, 0.8, 0.96]) { vm.forceReload = r; __DA3.view.render(__DA3.game.player, 1, { dt: 1 / 60, ads: 0, reload: r }); const pts = vm.handScreenPoints(); out.push([r, pts.length, pts.every(p => Number.isFinite(p.x) && Number.isFinite(p.y))]); }
