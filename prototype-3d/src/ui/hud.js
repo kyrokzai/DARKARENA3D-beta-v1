@@ -1,6 +1,6 @@
 // HUD view: builds touch controls, minimap and info panels; positions them from the layout model.
 // Two layout profiles: 'touch' (when the device is used with touch) and 'desktop'.
-import { HUD_ELEMENTS, computeRects, resolveRects, activeIds, sanitizeLayouts, cloneDefaultLayouts, PROFILES } from './hud-layout.js';
+import { HUD_ELEMENTS, computeRects, resolveRects, thumbGuardOn, activeIds, sanitizeLayouts, cloneDefaultLayouts, PROFILES } from './hud-layout.js';
 import { LAYOUT_KEY } from '../config.js';
 import { readSafeArea } from './safe-area.js';
 
@@ -76,7 +76,7 @@ export function createHud({ root, settings, world }) {
     state.profile = profile();
     const sc = screen(), layout = state.layouts[state.profile];
     const raw = computeRects(layout, settings, sc, state.profile);
-    state.rects = state.editing ? raw : resolveRects(raw, sc, fixedObstacles());
+    state.rects = state.editing ? raw : resolveRects(raw, sc, fixedObstacles(), { thumb: thumbGuardOn(settings, state.profile) });
     const active = new Set(activeIds(settings, state.profile));
     for (const [id, el] of Object.entries(els)) {
       const r = state.rects.find(x => x.id === id);

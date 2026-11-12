@@ -1,7 +1,7 @@
 // HUD layout editor: drag controls, resize the selected one, reset to the BUILD 1.3 layout.
 // Rules: an element always stays fully inside the safe area; it may not overlap another element —
 // a drop onto another control snaps back to the last free position; growing into a neighbour is refused.
-import { HUD_ELEMENTS, computeRects, findOverlaps, overlaps, toNormalized, cloneDefaultLayout, activeIds, SCALE_MIN, SCALE_MAX } from './hud-layout.js';
+import { HUD_ELEMENTS, computeRects, findOverlaps, overlaps, keepOutOfThumb, thumbGuardOn, toNormalized, cloneDefaultLayout, activeIds, SCALE_MIN, SCALE_MAX } from './hud-layout.js';
 
 export function createHudEditor({ hud, settings, toolbar, onExit }) {
   const $ = sel => toolbar.querySelector(sel);
@@ -76,6 +76,8 @@ export function createHudEditor({ hud, settings, toolbar, onExit }) {
     const n = toNormalized(e.clientX - drag.ox, e.clientY - drag.oy, hud.screen());
     working[drag.id].x = n.x; working[drag.id].y = n.y;
     const rs = rects(), me = rs.find(r => r.id === drag.id);
+    // M2.0: with the floating stick, buttons slide along the edge of the movement thumb area (as at the screen edges)
+    if (thumbGuardOn(settings, hud.profile)) keepOutOfThumb(me, hud.screen());
     // Store the clamped position (so the element never "hides" past the edge) and remember the last free spot.
     Object.assign(working[drag.id], toNormalized(me.cx, me.cy, hud.screen()));
     if (!rs.some(r => r.id !== drag.id && overlaps(me, r))) drag.last = { ...working[drag.id] };
@@ -96,7 +98,8 @@ export function createHudEditor({ hud, settings, toolbar, onExit }) {
     if (next === cur) return toast(step > 0 ? 'Максимальный размер' : 'Минимальный размер');
     working[selected].s = next;
     const rs = rects(), me = rs.find(r => r.id === selected);
-    if (step > 0 && rs.some(r => r.id !== selected && overlaps(me, r))) { working[selected].s = cur; toast('Нет места — сначала отодвиньте элемент'); }
+    const intoThumb = step > 0 && thumbGuardOn(settings, hud.profile) && (({ cx, cy }) => (keepOutOfThumb(me, hud.screen()), Math.abs(me.cx - cx) + Math.abs(me.cy - cy) > 0.5))({ cx: me.cx, cy: me.cy });
+    if (step > 0 && (intoThumb || rs.some(r => r.id !== selected && overlaps(me, r)))) { working[selected].s = cur; toast('Нет места — сначала отодвиньте элемент'); }
     refresh();
   }
 

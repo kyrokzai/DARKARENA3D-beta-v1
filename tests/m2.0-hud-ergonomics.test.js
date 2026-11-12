@@ -127,18 +127,29 @@ const SCREENS = [['iPhone 11', 'iPhone 11 landscape', 896, 414, 48, 48, 21], ['i
     await DA(page, () => { document.getElementById('pauseBtn').click(); document.getElementById('pauseEditHud').click(); }); await sleep(150);
     const drag = async (from, to, id) => { await touch(cdp, 'touchStart', [{ ...from, id }]); for (let i = 1; i <= 8; i++) await touch(cdp, 'touchMove', [{ x: from.x + (to.x - from.x) * i / 8, y: from.y + (to.y - from.y) * i / 8, id }]); await touch(cdp, 'touchEnd', []); await sleep(80); };
     const tb = () => DA(page, () => { const t = document.getElementById('editBar').getBoundingClientRect(); return [...document.querySelectorAll('.hud-el:not(.hidden)')].filter(e => getComputedStyle(e).display !== 'none').filter(e => { const r = e.getBoundingClientRect(); return r.left < t.right && t.left < r.right && r.top < t.bottom && t.top < r.bottom; }).map(e => e.dataset.hud); });
-    const covered0 = await tb();
+    const sa = await DA(page, () => ({ ...__DA3.screen.safe, W: innerWidth, H: innerHeight })), sw = sa.W - sa.left - sa.right, sh = sa.H - sa.top - sa.bottom;
+    const at = (fx, fy) => ({ x: sa.left + sw * fx, y: sa.top + sh * fy });
+    const barRows = () => DA(page, () => { const b = document.getElementById('editBar'); return { compact: b.classList.contains('compact'), h: b.getBoundingClientRect().height }; });
+    const covered0 = await tb(), rows0 = await barRows();
     const S0 = await rectOf(page, 'weapons'), L0 = await rectOf(page, 'light');
-    await drag({ x: S0.cx, y: S0.cy }, { x: 470, y: 205 }, 1);
+    const sT = at(0.50, 0.62), lT = at(0.53, 0.35);
+    await drag({ x: S0.cx, y: S0.cy }, sT, 1);
     await DA(page, () => document.querySelector('[data-ed=plus]').click()); await sleep(60);
-    await drag({ x: L0.cx, y: L0.cy }, { x: 345, y: 130 }, 2);
+    await drag({ x: L0.cx, y: L0.cy }, lT, 2);
     const S1 = await rectOf(page, 'weapons'), L1 = await rectOf(page, 'light');
-    const a1 = await audit(page), covered1 = await tb();
-    check('D Editor: slots and flashlight can be dragged (slots also enlarged); toolbar covers no control before / after', Math.abs(S1.cx - 470) < 3 && Math.abs(L1.cx - 345) < 3 && S1.w > S0.w && !a1.overlap.length && !covered0.some(id => !['wave', 'health', 'minimap', 'ammo'].includes(id)) && !covered1.length, JSON.stringify({ S1, L1, overlap: a1.overlap, covered0, covered1 }));
+    const a1 = await audit(page), covered1 = await tb(), rows1 = await barRows();
+    check('D Editor: slots and flashlight can be dragged (slots also enlarged); the toolbar covers no control; compact form ≤ 2 rows', Math.abs(S1.cx - sT.x) < 3 && Math.abs(S1.cy - sT.y) < 3 && Math.abs(L1.cx - lT.x) < 3 && S1.w > S0.w && !a1.overlap.length && !covered0.some(id => !['wave', 'health', 'minimap', 'ammo'].includes(id)) && !covered1.some(id => !['wave', 'health', 'minimap', 'ammo'].includes(id)) && [rows0, rows1].every(r => !r.compact || r.h < 110), JSON.stringify({ S1, L1, overlap: a1.overlap, covered0, covered1, rows0, rows1 }));
+    // the floating-stick thumb area: a button dragged into it slides along its edge (editor = what is played)
+    const zone = at(0.25, 0.70);
+    await drag({ x: L1.cx, y: L1.cy }, zone, 3);
+    const Lz = await rectOf(page, 'light'), zx = sa.left + sw * 0.4, zy = sa.top + sh * 0.42;
+    check('D Editor: a button dragged into the movement thumb area stays at its edge (not inside)', !(Lz.l < zx - 0.5 && Lz.b > zy + 0.5), JSON.stringify({ Lz, zx, zy }));
+    await drag({ x: Lz.cx, y: Lz.cy }, lT, 4);
+    const L1b = await rectOf(page, 'light');
     await DA(page, () => document.querySelector('[data-ed=done]').click()); await sleep(150);
     await page.reload(); await page.waitForFunction(() => window.__DA3); await DA(page, () => document.getElementById('playBtn').click()); await sleep(200); await notch(page, 48, 48, 21);
     const S2 = await rectOf(page, 'weapons'), L2 = await rectOf(page, 'light'), a2 = await audit(page);
-    check('D After save + reload: new positions / size kept, layout clean', Math.abs(S2.cx - S1.cx) < 3 && Math.abs(L2.cx - L1.cx) < 3 && Math.abs(S2.w - S1.w) < 2 && !a2.overlap.length && !a2.oob.length, JSON.stringify({ S2, L2, a2 }));
+    check('D After save + reload: new positions / size kept exactly as shown in the editor, layout clean', Math.abs(S2.cx - S1.cx) < 3 && Math.abs(S2.cy - S1.cy) < 3 && Math.abs(L2.cx - L1b.cx) < 3 && Math.abs(L2.cy - L1b.cy) < 3 && Math.abs(S2.w - S1.w) < 2 && !a2.overlap.length && !a2.oob.length, JSON.stringify({ S2, L2, L1b, a2 }));
     const l0 = (await game(page)).light;
     await touch(cdp, 'touchStart', [{ x: L2.cx, y: L2.cy, id: 3 }]); await sleep(40); await touch(cdp, 'touchEnd', []); await sleep(60);
     await touch(cdp, 'touchStart', [{ x: S2.l + S2.w * 2.5 / 3, y: S2.cy, id: 4 }]); await sleep(40); await touch(cdp, 'touchEnd', []); await sleep(1300);
@@ -147,6 +158,7 @@ const SCREENS = [['iPhone 11', 'iPhone 11 landscape', 896, 414, 48, 48, 21], ['i
     // reset to the standard layout
     await DA(page, () => { document.getElementById('pauseBtn').click(); document.getElementById('pauseEditHud').click(); }); await sleep(150);
     await DA(page, () => { const b = document.querySelector('[data-ed=reset]'); b.click(); b.click(); document.querySelector('[data-ed=done]').click(); }); await sleep(150);
+    await DA(page, () => { const r = document.getElementById('resumeBtn'); if (r && r.offsetParent) r.click(); }); await sleep(150);
     const S3 = await rectOf(page, 'weapons'), a3 = await audit(page);
     check('D Reset restores the standard layout (slots back in the top band), clean', S3.cy < 70 && !a3.overlap.length, JSON.stringify({ S3, a3 }));
     await ctx.close();
@@ -159,16 +171,21 @@ const SCREENS = [['iPhone 11', 'iPhone 11 landscape', 896, 414, 48, 48, 21], ['i
     await DA(page, () => document.getElementById('pauseBtn').click()); await sleep(120);
     await DA(page, () => document.getElementById('pauseSettings').click()); await sleep(150);
     const fails = [];
+    await DA(page, () => document.getElementById('pauseBtn').click()); await sleep(80); await DA(page, () => document.getElementById('resumeBtn').click()); await sleep(80); // (first pause above)
     for (let s = 0.7; s <= 1.401; s += 0.1) {
+      await DA(page, () => document.getElementById('pauseBtn').click()); await sleep(100);
+      await DA(page, () => document.getElementById('pauseSettings').click()); await sleep(120);
       await DA(page, v => { const el = document.querySelector('input[type=range][data-key=hudScale]'); el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); }, s.toFixed(2)); await sleep(60);
-      const a = await audit(page);
+      // menus open: the menu is what the finger hits (the HUD never covers it)
       const top = await DA(page, () => { const panel = document.querySelector('#settings .panel').getBoundingClientRect(); const pts = [[panel.left + 20, panel.top + 20], [panel.left + panel.width / 2, panel.top + panel.height / 2], [panel.right - 20, panel.top + 30]]; return pts.map(([x, y]) => { const e = document.elementFromPoint(x, y); return !!(e && e.closest('#settings')); }).every(Boolean); });
-      if (a.overlap.length || a.oob.length || !top) fails.push(`${s.toFixed(1)}: ${JSON.stringify(a)} menuOnTop=${top}`);
+      await DA(page, () => document.getElementById('settingsBack').click()); await sleep(100);
+      const pauseTop = await DA(page, () => { const p = document.querySelector('#paused .panel').getBoundingClientRect(); const e = document.elementFromPoint(p.left + p.width / 2, p.top + p.height / 2); return !!(e && e.closest('#paused')); });
+      await DA(page, () => document.getElementById('resumeBtn').click()); await sleep(150);
+      // back in play at the new size: the HUD is clean (incl. the pause button) and the new controls respond
+      const a = await audit(page), st = await DA(page, () => ({ playing: __DA3.state, scale: __DA3.settings.hudScale }));
+      if (a.overlap.length || a.oob.length || !top || !pauseTop || Math.abs(st.scale - s) > 0.01) fails.push(`${s.toFixed(1)}: ${JSON.stringify(a)} settingsOnTop=${top} pauseOnTop=${pauseTop} ${JSON.stringify(st)}`);
     }
-    const scale = await DA(page, () => __DA3.settings.hudScale);
-    await DA(page, () => document.getElementById('settingsBack').click()); await sleep(120);
-    const pauseTop = await DA(page, () => { const p = document.querySelector('#paused .panel').getBoundingClientRect(); const e = document.elementFromPoint(p.left + p.width / 2, p.top + p.height / 2); return !!(e && e.closest('#paused')); });
-    check('E Settings open, HUD size 0.7 → 1.4 (8 steps): HUD clean at every size, menus stay above the HUD', !fails.length && Math.abs(scale - 1.4) < 0.01 && pauseTop, fails.slice(0, 3).join(' | ') + ` scale ${scale}`);
+    check('E Settings → HUD size 0.7 → 1.4 (8 steps): menus stay above the HUD; back in play the HUD is clean at every size', !fails.length, fails.slice(0, 3).join(' | '));
     await ctx.close();
   }
 

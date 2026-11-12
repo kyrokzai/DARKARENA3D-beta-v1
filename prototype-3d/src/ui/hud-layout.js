@@ -140,9 +140,13 @@ export function inBounds(r, screen) {
  * shown on a small one), push elements apart and, as a last resort, shrink them. Saved values are not changed.
  * Panels (map/info) are pinned at first; controls move away from them.
  */
-/** Display-time constraint (M2.0): a touch button / the slots never sit in the movement thumb area — moved up or to
- * the right, whichever is the smaller shift (the move stick itself and the panels are exempt). */
-function keepOutOfThumb(r, screen) {
+/** Is the movement-thumb guard active? Only for the touch profile with the FLOATING move stick (it starts anywhere in
+ * the left zone); with the fixed stick that area is not used for movement and buttons may sit there. */
+export function thumbGuardOn(settings, profile = 'touch') { return profile === 'touch' && settings.moveStickMode !== 'fixed'; }
+/** Constraint (M2.0): a touch button / the slots never sit in the movement thumb area — moved up or to the right,
+ * whichever is the smaller shift (the move stick itself and the panels are exempt). Used at display time AND by the
+ * editor while dragging, so what the editor shows is what is played. Mutates and returns r. */
+export function keepOutOfThumb(r, screen) {
   const k = kindOf(r.id);
   if (r.fixed || r.id === 'move' || (k !== 'button' && k !== 'slots')) return;
   const { w: W, h: H, safe } = screen, sw = W - safe.left - safe.right, sh = H - safe.top - safe.bottom;
@@ -151,11 +155,13 @@ function keepOutOfThumb(r, screen) {
   const up = r.y1 - zy, right = zx - r.x0;
   const canUp = zy - r.h >= safe.top;
   Object.assign(r, placeIn(r, canUp && up <= right ? r.cx : r.cx + right, canUp && up <= right ? r.cy - up : r.cy, r.w, r.h, screen));
+  return r;
 }
-export function resolveRects(rects, screen, fixed = []) {
+export function resolveRects(rects, screen, fixed = [], { thumb = false } = {}) {
   // `fixed` = immovable obstacles (e.g. the pause button): {id, x0, y0, x1, y1, cx, cy, w, h}
   const out = [...rects.map(r => ({ ...r })), ...fixed.map(r => ({ ...r, fixed: true }))];
-  for (const r of out) keepOutOfThumb(r, screen);
+  const guard = r => { if (thumb) keepOutOfThumb(r, screen); };
+  for (const r of out) guard(r);
   for (let iter = 0; iter < 80; iter++) {
     let moved = false;
     for (let i = 0; i < out.length; i++) for (let j = i + 1; j < out.length; j++) {
@@ -175,7 +181,7 @@ export function resolveRects(rects, screen, fixed = []) {
       const k = aw + bw || 1;
       Object.assign(a, placeIn(a, a.cx - dx * need * aw / k, a.cy - dy * need * aw / k, a.w, a.h, screen));
       Object.assign(b, placeIn(b, b.cx + dx * need * bw / k, b.cy + dy * need * bw / k, b.w, b.h, screen));
-      keepOutOfThumb(a, screen); keepOutOfThumb(b, screen);
+      guard(a); guard(b);
     }
     if (!moved) break;
     if (iter > 50) for (const r of out) {

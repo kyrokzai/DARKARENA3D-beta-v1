@@ -106,7 +106,7 @@ body.editing .hud::after { content: ""; position: absolute; inset: 0; background
   display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: var(--panel); border: 1px solid var(--line);
   border-radius: 8px; box-shadow: 0 8px 24px #000c; pointer-events: auto; max-width: calc(100% - var(--sa-left) - var(--sa-right) - 16px); }
 /* M2.0: compact two-row form, used only when the one-row bar would cover HUD elements (small phones) */
-#editBar.compact { flex-wrap: wrap; justify-content: center; width: 272px; row-gap: 6px; }
+#editBar.compact { flex-wrap: wrap; justify-content: center; width: 318px; row-gap: 6px; }
 #editBar.compact .ed-title { flex: 1 1 100px; min-width: 0; }
 .ed-title { display: flex; flex-direction: column; min-width: 92px; line-height: 1.1; }
 .ed-title small { font-size: 9px; letter-spacing: 1.5px; color: var(--muted); }

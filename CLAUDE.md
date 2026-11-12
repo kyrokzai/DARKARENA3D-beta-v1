@@ -26,7 +26,7 @@ Browser FPS (survival vs. waves of infected). Owner makes key decisions; work in
    + `node tests/sim-m1.7.test.mjs` + `node tests/m1.7-outpost.test.js`
    + `node tests/sim-m1.8.test.mjs` + `node tests/m1.8-visual.test.js`
    + `node tests/sim-m1.9.test.mjs` + `node tests/m1.9-fp-combat.test.js`
-   + `node tests/sim-m2.0.test.mjs` + `node tests/m2.0-arsenal.test.js`; report changed files,
+   + `node tests/sim-m2.0.test.mjs` + `node tests/m2.0-arsenal.test.js` + `node tests/m2.0-hud-ergonomics.test.js`; report changed files,
    test results, how to verify on PC and iPhone, and known limitations. Not accepted until the owner confirms.
 7. Test hooks and the debug panel are allowed only behind `?debug=1`.
 8. Gameplay values reach the HUD only through `prototype-3d/src/sim/game-state.js` (GameState + events);
@@ -54,5 +54,8 @@ Browser FPS (survival vs. waves of infected). Owner makes key decisions; work in
     the other weapons and switches (holster → draw; nothing fires, aims, reloads or strikes meanwhile; a cancelled magazine
     reload moves no rounds). Viewmodel kits share one hands rig; each gun has its own proxy volumes in `hand-poses.js` and
     must keep the M1.4 penetration limits. The flashlight is an always-present spot light (intensity only, no recompiles).
+    Touch HUD placement (`ui/hud-layout.js`): with the floating move stick no button / the slots sit in the movement thumb
+    area (left `MOVE_ZONE_X`, below `MOVE_THUMB_Y`) — enforced at display time and by the editor alike; the slots keep a
+    12 px gap. Check ergonomics with real touches (`m2.0-hud-ergonomics`), not only coordinates.
 13. The alarm between waves is a view of the existing intermission: `sim/waves/alarm.js` (pure) → `GameState.alarm`
     (written by the wave director) → renderer / HUD / audio read it. No separate timer; it resets on restart.
