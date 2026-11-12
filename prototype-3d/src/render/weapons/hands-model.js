@@ -90,23 +90,24 @@ function buildGeometries() {
   const lathe = (pts, seg = 16, phiStart = 0, phiLen = Math.PI * 2) => new THREE.LatheGeometry([...pts].sort((a, b) => a[1] - b[1]).map(([rr, y]) => new THREE.Vector2(rr, y)), seg, phiStart, phiLen);
   // M1.9 phalanx: same unit frame as the old capsule (radius 0.5, height 3 centred on 0 → segment() unchanged), but
   // anatomical — rounded joint at the base, a slight waist, a bulge at the next joint, a soft rounded tip.
-  const capsule = lathe([[0.001, -1.5], [0.24, -1.44], [0.38, -1.31], [0.47, -1.12], [0.52, -0.86], [0.505, -0.5], [0.47, -0.1],
-    [0.46, 0.3], [0.48, 0.72], [0.5, 0.98], [0.47, 1.18], [0.39, 1.34], [0.25, 1.45], [0.001, 1.5]], 12);
+  // (10 profile points × 10 sides — the fine shape comes from the normal map; keeps the hands ≤ 14k triangles)
+  const capsule = lathe([[0.001, -1.5], [0.3, -1.4], [0.47, -1.15], [0.52, -0.85], [0.48, -0.15], [0.465, 0.35], [0.5, 0.9],
+    [0.44, 1.25], [0.26, 1.44], [0.001, 1.5]], 10);
   paintByNormalZ(capsule, GLOVE_BACK, GLOVE_PALM, -0.2, 0.5);
-  const pad = new THREE.SphereGeometry(0.5, 14, 9);
+  const pad = new THREE.SphereGeometry(0.5, 10, 6);
   const palmShape = new THREE.Shape();
   // organic palm: narrow at the wrist, widest at the knuckles, generous rounded bevel
   palmShape.moveTo(-0.024, -0.004); palmShape.quadraticCurveTo(0, -0.010, 0.024, -0.004);
   palmShape.quadraticCurveTo(0.038, 0.040, 0.034, PALM_LEN - 0.004); palmShape.quadraticCurveTo(0, PALM_LEN + 0.003, -0.034, PALM_LEN - 0.004);
   palmShape.quadraticCurveTo(-0.038, 0.040, -0.024, -0.004);
-  const palm = new THREE.ExtrudeGeometry(palmShape, { depth: 0.005, bevelEnabled: true, bevelThickness: 0.0085, bevelSize: 0.009, bevelSegments: 7, curveSegments: 16 });
+  const palm = new THREE.ExtrudeGeometry(palmShape, { depth: 0.005, bevelEnabled: true, bevelThickness: 0.0085, bevelSize: 0.009, bevelSegments: 4, curveSegments: 10 });
   palm.translate(0, 0, -0.0025);
   palm.computeVertexNormals(); paintByNormalZ(palm, GLOVE_BACK, GLOVE_PALM);
   const cuff = lathe([[0.0225, 0.016], [0.0262, 0.012], [0.0281, 0.006], [0.0292, -0.006], [0.0297, -0.018], [0.0296, -0.030], [0.0286, -0.035], [0.0272, -0.037]], 20);
   const strap = lathe([[0.0300, 0.001], [0.0308, -0.002], [0.0310, -0.008], [0.0310, -0.014], [0.0307, -0.017], [0.0300, -0.019]], 20);
   // sleeve: more rings + a fold displacement (bunched just above the wrist, soft lengthwise creases further up)
-  const sp = []; for (let i = 0; i <= 22; i++) { const t = i / 22, y = -0.016 - t * (SLEEVE_LEN - 0.016); sp.push([0.027 + (0.043 - 0.027) * Math.min(1, Math.pow(t / 0.75, 0.6)) + (t < 0.05 ? -0.003 * (1 - t / 0.05) : 0), y]); }
-  const sleeve = lathe(sp, 24);
+  const sp = []; for (let i = 0; i <= 16; i++) { const t = i / 16, y = -0.016 - t * (SLEEVE_LEN - 0.016); sp.push([0.027 + (0.043 - 0.027) * Math.min(1, Math.pow(t / 0.75, 0.6)) + (t < 0.05 ? -0.003 * (1 - t / 0.05) : 0), y]); }
+  const sleeve = lathe(sp, 18);
   { const P = sleeve.getAttribute('position');
     for (let i = 0; i < P.count; i++) {
       const x = P.getX(i), y = P.getY(i), z = P.getZ(i), r = Math.hypot(x, z); if (r < 1e-6) continue;
