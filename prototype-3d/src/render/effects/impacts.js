@@ -28,12 +28,16 @@ export function createImpacts(scene) {
   for (let i = 0; i < SPARKS; i++) pos[i * 3 + 1] = -100; // parked below the floor
 
   const m = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), n = new THREE.Vector3(), sc = new THREE.Vector3(1, 1, 1), zAxis = new THREE.Vector3(0, 0, 1);
+  const yAxis = new THREE.Vector3(0, 1, 0), tmp = new THREE.Vector3();
   const stats = { decals: 0, sparks: 0, dust: 0, metal: 0, concrete: 0, blood: 0 };
 
   // ---- concrete dust (grey, slow, fades) ----
-  const DUST = 60, dpos = new Float32Array(DUST * 3), dvel = new Float32Array(DUST * 3), dlife = new Float32Array(DUST), dcol = new Float32Array(DUST * 3);
-  const dgeo = new THREE.BufferGeometry(); dgeo.setAttribute('position', new THREE.BufferAttribute(dpos, 3)); dgeo.setAttribute('color', new THREE.BufferAttribute(dcol, 3));
-  const dust = new THREE.Points(dgeo, new THREE.PointsMaterial({ size: 0.09, vertexColors: true, transparent: true, opacity: 0.55, depthWrite: false }));
+  const DUST = 60, dpos = new Float32Array(DUST * 3), dvel = new Float32Array(DUST * 3), dlife = new Float32Array(DUST), dcol = new Float32Array(DUST * 4), dbase = new Float32Array(DUST);
+  const dgeo = new THREE.BufferGeometry(); dgeo.setAttribute('position', new THREE.BufferAttribute(dpos, 3)); dgeo.setAttribute('color', new THREE.BufferAttribute(dcol, 4)); // RGBA: the puff fades by alpha, never towards black (review fix)
+  const dc = document.createElement('canvas'); dc.width = dc.height = 32; { const g = dc.getContext('2d'), gr = g.createRadialGradient(16, 16, 0, 16, 16, 16);
+    gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.55, 'rgba(255,255,255,0.45)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 32, 32); }
+  const dtex = new THREE.CanvasTexture(dc);
+  const dust = new THREE.Points(dgeo, new THREE.PointsMaterial({ size: 0.11, map: dtex, vertexColors: true, transparent: true, opacity: 0.6, depthWrite: false }));
   dust.frustumCulled = false; scene.add(dust);
   for (let i = 0; i < DUST; i++) dpos[i * 3 + 1] = -100;
   let dNext = 0, activeDust = 0;
@@ -49,7 +53,7 @@ export function createImpacts(scene) {
   let bNext = 0, bPlaced = 0;
   /** A splat on the floor at sim (x, y) — size 0.4…1.2 (kills larger than headshots). */
   function bloodSplat(x, y, size = 1) {
-    q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.random() * Math.PI * 2); const s = size * (0.75 + Math.random() * 0.4); sc.set(s, 1, s);
+    q.setFromAxisAngle(yAxis, Math.random() * Math.PI * 2); const s = size * (0.75 + Math.random() * 0.4); sc.set(s, 1, s);
     m.compose(p.set(x * S, 0.006 + bNext * 0.0002, y * S), q, sc); blood.setMatrixAt(bNext, m); blood.instanceMatrix.needsUpdate = true;
     bNext = (bNext + 1) % BLOOD; bPlaced = Math.min(BLOOD, bPlaced + 1); blood.count = bPlaced; stats.blood++;
   }
@@ -59,7 +63,7 @@ export function createImpacts(scene) {
     n.set(normal.x, normal.z, normal.y).normalize();
     q.setFromUnitVectors(zAxis, n);
     const s = 0.8 + Math.random() * 0.5; sc.set(s, s, s);
-    m.compose(p.clone().addScaledVector(n, 0.004), q, sc);
+    m.compose(tmp.copy(p).addScaledVector(n, 0.004), q, sc);
     decals.setMatrixAt(next, m); decals.instanceMatrix.needsUpdate = true;
     next = (next + 1) % DECALS; placed = Math.min(DECALS, placed + 1); decals.count = placed; stats.decals++;
     const metal = surface === 'metal'; stats[metal ? 'metal' : 'concrete']++;
@@ -79,7 +83,7 @@ export function createImpacts(scene) {
       dpos[k * 3] = p.x; dpos[k * 3 + 1] = p.y; dpos[k * 3 + 2] = p.z;
       const sp = 0.25 + Math.random() * 0.45;
       dvel[k * 3] = (n.x + (Math.random() - 0.5) * 0.8) * sp; dvel[k * 3 + 1] = (n.y + 0.3 + Math.random() * 0.4) * sp; dvel[k * 3 + 2] = (n.z + (Math.random() - 0.5) * 0.8) * sp;
-      dlife[k] = 0.6 + Math.random() * 0.4; const g = 0.42 + Math.random() * 0.12; dcol[k * 3] = g; dcol[k * 3 + 1] = g * 0.97; dcol[k * 3 + 2] = g * 0.92;
+      dlife[k] = 0.6 + Math.random() * 0.4; const g = 0.42 + Math.random() * 0.12; dcol[k * 4] = g; dcol[k * 4 + 1] = g * 0.97; dcol[k * 4 + 2] = g * 0.92; dcol[k * 4 + 3] = 1; dbase[k] = dlife[k];
       stats.dust++;
     }
   }
@@ -103,8 +107,8 @@ export function createImpacts(scene) {
       activeDust++;
       dvel[i * 3] *= 0.96; dvel[i * 3 + 1] = dvel[i * 3 + 1] * 0.96 - 0.15 * dt; dvel[i * 3 + 2] *= 0.96;
       dpos[i * 3] += dvel[i * 3] * dt; dpos[i * 3 + 1] += dvel[i * 3 + 1] * dt; dpos[i * 3 + 2] += dvel[i * 3 + 2] * dt;
-      const f = Math.min(1, dlife[i] * 2); dcol[i * 3] *= 0.995; dcol[i * 3 + 1] *= 0.995; dcol[i * 3 + 2] *= 0.995;
-      if (f < 1) { dcol[i * 3] = Math.min(dcol[i * 3], 0.5 * f); dcol[i * 3 + 1] = Math.min(dcol[i * 3 + 1], 0.5 * f); dcol[i * 3 + 2] = Math.min(dcol[i * 3 + 2], 0.48 * f); }
+      const age = 1 - dlife[i] / (dbase[i] || 1); // quick fade-in, slow fade-out — alpha only, the grey stays grey
+      dcol[i * 4 + 3] = Math.min(1, age * 8) * Math.min(1, dlife[i] * 2.2);
     }
     dgeo.attributes.position.needsUpdate = true; dgeo.attributes.color.needsUpdate = true;
   }

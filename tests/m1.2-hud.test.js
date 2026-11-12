@@ -18,7 +18,7 @@ const widthPct = (page, sel) => DA(page, s => { const e = document.querySelector
 const audit = page => DA(page, () => {
   const sa = __DA3.screen.safe, W = innerWidth, H = innerHeight, out = { items: [], oob: [], overlap: [], clipped: [] };
   const els = [...document.querySelectorAll('.hud-el')].filter(e => getComputedStyle(e).display !== 'none' && !e.classList.contains('hidden'));
-  const rs = els.map(e => { const r = e.getBoundingClientRect(); return { id: e.dataset.hud, circle: !e.classList.contains('hud-panel'), l: r.left, t: r.top, r: r.right, b: r.bottom, cx: r.left + r.width / 2, cy: r.top + r.height / 2, s: r.width }; });
+  const rs = els.map(e => { const r = e.getBoundingClientRect(); return { id: e.dataset.hud, circle: !e.classList.contains('hud-panel') && !e.classList.contains('slots') /* M2.0: the slot strip is a rect control */, l: r.left, t: r.top, r: r.right, b: r.bottom, cx: r.left + r.width / 2, cy: r.top + r.height / 2, s: r.width }; });
   const pb = document.getElementById('pauseBtn').getBoundingClientRect();
   rs.push({ id: 'pause', circle: false, l: pb.left, t: pb.top, r: pb.right, b: pb.bottom });
   for (const r of rs) {
@@ -266,7 +266,7 @@ const audit = page => DA(page, () => {
     await page.keyboard.press('Escape'); await sleep(100);
     await DA(page, () => document.getElementById('pauseEditHud').click()); await sleep(150);
     const ids = await DA(page, () => [...document.querySelectorAll('.hud-el')].filter(e => getComputedStyle(e).display !== 'none' && !e.classList.contains('hidden')).map(e => e.dataset.hud).sort());
-    check('Desktop editor shows only info panels + minimap', JSON.stringify(ids) === JSON.stringify(['ammo', 'health', 'minimap', 'wave']), JSON.stringify(ids));
+    check('Desktop editor shows only info panels + minimap', JSON.stringify(ids) === JSON.stringify(['ammo', 'health', 'minimap', 'wave', 'weapons']), JSON.stringify(ids)); // M2.0: + the 1/2/3 weapon info panel
     const a = await DA(page, () => { const r = document.querySelector('.hud-ammo').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
     await page.mouse.move(a.x, a.y); await page.mouse.down(); await page.mouse.move(a.x - 300, a.y - 200, { steps: 8 }); await page.mouse.up();
     await DA(page, () => document.querySelector('[data-ed=done]').click()); await sleep(50);

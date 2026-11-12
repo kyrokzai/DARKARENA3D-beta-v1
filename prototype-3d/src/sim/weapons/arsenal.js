@@ -47,13 +47,15 @@ export class Arsenal {
       this.lastPress = pr;
       const req = this.resolve(input.weaponRequest);
       if (req !== null) {
-        if (this.phase === 'holster') { this.target = req; this.pending = null; }   // still putting the old one away: just retarget
+        if (this.phase === 'holster' && req === this.active) { // changed my mind: bring the same weapon back up from where it is
+          const back = 1 - Math.min(1, this.t / this.def(this.active).switch.holster);
+          this.phase = 'draw'; this.target = req; this.pending = null; this.t = this.def(this.active).switch.draw * back;
+        } else if (this.phase === 'holster') { this.target = req; this.pending = null; } // still putting the old one away: just retarget
         else if (this.phase === 'draw') this.pending = req === this.target ? null : req; // finish bringing it up first
         else this.pending = req === this.active ? null : req;
       }
     }
     const melee = this.game.melee && this.game.melee.busy;
-    if (this.phase === 'ready' && this.pending !== null && !melee) { const to = this.pending; this.pending = null; if (to !== this.active) this.begin(to); }
     if (this.phase === 'holster') {
       this.t += dt;
       if (this.t >= this.def(this.active).switch.holster) this.swap();
@@ -61,6 +63,9 @@ export class Arsenal {
       this.t += dt;
       if (this.t >= this.def(this.active).switch.draw) { this.phase = 'ready'; this.t = 0; this.game.emit('weaponReady', { id: this.activeId }); }
     }
+    // a queued choice starts in the SAME tick the previous draw ends (review fix: otherwise the intermediate weapon could
+    // fire / reload / strike for one tick before being put away)
+    if (this.phase === 'ready' && this.pending !== null && !melee) { const to = this.pending; this.pending = null; if (to !== this.active) this.begin(to); }
     this.publish();
   }
 
@@ -75,17 +80,21 @@ export class Arsenal {
     this.ammo[this.active] = { mag: st.mag, reserve: st.reserve };   // keep what is left in the one being put away
     this.active = this.target;
     const def = this.def(this.active);
-    this.game.weapon.equip(def, this.ammo[this.active]);
+    this.game.weapon.equip(def, this.ammo[this.active], { keepRecoil: true }); // the camera keeps recovering the climb
     if (this.game.melee) this.game.melee.equip(def);
     this.phase = 'draw'; this.t = 0;
     this.game.emit('weaponSwap', { id: def.id });
   }
 
-  publish() {
+  publish() { // every tick, allocation-free: the slot objects are reused, 'arsenal' is emitted only on a change
     const st = this.game.state, w = st.weapon;
-    const slots = this.ids.map((id, i) => (i === this.active ? { id, short: WEAPONS[id].short, mag: w.mag, reserve: w.reserve } : { id, short: WEAPONS[id].short, mag: this.ammo[i].mag, reserve: this.ammo[i].reserve }));
+    if (!this.slots || this.slots.length !== this.ids.length) this.slots = this.ids.map(id => ({ id, short: WEAPONS[id].short, mag: 0, reserve: 0 }));
+    let changed = false;
+    this.ids.forEach((id, i) => { const s = this.slots[i], mag = i === this.active ? w.mag : this.ammo[i].mag, res = i === this.active ? w.reserve : this.ammo[i].reserve;
+      if (s.id !== id) { s.id = id; s.short = WEAPONS[id].short; changed = true; }
+      if (s.mag !== mag || s.reserve !== res) { s.mag = mag; s.reserve = res; changed = true; } });
     const dur = this.phase === 'holster' ? this.def(this.active).switch.holster : this.phase === 'draw' ? this.def(this.active).switch.draw : 1;
-    st.setArsenal({ active: this.active, phase: this.phase, progress: this.phase === 'ready' ? 1 : Math.min(1, this.t / dur), slots });
+    st.setArsenal(this.active, this.phase, this.phase === 'ready' ? 1 : Math.min(1, this.t / dur), this.slots, changed);
   }
   /** Total rounds of one weapon (mag + reserve) — tests: nothing is lost or created by switching. */
   total(i) { const w = this.game.state.weapon; return i === this.active ? w.mag + w.reserve : this.ammo[i].mag + this.ammo[i].reserve; }

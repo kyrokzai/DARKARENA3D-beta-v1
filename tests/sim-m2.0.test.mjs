@@ -213,6 +213,41 @@ const place = (g, distM, variant = 'guard', angDeg = 0) => { const p = g.player,
   check('43. Waves and infected unchanged: 3 × 9 (3/3/3), max 5 alive, HOLLOW 100 HP, blow 15', WAVES.length === 3 && WAVES.every(w => w.enemies.reduce((s, e) => s + e.count, 0) === 9) && MATCH.maxActive === 5 && H.hp === 100 && H.attackDamage === 15);
 }
 
+// ============ 9. Independent review fixes ============
+{
+  // R1: a queued choice (1 → 2 while drawing, then 3) — the intermediate weapon never fires / reloads / is ready to act
+  const q = setup(); q.inp.setAction('fire', true); q.select(1); let n = 0; while (q.g.arsenal.phase !== 'draw' && n++ < 100) q.step(1);
+  q.select(2); n = 0; while (q.g.arsenal.switching && n++ < 300) q.step(1);
+  const fired = q.ev.filter(e => e[0] === 'fire').map(e => e[1].weapon || q.g.weapon.def.id);
+  const readyIds = q.ev.filter(e => e[0] === 'weaponReady').map(e => e[1].id);
+  q.inp.setAction('fire', false);
+  check('44. Review: a choice queued during the draw starts in the same tick — the intermediate AK-47 never fires', q.g.arsenal.activeId === 'krait' && q.ev.filter(e => e[0] === 'fire' && e[1].weapon === 'ak47').length === 0 && q.ev.filter(e => e[0] === 'fire').length <= 1, `ready ${readyIds}, fires ${fired}`);
+  // R2: the camera keeps recovering the recoil climb after a switch (spray → switch → aim returns down)
+  const r = setup(); r.equip(1); const p0 = r.g.player.pitch; r.inp.setAction('fire', true); r.step(30); r.inp.setAction('fire', false);
+  const peak = r.g.player.pitch - p0; r.select(0); r.sec(2);
+  const left = r.g.player.pitch - p0;
+  check('45. Review: recoil recovery continues across a weapon switch (aim does not stay high)', peak > 0.02 && left < peak * 0.5, `peak ${(peak * 57.3).toFixed(2)}°, after ${(left * 57.3).toFixed(2)}°`);
+  const rr = setup(); rr.equip(1); rr.inp.setAction('fire', true); rr.step(30); rr.inp.setAction('fire', false); rr.g.restart(); rr.step(1);
+  check('46. Restart clears the recoil climb (fresh weapon state)', (rr.g.weapon.recoilClimb || 0) === 0);
+  // R3: a pull held during the closing phase of a shell reload fires when the shotgun is ready
+  const e = setup(); e.equip(2); e.g.state.setAmmo(6); e.step(1); e.inp.setAction('reload', true); e.step(1); e.inp.setAction('reload', false);
+  n = 0; while (e.g.weapon.shell && e.g.weapon.shell.phase !== 'end' && n++ < 400) e.step(1);
+  const inEnd = !!(e.g.weapon.shell && e.g.weapon.shell.phase === 'end'), f0 = e.count('fire');
+  e.inp.setAction('fire', true); e.step(1); e.sec(1.2); e.inp.setAction('fire', false);
+  check('47. Review: a held pull during the shell reload’s closing phase fires once it is ready (not dropped)', inEnd && e.count('fire') === f0 + 1 && e.g.state.weapon.mag === 7, `mag ${e.g.state.weapon.mag}, fires ${e.count('fire') - f0}`);
+  // R4: a pull in the last 0.15 s of the pump cycle is buffered (held) and fires as soon as the cycle ends
+  const b = setup(); b.equip(2); b.pull(); const cyc = 60 / KR.rpm; b.sec(cyc - 0.1);
+  b.inp.setAction('fire', true); b.step(1); b.inp.setAction('fire', true); b.sec(0.2); b.inp.setAction('fire', false);
+  check('48. Review: a pull just before the pump finishes is buffered and fires when ready', b.count('fire') === 2, `fires ${b.count('fire')}`);
+  // R5: changing one's mind during the holster (2 then 1 again) reverses instead of a full cycle
+  const m = setup(); m.select(1); m.step(6); const t0 = m.g.tick; m.select(0); n = 0; while (m.g.arsenal.switching && n++ < 300) m.step(1);
+  const took = m.g.tick - t0;
+  check('49. Review: back to the same weapon during the holster reverses (short, no swap, ammo untouched)', m.g.arsenal.activeId === 'raven' && m.count('weaponSwap') === 0 && took < Math.round(RV.switch.draw * 60) && m.g.state.weapon.mag === 30, `${took} ticks`);
+  // R6: opts.weapon chooses the starting slot
+  const g6 = new Game(outpost, { rng: () => 0.5, waveRng: rng, aiRng: rng, weapon: 'krait' });
+  check('50. Review: opts.weapon and the arsenal agree on the starting slot', g6.arsenal.activeId === g6.weapon.def.id, `${g6.arsenal.activeId} / ${g6.weapon.def.id}`);
+}
+
 const failed = results.filter(r => !r).length;
 console.log(`\n${results.length - failed}/${results.length} passed`);
 process.exit(failed ? 1 : 0);

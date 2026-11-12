@@ -43,7 +43,8 @@ export class Game {
     this.melee = new MeleeSystem(this, this.weapon.def); // M1.9 rifle-butt strike (data: weapon def `melee`)
     // M2.0 arsenal: RAVEN / AK-47 / KRAIT with separate ammo and holster→draw switching. A test may ask for one weapon
     // only (opts.loadout = ['raven']) — the older suites then see exactly the M1.9 game.
-    this.arsenal = new Arsenal(this, opts.loadout, 0);
+    const loadout = opts.loadout || undefined, startSlot = Math.max(0, (opts.loadout || ['raven', 'ak47', 'krait']).indexOf(this.weapon.def.id));
+    this.arsenal = new Arsenal(this, loadout, startSlot); // start slot = the weapon in the hands (review fix: opts.weapon)
     this.lastLightPress = 0; this.lightResync = false;
     this.on('fire', () => { this.noise = true; }); // gunfire is heard by infected in range (handled in step)
   }

@@ -21,7 +21,7 @@ const notch = (page, l, r, b) => DA(page, ([l, r, b]) => { const s = document.do
 const audit = page => DA(page, () => {
   const sa = __DA3.screen.safe, W = innerWidth, H = innerHeight, out = { items: [], oob: [], small: [], overlap: [] };
   const els = [...document.querySelectorAll('.hud-el')].filter(e => getComputedStyle(e).display !== 'none' && !e.classList.contains('hidden'));
-  const rs = els.map(e => { const r = e.getBoundingClientRect(); return { id: e.dataset.hud, circle: !e.classList.contains('hud-panel'), l: r.left, t: r.top, r: r.right, b: r.bottom, cx: r.left + r.width / 2, cy: r.top + r.height / 2, s: r.width }; });
+  const rs = els.map(e => { const r = e.getBoundingClientRect(); return { id: e.dataset.hud, circle: !e.classList.contains('hud-panel') && !e.classList.contains('slots') /* M2.0: the slot strip is a rect control */, l: r.left, t: r.top, r: r.right, b: r.bottom, cx: r.left + r.width / 2, cy: r.top + r.height / 2, s: r.width }; });
   for (const r of rs) {
     out.items.push(r.id);
     if (r.l < sa.left - 0.5 || r.t < sa.top - 0.5 || r.r > W - sa.right + 0.5 || r.b > H - sa.bottom + 0.5) out.oob.push(r.id);

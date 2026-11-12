@@ -45,12 +45,14 @@ export function setupDesktopInput({ input, canvas, getSettings, isPlaying, onLoc
     if (e.button === 2) input.aimHeld = false;
   });
   canvas.addEventListener('contextmenu', e => e.preventDefault());
-  // M2.0: mouse wheel cycles the weapons (one step per notch, throttled — trackpads send bursts of small deltas)
-  let lastWheel = 0;
+  // M2.0: mouse wheel cycles the weapons. One step per gesture: a step happens only after ≥ 120 ms without ANY wheel
+  // event, so a trackpad's momentum tail (a stream of small deltas lasting up to ~1–2 s) is a single step (review fix).
+  let lastWheelEvent = -1e9;
   document.addEventListener('wheel', e => {
+    const now = performance.now(), idle = now - lastWheelEvent; lastWheelEvent = now;
     if (!isPlaying() || !(locked() || dragFallback)) return;
-    const now = performance.now(); if (Math.abs(e.deltaY) < 4 || now - lastWheel < 150) return;
-    lastWheel = now; input.selectWeapon(e.deltaY > 0 ? 'next' : 'prev');
+    if (Math.abs(e.deltaY) < 2 || idle < 120) return;
+    input.selectWeapon(e.deltaY > 0 ? 'next' : 'prev');
   }, { passive: true });
   addEventListener('keydown', e => {
     if (e.repeat || !isPlaying()) return;

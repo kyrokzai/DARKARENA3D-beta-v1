@@ -49,8 +49,12 @@ export function createViewmodel({ renderer, skin }) {
   // between them while the weapon is down (switch animation). Feel per weapon: recoil / flash scale, casing type.
   const kits = {};
   let kit = null, model = null, ctl = null;
-  function makeKit(id) {
-    if (kits[id]) return kits[id];
+  function makeKit(reqId) {
+    if (kits[reqId]) return kits[reqId];
+    // review fix: resolve through the weapon definition's `viewmodel` key and cache under the requested id too, so an
+    // unknown / aliased id never rebuilds a model every frame
+    const def = WEAPONS[reqId], id = (def && def.viewmodel) || reqId;
+    if (kits[id]) return (kits[reqId] = kits[id]);
     let k;
     if (id === 'ak47') { const m = createAk47Model(); k = { id, model: m, ctl: createHandsController(m, hands, { poses: getAkPoses(), chargeTravel: 0.075, dropSide: 0.6, dropBack: 0.3, dropSpeed: 2.2, dropHide: 0.43 }), kind: 'rifle', chargeTravel: 0.075, dropSide: 0.6, dropBack: 0.3, dropSpeed: 2.2, dropHide: 0.43, recoil: 1.35, flash: 1.2, casing: 'brass', light: 7 }; }
     else if (id === 'krait') { const m = createKraitModel(); k = { id, model: m, ctl: createShotgunController(m, hands, getKraitPoses(), WEAPONS.krait, PUMP_TRAVEL), kind: 'shotgun', recoil: 2.2, flash: 1.7, casing: 'shell', light: 10 }; }
@@ -58,7 +62,8 @@ export function createViewmodel({ renderer, skin }) {
     const sp = k.model.anchors.sight.position;
     k.ads = new THREE.Vector3(-sp.x, -sp.y, -ADS_EYE_DIST - sp.z);
     k.detail = (k.model.detailMats || ['body', 'polymer', 'grip', 'accent', 'steel']).map(n => k.model.mats[n]);
-    kits[k.id] = k;
+    k.def = WEAPONS[k.id];
+    kits[k.id] = k; kits[reqId] = k;
     if (!surfaceDetail) applySurfaceDetail();
     return k;
   }
@@ -66,6 +71,7 @@ export function createViewmodel({ renderer, skin }) {
     const k = makeKit(id);
     if (kit === k) return;
     if (kit) rig.remove(kit.model.group);
+    shellPending = false; // review fix: a shell waiting for the pump never ejects from the next weapon
     kit = k; model = k.model; ctl = k.ctl;
     rig.add(model.group); model.group.add(hands.group);
     model.anchors.muzzle.add(flash); model.anchors.muzzle.add(flashLight);
@@ -104,6 +110,7 @@ export function createViewmodel({ renderer, skin }) {
   const caseState = Array.from({ length: CASES }, () => ({ life: 0, p: new THREE.Vector3(), v: new THREE.Vector3(), r: new THREE.Euler(), w: new THREE.Vector3() }));
   const shellState = Array.from({ length: SHELLS }, () => ({ life: 0, p: new THREE.Vector3(), v: new THREE.Vector3(), r: new THREE.Euler(), w: new THREE.Vector3() }));
   let caseNext = 0, shellNext = 0, shellPending = false;
+  const svBuf = { cycle: 1, shellPhase: null, shellT: 0, shellPump: false };
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), one = new THREE.Vector3(1, 1, 1), zero = new THREE.Vector3(0, 0, 0);
   for (let i = 0; i < CASES; i++) { m4.compose(zero, q, new THREE.Vector3(0, 0, 0)); casings.setMatrixAt(i, m4); }
   for (let i = 0; i < SHELLS; i++) { m4.compose(zero, q, new THREE.Vector3(0, 0, 0)); shells.setMatrixAt(i, m4); }
@@ -188,7 +195,9 @@ export function createViewmodel({ renderer, skin }) {
     rig.rotation.x += Math.sin(breathT * 1.55 + 0.9) * 0.0022 * br;
     // reload: ONE timeline per weapon kind (weapon-anim.js) for weapon tilt, magazines / pump, charging handle, left hand
     const rr = api.forceReload ?? s.reload;
-    const sv = api.forceShell ? { cycle: 1, ...api.forceShell } : { cycle: api.forceCycle ?? s.cycle ?? 1, shellPhase: s.shellPhase, shellT: s.shellT, shellPump: s.shellPump };
+    const sv = svBuf; // reused every frame (review: no per-frame allocation)
+    if (api.forceShell) { sv.cycle = 1; sv.shellPhase = null; sv.shellT = 0; sv.shellPump = false; Object.assign(sv, api.forceShell); }
+    else { sv.cycle = api.forceCycle ?? s.cycle ?? 1; sv.shellPhase = s.shellPhase; sv.shellT = s.shellT; sv.shellPump = s.shellPump; }
     const tl = kit.kind === 'shotgun' ? ctl.timeline(sv) : reloadTimeline(rr, { chargeTravel: kit.chargeTravel, dropSide: kit.dropSide ?? 0.15, dropBack: kit.dropBack ?? 0, dropSpeed: kit.dropSpeed ?? 0.6, dropHide: kit.dropHide ?? 0.5 });
     rig.rotation.x += tl.rig.rx; rig.rotation.y += tl.rig.ry; rig.rotation.z += tl.rig.rz;
     rig.position.x += tl.rig.px; rig.position.y += tl.rig.py; rig.position.z += tl.rig.pz;
@@ -211,7 +220,7 @@ export function createViewmodel({ renderer, skin }) {
     if (triggerPullT > 0) triggerPullT -= dt;
     ctl.apply(kit.kind === 'shotgun' ? sv : rr, pull, elbowM);
     // KRAIT: the spent shell leaves the port when the pump reaches the back
-    if (shellPending && kit.kind === 'shotgun' && sv.cycle * (60 / WEAPONS.krait.rpm) >= WEAPONS.krait.pump.back) { shellPending = false; eject(shellState, shellNext, 1.15); shellNext = (shellNext + 1) % SHELLS; stats.shellsEjected++; }
+    if (shellPending && kit.kind === 'shotgun' && sv.cycle * (60 / kit.def.rpm) >= kit.def.pump.back) { shellPending = false; eject(shellState, shellNext, 1.15); shellNext = (shellNext + 1) % SHELLS; stats.shellsEjected++; }
     // flash
     if (flashT > 0) { if (!api.holdFlash) flashT -= dt; flashLight.intensity = flashLight.userData.peak || 6; if (flashT <= 0) { flash.visible = false; flashLight.intensity = 0; } }
     // smoke

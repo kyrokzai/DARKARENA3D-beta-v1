@@ -17,7 +17,8 @@ export class WeaponSystem {
     this.equip(def);
   }
 
-  equip(def, ammo = null) {
+  equip(def, ammo = null, { keepRecoil = false } = {}) {
+    const climb = keepRecoil ? this.recoilClimb || 0 : 0; // review fix: a weapon change keeps recovering the camera climb
     this.def = def;
     this.shell = null;          // shell reload state {phase: 'start' | 'shell' | 'end', t, wasEmpty, stop, loaded, planned}
     this.pendingPull = false;   // a trigger pull that interrupted a shell reload: fires when ready if the trigger is still held
@@ -28,7 +29,7 @@ export class WeaponSystem {
     this.burstLeft = 0;
     this.shotsInSpray = 0;
     this.bloom = 0;             // deg
-    this.recoilClimb = 0;       // rad of pitch added by recoil that will be (partly) recovered
+    this.recoilClimb = climb;   // rad of pitch added by recoil that will be (partly) recovered
     this.adsT = 0; this.adsWanted = false;
     this.reloadT = -1;          // < 0: not reloading (driven by this system)
     // press counters persist across equips (M2.0 fix: resetting them made an old press look new after a weapon change
@@ -92,6 +93,9 @@ export class WeaponSystem {
     // (only if there will be something to fire — a shell already in the tube or the one going in now; otherwise an empty
     //  shotgun with the trigger hammered would stop every reload before the first shell: an endless dry-click loop)
     if (pulled && this.shell && this.shell.phase !== 'end' && (w.mag > 0 || this.shell.phase === 'shell')) { this.shell.stop = true; this.pendingPull = true; }
+    else if (pulled && this.shell && this.shell.phase === 'end') this.pendingPull = true;   // closing already: fire when ready if held
+    // review fix: a pull in the last 0.15 s of a pump / semi cycle is buffered (fires when ready if still held)
+    if (pulled && (def.fireMode === 'pump' || def.fireMode === 'semi') && this.cooldown > 1e-6 && this.cooldown <= 0.15) this.pendingPull = true;
     if (!trig) this.pendingPull = false;
     const single = def.fireMode === 'semi' || def.fireMode === 'pump';
     let firedThisTick = false;
@@ -200,7 +204,7 @@ export class WeaponSystem {
       } else if (hit.type === 'world') {
         g.emit('impact', { point: hit.point, normal: hit.normal, kind: hit.kind, cell: hit.cell }); // cell: M2.0 surface (metal props / concrete)
       } else g.emit('miss', {});
-      g.emit('shot', { origin, dir, aim: base, hit, ads: this.adsT, spread, index: this.shotsInSpray });
+      g.emit('shot', { origin, dir, aim: base, hit, ads: this.adsT, spread, index: this.shotsInSpray, pellet: i });
     }
     if (anyHit) st.registerHit({ kill: anyKill, headshot: anyHead }); // one confirmation per shot (8 pellets → one marker)
     this.totalShots++;

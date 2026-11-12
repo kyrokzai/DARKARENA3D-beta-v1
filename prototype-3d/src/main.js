@@ -191,7 +191,8 @@ const rel = (x, y) => { // pan (−1..1) and distance (m) of a sim point relativ
   const right = (dx * -Math.sin(p.yaw) + dy * Math.cos(p.yaw)) / (Math.hypot(dx, dy) || 1);
   relOut.pan = Math.max(-1, Math.min(1, right)); relOut.dist = d; return relOut;
 };
-game.on('shot', e => { if (e.hit.type === 'entity' && e.hit.entity.type) { view.infected.onHit(e.hit.point, e.dir, e.hit.zone); if (e.hit.zone === 'head' && Math.random() < 0.6) view.bloodSplat(e.hit.point.x + e.dir.x * 0.4, e.hit.point.y + e.dir.y * 0.4, 0.45); } });
+let headSplatShot = false; /* KRAIT: at most one head splat per shot, not one per pellet (review fix) */
+game.on('shot', e => { if (!e.pellet) headSplatShot = false; if (e.hit.type === 'entity' && e.hit.entity.type) { view.infected.onHit(e.hit.point, e.dir, e.hit.zone); if (e.hit.zone === 'head' && !headSplatShot && Math.random() < 0.6 && (headSplatShot = true)) view.bloodSplat(e.hit.point.x + e.dir.x * 0.4, e.hit.point.y + e.dir.y * 0.4, 0.45); } });
 game.on('targetHit', e => { const en = game.enemies.find(x => x.id === e.id); if (en && !e.killed && e.first !== false) { /* KRAIT: one pain sound per shot, not per pellet */ const r = rel(en.x, en.y); sfx.infected('hurt', r.pan, r.dist); } });
 game.on('infectedAlert', e => { const r = rel(e.x, e.y); sfx.infected('alert', r.pan, r.dist); });
 game.on('infectedAttack', e => { const r = rel(e.x, e.y); sfx.infected('attack', r.pan, r.dist); });
