@@ -196,7 +196,7 @@ const clearArena = page => DA(page, () => { const g = __DA3.game; g.waves.reset(
     await DA(page, () => window.dispatchEvent(new Event('blur'))); await sleep(300);
     const fo = await DA(page, () => ({ state: __DA3.state, fire: __DA3.input.actions.fire, trig: __DA3.game.weapon.triggerDown }));
     await DA(page, () => __DA3.show('play'));
-    check('Focus loss (blur) pauses and releases the trigger (no stuck fire after switching)', fo.state === 'paused' && !fo.fire, JSON.stringify(fo));
+    check('Focus loss (blur) releases the held trigger (no stuck fire); play is not interrupted (M0 contract: release, not pause)', fo.state === 'play' && !fo.fire, JSON.stringify(fo));
     // graphics settings: profile saved; viewmodel relief per profile on every kit
     const gx = await DA(page, () => { const vm = __DA3.view.vm, kits = vm.kitIds.map(id => vm.kitOf(id)); const cnt = () => kits.flatMap(k => k.detail).filter(m => m.normalMap).length, tot = kits.flatMap(k => k.detail).length;
       __DA3.settings.graphicsProfile = 'balanced'; __DA3.view.resize(true); const bal = cnt(); __DA3.settings.graphicsProfile = 'performance'; __DA3.view.resize(true); const perf = cnt(); return { bal, perf, tot }; });
