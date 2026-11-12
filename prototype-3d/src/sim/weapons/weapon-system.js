@@ -198,7 +198,7 @@ export class WeaponSystem {
         const first = !seen.has(hit.entity.id); seen.add(hit.entity.id);
         g.emit('targetHit', { id: hit.entity.id, zone: hit.zone, killed: r.killed, point: hit.point, damage: dmg, pellet: i, first });
       } else if (hit.type === 'world') {
-        g.emit('impact', { point: hit.point, normal: hit.normal, kind: hit.kind });
+        g.emit('impact', { point: hit.point, normal: hit.normal, kind: hit.kind, cell: hit.cell }); // cell: M2.0 surface (metal props / concrete)
       } else g.emit('miss', {});
       g.emit('shot', { origin, dir, aim: base, hit, ads: this.adsT, spread, index: this.shotsInSpray });
     }

@@ -256,7 +256,8 @@ export const AK_PROXIES = [
   box('rearSight', [0, 0.075, -0.266], [0.010, 0.012, 0.034]),
   box('sight', [0, 0.112, -0.091], [0.020, 0.025, 0.022]),
   box('mount', [-0.030, 0.060, -0.090], [0.006, 0.030, 0.045]),
-  box('stock', [0, -0.020, 0.150], [0.020, 0.050, 0.120]),
+  box('stock', [0, -0.004, 0.090], [0.018, 0.033, 0.045]),   // stock wrist behind the tang: shallow (bottom ≈ −0.035), 40 mm wide with a 6 mm bevel → 36 mm at the palm
+  box('stockRear', [0, -0.035, 0.210], [0.020, 0.065, 0.075]), // butt: deeper towards the plate
   box('charging', [0.0345, 0.052, -0.168], [0.010, 0.0065, 0.0065], null, 'charging'),
   box('mag', [0, -0.118, -0.198], [0.013, 0.112, 0.030], [[1, 0, 0], akMagAxis, akMagFwd], 'mag'),
   box('spare', [0, -0.118, -0.198], [0.013, 0.112, 0.030], [[1, 0, 0], akMagAxis, akMagFwd], 'spare'),

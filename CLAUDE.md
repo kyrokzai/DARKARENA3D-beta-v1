@@ -25,7 +25,8 @@ Browser FPS (survival vs. waves of infected). Owner makes key decisions; work in
    + `node tests/sim-m1.6.test.mjs` + `node tests/m1.6-evolution.test.js`
    + `node tests/sim-m1.7.test.mjs` + `node tests/m1.7-outpost.test.js`
    + `node tests/sim-m1.8.test.mjs` + `node tests/m1.8-visual.test.js`
-   + `node tests/sim-m1.9.test.mjs` + `node tests/m1.9-fp-combat.test.js`; report changed files,
+   + `node tests/sim-m1.9.test.mjs` + `node tests/m1.9-fp-combat.test.js`
+   + `node tests/sim-m2.0.test.mjs` + `node tests/m2.0-arsenal.test.js`; report changed files,
    test results, how to verify on PC and iPhone, and known limitations. Not accepted until the owner confirms.
 7. Test hooks and the debug panel are allowed only behind `?debug=1`.
 8. Gameplay values reach the HUD only through `prototype-3d/src/sim/game-state.js` (GameState + events);
@@ -48,5 +49,10 @@ Browser FPS (survival vs. waves of infected). Owner makes key decisions; work in
     change to the model / surface functions) into `prototype-3d/assets/infected/*.jpg`; LODs share the skeleton and atlas.
 15. Melee is weapon data (`defs.js` → `melee` block) handled by the generic `sim/weapons/melee-system.js`: one strike per
     press + cooldown, never in the same tick as a shot, not during a reload; the viewmodel / HUD only read `GameState.melee`.
+16. M2.0 arsenal: RAVEN / AK-47 MOD / DA-S12 KRAIT are entries in `defs.js` (`LOADOUT`) on the generic WeaponSystem (fire modes
+    auto / semi / burst / pump, pellets + falloff, reload types magazine / shell); `sim/weapons/arsenal.js` keeps the ammo of
+    the other weapons and switches (holster → draw; nothing fires, aims, reloads or strikes meanwhile; a cancelled magazine
+    reload moves no rounds). Viewmodel kits share one hands rig; each gun has its own proxy volumes in `hand-poses.js` and
+    must keep the M1.4 penetration limits. The flashlight is an always-present spot light (intensity only, no recompiles).
 13. The alarm between waves is a view of the existing intermission: `sim/waves/alarm.js` (pure) → `GameState.alarm`
     (written by the wave director) → renderer / HUD / audio read it. No separate timer; it resets on restart.

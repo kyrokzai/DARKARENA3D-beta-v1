@@ -131,6 +131,9 @@ view.renderer.domElement.addEventListener('click', () => { if (state === 'play')
 addEventListener('keydown', e => {
   if (state === 'play' && (e.code === 'KeyP' || e.code === 'Escape')) { desktop.exitLock(); pausedAt = performance.now(); show('paused'); }
 });
+// M2.0 fix: focus loss (Alt+Tab, an iOS notification / Control Center) pauses too — otherwise a key held at that moment
+// (F = keyboard fire, a weapon key) never gets its keyup and stays pressed. Pausing releases every input.
+addEventListener('blur', () => { if (state === 'play') show('paused'); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) { if (state === 'play') show('paused'); sfx.silence(); } }); // rAF stops in a hidden tab → silence now
 
 // Switching to touch (first touch on a hybrid device) changes the layout profile.
