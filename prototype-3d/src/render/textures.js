@@ -90,7 +90,7 @@ function outpostWall(seed, tint = [1, 1, 1]) {
   return hiRes(W, H, (x, y) => {
     const n1 = vn2(x / 40, y / 40, seed), n2 = vn2(x / 9, y / 9, seed + 1), n3 = vn2(x / 2.2, y / 2.2, seed + 2);
     const streak = smooth(0.55, 0.9, vn2(x / 6, y / 90, seed + 3)) * (1 - y / H) * 0.6;           // water streaks from the top
-    const crack = Math.abs(vn2(x / 30, y / 30, seed + 4) - 0.5) < 0.012 && vn2(x / 80, y / 80, seed + 5) > 0.55 ? 1 : 0;
+    const crack = Math.abs(vn2(x / 30, y / 30, seed + 4) - 0.5) < 0.005 && vn2(x / 80, y / 80, seed + 5) > 0.7 ? 1 : 0; // thin, rare hairline cracks
     let c, hgt = 0.5 + (n3 - 0.5) * 0.12;
     if (y < dadoY) { const v = 120 + (n1 - 0.5) * 14 + (n2 - 0.5) * 8 + (n3 - 0.5) * 6 - streak * 22; c = [v * tint[0], (v + 2) * tint[1], (v - 2) * tint[2]]; }
     else {
@@ -105,7 +105,7 @@ function outpostWall(seed, tint = [1, 1, 1]) {
     if (y >= dadoY - 6 && y < dadoY + 4) { c = [52, 60, 58].map(q => q + (n3 - 0.5) * 6); hgt += 0.1; }      // service stripe
     if (x < 2 || x === W - 1 || (x >= 127 && x <= 129 && y < dadoY)) { c = c.map(q => q * 0.62); hgt -= 0.35; } // panel seams
     if (y > H - 14) { c = [34, 35, 34].map(q => q + (n3 - 0.5) * 6); hgt += 0.15; }                         // skirting board
-    if (crack) { c = c.map(q => q * 0.55); hgt -= 0.3; }
+    if (crack) { c = c.map(q => q * 0.78); hgt -= 0.2; }
     for (const [bx, by] of [[10, 10], [118, 10], [138, 10], [246, 10], [10, dadoY - 16], [246, dadoY - 16]]) if ((x - bx) ** 2 + (y - by) ** 2 < 5) { c = [70, 70, 68]; hgt += 0.3; } // bolts
     return [c[0], c[1], c[2], hgt];
   }, { anisotropy: 4 });
@@ -116,7 +116,7 @@ function outpostFloor(seed, W, H) { // 256 px per 2 m cell: concrete slab, seams
     let v = 84 + (n1 - 0.5) * 16 + (n2 - 0.5) * 8 + (n3 - 0.5) * 9, hgt = 0.5 + (n3 - 0.5) * 0.15;
     const stain = smooth(0.62, 0.8, vn2(x / 35 + 4, y / 35, seed + 3)); v -= stain * 12;
     if (x < 3 || y < 3) { v *= 0.6; hgt -= 0.4; }                                                   // slab joints
-    if (Math.abs(vn2(x / 24, y / 24, seed + 4) - 0.5) < 0.01 && vn2(x / 60, y / 60, seed + 5) > 0.6) { v *= 0.6; hgt -= 0.3; } // cracks
+    if (Math.abs(vn2(x / 24, y / 24, seed + 4) - 0.5) < 0.005 && vn2(x / 60, y / 60, seed + 5) > 0.68) { v *= 0.78; hgt -= 0.2; } // hairline cracks
     if (vn2(x * 0.9, y * 0.9, seed + 6) > 0.93) { v += 14; hgt += 0.2; }                               // grit
     return [v, v * 0.99, v * 0.96, hgt];
   }, { repeat: [W, H], anisotropy: 8 });
