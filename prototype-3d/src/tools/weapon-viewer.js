@@ -1,13 +1,20 @@
 // Developer tool: inspect DA-R1 RAVEN from any angle in every skin. ?sheet=1 renders a contact sheet
-// (rows = skins, columns = angles) for review screenshots.
+// (rows = skins, columns = angles) for review screenshots. M2.0: ?weapon=ak47 | krait shows the other arsenal guns
+// (one row: they have no skins; hands only for RAVEN).
 import * as THREE from 'three';
 import { createRavenModel } from '../render/weapons/raven-model.js';
+import { createAk47Model } from '../render/weapons/ak47-model.js';
+import { createKraitModel } from '../render/weapons/krait-model.js';
 import { SKINS, SKIN_IDS } from '../render/weapons/raven-skins.js';
 import { getStudioEnv } from '../render/weapons/studio-env.js';
 import { createHands } from '../render/weapons/hands-model.js';
 import { createHandsController } from '../render/weapons/hands-controller.js';
 
 const params = new URLSearchParams(location.search);
+const WEAPON = ['ak47', 'krait'].includes(params.get('weapon')) ? params.get('weapon') : 'raven';
+const makeModel = skin => (WEAPON === 'ak47' ? createAk47Model() : WEAPON === 'krait' ? createKraitModel() : createRavenModel(skin));
+const TITLE = { raven: 'DA-R1 RAVEN', ak47: 'AK-47 MOD', krait: 'DA-S12 KRAIT' }[WEAPON];
+document.querySelector('#ui h1').textContent = TITLE; document.title = TITLE + ' · Viewer';
 const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.5;
@@ -31,14 +38,14 @@ const ANGLES = {
   'Слева': [-Math.PI / 2, 0.0], 'Справа': [Math.PI / 2, 0.0], '3/4 спереди': [-Math.PI / 4.2, 0.28],
   '3/4 сзади': [-Math.PI * 0.78, 0.25], 'Сверху': [-Math.PI / 2, 1.2], 'Спереди': [0.0, 0.08],
 };
-const model = createRavenModel(params.get('skin') || 'obsidian');
+const model = makeModel(params.get('skin') || 'obsidian');
 const pivot = new THREE.Group(); pivot.add(model.group);
 // ?hands=1 → show the first-person hands; &r=0.3 → reload stage (−1 = holding the weapon)
-const showHands = params.get('hands') === '1';
+const showHands = params.get('hands') === '1' && WEAPON === 'raven';
 let reloadR = Number(params.get('r') ?? -1);
 const hands = showHands ? createHands() : null;
 if (hands) model.group.add(hands.group);
-const ctl = createHandsController(model, hands);
+const ctl = WEAPON === 'raven' ? createHandsController(model, hands) : { apply() {} };
 // elbows in model space for a natural stance in the viewer (behind / below the weapon)
 const elbows = { right: new THREE.Vector3(0.20, -0.30, 0.42), left: new THREE.Vector3(-0.30, -0.28, -0.10) };
 function applyHands() { ctl.apply(reloadR, 0, elbows); }
@@ -56,8 +63,8 @@ addEventListener('resize', resize); resize();
 if (params.get('sheet') === '1') {
   // Contact sheet: one model per skin, rendered into a grid with scissor viewports.
   document.getElementById('ui').style.display = 'none'; document.getElementById('note').style.display = 'none';
-  const cols = ['Слева', '3/4 спереди', '3/4 сзади', 'Сверху'], rows = SKIN_IDS;
-  const models = rows.map(id => { const m = createRavenModel(id); const pv = new THREE.Group(); m.group.position.copy(model.group.position); pv.add(m.group); return pv; });
+  const cols = ['Слева', '3/4 спереди', '3/4 сзади', 'Сверху'], rows = WEAPON === 'raven' ? SKIN_IDS : [WEAPON];
+  const models = rows.map(id => { const m = makeModel(id); const pv = new THREE.Group(); m.group.position.copy(model.group.position); pv.add(m.group); return pv; });
   stage.remove(pivot);
   const W = innerWidth, H = innerHeight, cw = W / cols.length, ch = H / rows.length;
   renderer.setScissorTest(true);
@@ -79,7 +86,7 @@ if (params.get('sheet') === '1') {
   lab.style.cssText = 'position:fixed;inset:0;pointer-events:none;font:700 14px "Arial Narrow",Arial;color:#ddd;letter-spacing:1px';
   rows.forEach((id, r) => cols.forEach((a, c) => {
     const d = document.createElement('div');
-    d.textContent = (c === 0 ? SKINS[id].label + ' · ' : '') + a;
+    d.textContent = (c === 0 ? (SKINS[id] ? SKINS[id].label : TITLE) + ' · ' : '') + a;
     d.style.cssText = `position:absolute;left:${c * cw + 10}px;top:${r * ch + 8}px;color:${c === 0 ? '#ff7a86' : '#9aa2b4'}`;
     lab.appendChild(d);
   }));
@@ -89,7 +96,7 @@ if (params.get('sheet') === '1') {
   // Interactive viewer
   const skins = document.getElementById('skins'), views = document.getElementById('views');
   const refreshButtons = () => { for (const b of skins.children) b.classList.toggle('on', b.dataset.id === model.skin); };
-  for (const id of SKIN_IDS) { const b = document.createElement('button'); b.textContent = SKINS[id].label; b.dataset.id = id; b.onclick = () => { model.setSkin(id); refreshButtons(); }; skins.appendChild(b); }
+  if (WEAPON === 'raven') for (const id of SKIN_IDS) { const b = document.createElement('button'); b.textContent = SKINS[id].label; b.dataset.id = id; b.onclick = () => { model.setSkin(id); refreshButtons(); }; skins.appendChild(b); }
   for (const a of Object.keys(ANGLES)) { const b = document.createElement('button'); b.textContent = a; b.onclick = () => { [yaw, pitch] = ANGLES[a]; }; views.appendChild(b); }
   refreshButtons();
   let drag = null;
