@@ -132,7 +132,7 @@ const SCREENS = [['iPhone 11', 'iPhone 11 landscape', 896, 414, 48, 48, 21], ['i
     const barRows = () => DA(page, () => { const b = document.getElementById('editBar'); return { compact: b.classList.contains('compact'), h: b.getBoundingClientRect().height }; });
     const covered0 = await tb(), rows0 = await barRows();
     const S0 = await rectOf(page, 'weapons'), L0 = await rectOf(page, 'light');
-    const sT = at(0.50, 0.62), lT = at(0.53, 0.35);
+    const sT = at(0.56, 0.62), lT = at(0.53, 0.35); // free spots on iPhone 11 (slots clear of the thumb area even at +10 %)
     await drag({ x: S0.cx, y: S0.cy }, sT, 1);
     await DA(page, () => document.querySelector('[data-ed=plus]').click()); await sleep(60);
     await drag({ x: L0.cx, y: L0.cy }, lT, 2);
