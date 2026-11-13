@@ -47,7 +47,8 @@ export function createHudEditor({ hud, settings, toolbar, onExit }) {
         let area = 0;
         for (const r of rs) {
           const ox = Math.min(left + tw, r.x1) - Math.max(left, r.x0), oy = Math.min(top + th, r.y1) - Math.max(top, r.y0);
-          if (ox > 0 && oy > 0) area += ox * oy * (HUD_ELEMENTS[r.id] && (HUD_ELEMENTS[r.id].kind === 'info' || HUD_ELEMENTS[r.id].kind === 'map') ? 0.3 : 1);
+          // the element being edited must stay visible and touchable; a passive panel is the cheapest thing to cover
+          if (ox > 0 && oy > 0) area += ox * oy * (r.id === selected ? 20 : HUD_ELEMENTS[r.id] && (HUD_ELEMENTS[r.id].kind === 'info' || HUD_ELEMENTS[r.id].kind === 'map') ? 0.3 : 1);
         }
         const cost = area * 1000 + Math.abs(left + tw / 2 - sc.w / 2) + (top - minT) * 2;
         if (!best || cost < best.cost) best = { cost, top, left, area };
