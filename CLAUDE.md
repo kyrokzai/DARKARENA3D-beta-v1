@@ -53,7 +53,8 @@ Browser FPS (survival vs. waves of infected). Owner makes key decisions; work in
     auto / semi / burst / pump, pellets + falloff, reload types magazine / shell); `sim/weapons/arsenal.js` keeps the ammo of
     the other weapons and switches (holster → draw; nothing fires, aims, reloads or strikes meanwhile; a cancelled magazine
     reload moves no rounds). Viewmodel kits share one hands rig; each gun has its own proxy volumes in `hand-poses.js` and
-    must keep the M1.4 penetration limits. The flashlight is an always-present spot light (intensity only, no recompiles).
+    must keep the M1.4 penetration limits. The flashlight is one camera spot light, in the render only while on (a spot light costs every lit fragment even at
+    intensity 0); both shader variants are pre-compiled (`warmFlashVariants`), so a toggle never compiles during play.
     Touch HUD placement (`ui/hud-layout.js`): with the floating move stick no button / the slots sit in the movement thumb
     area (left `MOVE_ZONE_X`, below `MOVE_THUMB_Y`) — enforced at display time and by the editor alike; the slots keep a
     12 px gap. Check ergonomics with real touches (`m2.0-hud-ergonomics`), not only coordinates.

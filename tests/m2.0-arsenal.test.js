@@ -165,16 +165,19 @@ const clearArena = page => DA(page, () => { const g = __DA3.game; g.waves.reset(
     const { ctx, page, errors } = await open(browser, base, { viewport: { width: 1280, height: 720 } });
     await clearArena(page);
     const pr0 = await DA(page, () => __DA3.view.renderer.info.programs.length);
-    const fl = [];
+    const fl = []; let firstToggle = null;
     for (const [key, id] of [['Digit1', 'raven'], ['Digit2', 'ak47'], ['Digit3', 'krait']]) {
-      await page.keyboard.press(key); await ready(page, id);
+      await page.keyboard.press(key); await ready(page, id); await sleep(200);
+      const prBefore = await DA(page, () => __DA3.view.renderer.info.programs.length);
       await page.keyboard.press('KeyL'); await sleep(500);
+      if (id === 'raven') firstToggle = { before: prBefore, after: await DA(page, () => __DA3.view.renderer.info.programs.length) };
       fl.push(await DA(page, async id => { const THREE = await import('three'); const v = __DA3.view, l = v.flashlight; const a = new THREE.Vector3(), b = new THREE.Vector3(), f = new THREE.Vector3(); l.getWorldPosition(a); l.target.getWorldPosition(b); v.camera.getWorldDirection(f);
         return { id, on: __DA3.gs.flashlight, I: +l.intensity.toFixed(1), dot: +b.sub(a).normalize().dot(f).toFixed(3), btn: document.querySelector('.hud-light').classList.contains('toggled') }; }, id));
       await page.keyboard.press('KeyL'); await sleep(400);
     }
-    const off = await DA(page, () => ({ on: __DA3.gs.flashlight, I: __DA3.view.flashlight.intensity }));
+    const off = await DA(page, () => ({ on: __DA3.gs.flashlight, I: __DA3.view.flashlight.intensity, visible: __DA3.view.flashlight.visible }));
     check('Flashlight (L) on / off with every weapon; the beam points where the player looks (dot ≥ 0.99)', fl.every(x => x.on && x.I > 30 && x.dot >= 0.99) && !off.on && off.I < 1, JSON.stringify({ fl, off }));
+    check('Flashlight off = no spot light in the render (no per-pixel cost); the very first toggle compiles nothing (variants pre-compiled)', off.visible === false && firstToggle && firstToggle.after === firstToggle.before, JSON.stringify({ off, firstToggle }));
     await page.keyboard.press('KeyL'); await DA(page, () => { __DA3.input.aimHeld = true; }); await page.waitForFunction(() => __DA3.game.weapon.ads === 1, null, { timeout: 8000 }).catch(() => {}); await sleep(400);
     const adsL = await DA(page, () => ({ on: __DA3.gs.flashlight, ads: __DA3.game.weapon.ads }));
     await shot(page, 'm20_flashlight_ads.png');
@@ -182,7 +185,7 @@ const clearArena = page => DA(page, () => { const g = __DA3.game; g.waves.reset(
     const prA = await DA(page, () => __DA3.view.renderer.info.programs.length);
     for (let i = 0; i < 8; i++) { await page.keyboard.press('KeyL'); await sleep(250); }
     const pr1 = await DA(page, () => __DA3.view.renderer.info.programs.length);
-    check('Flashlight in ADS stays on; toggling it 8× compiles no new shaders (light always present, intensity only)', adsL.on && adsL.ads === 1 && pr1 === prA, `programs ${prA} → ${pr1} (start ${pr0})`);
+    check('Flashlight in ADS stays on; toggling it 8× compiles no new shaders', adsL.on && adsL.ads === 1 && pr1 === prA, `programs ${prA} → ${pr1} (start ${pr0})`);
     // pause during a switch: frozen, then finishes
     await DA(page, () => { window.__once = false; __DA3.game.on('weaponSwitch', () => { if (!window.__once) { window.__once = true; setTimeout(() => __DA3.show('paused'), 0); } }); });
     await page.keyboard.press('Digit2'); await page.waitForFunction(() => window.__DA3.state === 'paused', null, { timeout: 8000 }).catch(() => {});
