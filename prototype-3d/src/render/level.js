@@ -85,10 +85,25 @@ export function buildLevel(scene, world) {
     hemi.color.copy(hemiSky).lerp(alarmSky, k * 0.5); hemi.groundColor.copy(hemiGround).lerp(alarmGround, k * 0.5);
     for (const p of pool) p.light.color.copy(p.base).lerp(alarmRed, k * 0.55);
   }
+  // M2.0 light budget (PERFORMANCE): while the flashlight is on it takes the slot of the pooled lamp farthest from the
+  // camera — that lamp fades out (setReserve), then the renderer swaps it for the flashlight in the same frame
+  // (hideReserved), so only two light sets ever exist (4 lamps / 3 lamps + flashlight) and the per-pixel cost stays.
+  let reserve = false, victim = null;
+  function setReserve(on) {
+    if (on && !victim && pool.length) { // the farthest lamp among the pooled ones (stable while reserved)
+      let best = null, bd = -1; for (const p of pool) { const l = lamps[p.lamp], d = Math.hypot(l.x * S - lastCam.x, l.y * S - lastCam.z); if (d > bd) { bd = d; best = p; } }
+      victim = best;
+    }
+    reserve = on;
+    if (!on && victim && victim.light.visible) victim = null; // released: the next reservation picks the farthest lamp anew
+  }
+  function hideReserved(hide) { if (victim) { victim.light.visible = !hide; if (!hide && !reserve) { victim = null; } } }
+  const lastCam = { x: 0, z: 0 };
   function update(camPos, dt, dressDt = dt) { // dressDt = 0 while paused (beacons / monitors freeze)
     if (dressing) dressing.update(dressDt, alarmK);
-    if (lamps.length <= pool.length) return;
-    if ((tick++ & 7) === 0) {
+    lastCam.x = camPos.x; lastCam.z = camPos.z;
+    for (const p of pool) { const t = reserve && p === victim ? 0 : 1; p.r = p.r === undefined ? 1 : p.r + Math.sign(t - p.r) * Math.min(Math.abs(t - p.r), dt * 9); }
+    if (lamps.length > pool.length && (tick++ & 7) === 0) {
       for (let i = 0; i < lamps.length; i++) dist[i] = Math.hypot(lamps[i].x * S - camPos.x, lamps[i].y * S - camPos.z);
       order.sort(byDist);
       for (const p of pool) {
@@ -108,12 +123,12 @@ export function buildLevel(scene, world) {
         p.k -= dt * FADE;
         if (p.k <= 0) { p.k = 0; p.lamp = p.next; p.next = undefined; const l = lamps[p.lamp]; p.base.setHex(l.color); p.light.color.copy(p.base).lerp(alarmRed, alarmK * 0.55); p.light.position.set(l.x * S, WALL_HEIGHT - 0.35, l.y * S); }
       } else if (p.k < 1) p.k = Math.min(1, p.k + dt * FADE);
-      p.light.intensity = LAMP_POWER * p.k;
+      p.light.intensity = LAMP_POWER * p.k * p.r;
     }
   }
   scene.add(group);
   void tint;
   // M2.0: hit effects ask whether a solid cell is a piece of (metal) equipment or a concrete wall
   const isPropCell = (x, y) => propCells.has(x + ',' + y);
-  return { group, wallCount, update, setAlarm, dressing, hemi, daylight, isPropCell, get lightCount() { return pool.length; }, get lampCount() { return lamps.length; }, get alarm() { return alarmK; } };
+  return { group, wallCount, update, setAlarm, setReserve, hideReserved, get reserveFaded() { return !!victim && reserve && victim.r <= 0; }, get reserveHidden() { return !!victim && !victim.light.visible; }, dressing, hemi, daylight, isPropCell, get lightCount() { return pool.length; }, get lampCount() { return lamps.length; }, get alarm() { return alarmK; } };
 }

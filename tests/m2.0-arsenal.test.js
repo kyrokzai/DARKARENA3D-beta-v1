@@ -177,6 +177,12 @@ const clearArena = page => DA(page, () => { const g = __DA3.game; g.waves.reset(
     }
     const off = await DA(page, () => ({ on: __DA3.gs.flashlight, I: __DA3.view.flashlight.intensity, visible: __DA3.view.flashlight.visible }));
     check('Flashlight (L) on / off with every weapon; the beam points where the player looks (dot ≥ 0.99)', fl.every(x => x.on && x.I > 30 && x.dot >= 0.99) && !off.on && off.I < 1, JSON.stringify({ fl, off }));
+    // PERFORMANCE light budget: the flashlight takes one pooled lamp slot; sampled every frame through two toggles
+    const sets = await DA(page, () => new Promise(res => { const V = __DA3.view, seen = new Set(); let stop = false;
+      const count = () => { let pt = 0, sp = 0; V.scene.traverse(o => { if (o.isPointLight && o.visible && o.parent !== V.camera) pt++; if (o.isSpotLight && o.visible) sp++; }); return pt + 'p+' + sp + 's'; };
+      const f = () => { seen.add(count()); if (!stop) requestAnimationFrame(f); }; requestAnimationFrame(f);
+      (async () => { for (let i = 0; i < 2; i++) { __DA3.gs.setFlashlight(true); await new Promise(r => setTimeout(r, 600)); __DA3.gs.setFlashlight(false); await new Promise(r => setTimeout(r, 600)); } stop = true; res({ seen: [...seen].sort(), profile: __DA3.settings.graphicsProfile }); })(); }));
+    check('PERFORMANCE: the flashlight takes one lamp slot — only "4 lamps" or "3 lamps + flashlight" are ever rendered (cost does not grow)', sets.profile === 'performance' && sets.seen.join() === '3p+1s,4p+0s', JSON.stringify(sets));
     check('Flashlight off = no spot light in the render (no per-pixel cost); the very first toggle compiles nothing (variants pre-compiled)', off.visible === false && firstToggle && firstToggle.after === firstToggle.before, JSON.stringify({ off, firstToggle }));
     await page.keyboard.press('KeyL'); await DA(page, () => { __DA3.input.aimHeld = true; }); await page.waitForFunction(() => __DA3.game.weapon.ads === 1, null, { timeout: 8000 }).catch(() => {}); await sleep(400);
     const adsL = await DA(page, () => ({ on: __DA3.gs.flashlight, ads: __DA3.game.weapon.ads }));
@@ -212,11 +218,14 @@ const clearArena = page => DA(page, () => { const g = __DA3.game; g.waves.reset(
     // leaks: 2 warm-up + 6 restarts with switching / shooting / flashlight
     await DA(page, () => document.getElementById('playBtn').click()); await sleep(300);
     const cyc = async () => { await DA(page, () => { __DA3.game.restart(); }); for (const k of ['Digit2', 'Digit3', 'Digit1']) { await page.keyboard.press(k); await sleep(700); } await DA(page, () => { __DA3.input.setAction('fire', true); }); await sleep(300); await DA(page, () => { __DA3.input.setAction('fire', false); }); await page.keyboard.press('KeyL'); await sleep(200); };
-    for (let i = 0; i < 6; i++) await cyc(); // warm-up: some pools are created lazily on first use (measured plateau after 6 cycles, flat through 14)
-    const m0 = await DA(page, () => ({ ...__DA3.view.renderer.info.memory, programs: __DA3.view.renderer.info.programs.length }));
+    // warm-up until stable: some resources are created once, lazily, on first use (e.g. a variant's maps on a pooled
+    // infected) — WHEN depends on what ran before; a plateau = 3 cycles in a row without any change (max 14 cycles)
+    const memNow = () => DA(page, () => ({ ...__DA3.view.renderer.info.memory, programs: __DA3.view.renderer.info.programs.length }));
+    let m0 = null, stable = 0, warm = 0;
+    while (warm < 14 && stable < 3) { await cyc(); warm++; const m = await memNow(); stable = m0 && JSON.stringify(m) === JSON.stringify(m0) ? stable + 1 : 0; m0 = m; }
     for (let i = 0; i < 6; i++) await cyc();
     const m1 = await DA(page, () => ({ ...__DA3.view.renderer.info.memory, programs: __DA3.view.renderer.info.programs.length }));
-    check('No growth over 6 restarts with switching, shooting and the flashlight (geometries / textures / programs)', m1.geometries <= m0.geometries && m1.textures <= m0.textures && m1.programs <= m0.programs, JSON.stringify({ m0, m1 }));
+    check('No growth over 6 restarts with switching, shooting and the flashlight (geometries / textures / programs), after a stable warm-up', stable >= 3 && m1.geometries <= m0.geometries && m1.textures <= m0.textures && m1.programs <= m0.programs, JSON.stringify({ warm, m0, m1 }));
     check('No JS errors (flashlight / pause / settings / restarts)', !errors.length, errors.join(' | '));
     await ctx.close();
   }

@@ -50,12 +50,17 @@ export function createRenderer({ container, world, getSettings, skin }) {
   // M2.0 perf fix: a spot light costs every lit fragment even at intensity 0 (measured ≈ +15 % frame time in software
   // GL), so it is in the render only while on / fading (visible). Toggling visible switches the shader variant; both
   // variants are compiled ahead of time (warmFlashVariants) so a toggle never compiles during play.
+  // PERFORMANCE (profile.flashTakesLamp): the flashlight takes the slot of the farthest pooled lamp — the two light sets
+  // are '4 lamps' and '3 lamps + flashlight', swapped in one frame (level.hideReserved), so the cost never grows.
   flashlight.visible = false;
-  let flashWarmKey = -1;
-  function warmFlashVariants() {
+  let flashWarmKey = '', flashSwap = false; // flashSwap: (budget mode) the lamp is hidden and the flashlight is in
+  function setFlashState(on, budget) { flashlight.visible = on; if (budget) level.hideReserved(on); }
+  function warmFlashVariants(budget) {
     const was = flashlight.visible;
-    flashlight.visible = !was; renderer.compile(scene, camera); // the variant not in use right now
-    flashlight.visible = was;
+    if (budget) level.setReserve(true); // pick the lamp that would be swapped
+    setFlashState(!was, budget); renderer.compile(scene, camera); // the light set not in use right now
+    setFlashState(was, budget);
+    if (budget && !was) level.setReserve(false);
   }
   scene.add(camera);
 
@@ -173,12 +178,26 @@ export function createRenderer({ container, world, getSettings, skin }) {
       if (w.enemies) infected.update(w.enemies, w.enemyDt ?? dt, alpha, camera.position);
       { const k = infected.stats.created * 1000 + mapsLoaded(); if (k !== texCreated) { texCreated = k; texKey = ''; applyTextureQuality(); } } // new pooled infected / maps just loaded: profile filtering for them too // enemyDt = 0 while paused → animation frozen
       if (w.alarm !== undefined) level.setAlarm(w.alarm);
-      // flashlight: a short fade (a bulb, not a strobe); follows the view exactly (child of the camera)
-      flashK += ((w.flashlight ? 1 : 0) - flashK) * Math.min(1, dt * 18);
-      flashlight.visible = flashK >= 0.01 || !!w.flashlight;
-      flashlight.intensity = flashK < 0.01 ? 0 : FLASH_POWER * flashK;
-      { const k = infected.stats.created * 1000 + mapsLoaded(); if (k !== flashWarmKey) { flashWarmKey = k; warmFlashVariants(); } } // new materials → both variants ready
       level.update(camera.position, dt, w.enemyDt ?? dt);
+      { // flashlight: a short fade (a bulb, not a strobe); follows the view exactly (child of the camera)
+        const budget = !!getProfile(s.graphicsProfile).flashTakesLamp, want = !!w.flashlight;
+        const key = infected.stats.created * 1000 + mapsLoaded() + (budget ? 'b' : 'f');
+        if (key !== flashWarmKey) { // new materials / profile → both light sets compiled now, not on the first toggle
+          if (!budget && flashSwap) { level.hideReserved(false); level.setReserve(false); flashSwap = false; } // profile changed while on
+          if (budget && !flashSwap && flashlight.visible) { flashlight.visible = false; flashK = 0; } // → swap in properly
+          flashWarmKey = key; warmFlashVariants(budget);
+        }
+        if (budget) {
+          level.setReserve(want || flashSwap);
+          if (want && !flashSwap && level.reserveFaded) { setFlashState(true, true); flashSwap = true; } // same frame: lamp out, flashlight in
+          if (!want && flashSwap && flashK < 0.01) { setFlashState(false, true); flashSwap = false; level.setReserve(false); }
+          flashK += ((want && flashSwap ? 1 : 0) - flashK) * Math.min(1, dt * 18);
+        } else {
+          flashK += ((want ? 1 : 0) - flashK) * Math.min(1, dt * 18);
+          flashlight.visible = flashK >= 0.01 || want;
+        }
+        flashlight.intensity = flashK < 0.01 ? 0 : FLASH_POWER * flashK;
+      }
       renderer.info.reset();
       renderer.toneMapping = THREE.NoToneMapping;
       renderer.render(scene, camera);
