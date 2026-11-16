@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#07090d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>DARK ARENA · M3.0 TOPDOWN</title>
+<link rel="stylesheet" href="./topdown.css">
+<script type="importmap">{ "imports": { "three": "./vendor/three/three.module.js", "three/addons/": "./vendor/three/addons/" } }</script>
+</head>
+<body>
+<div id="game">
+  <!-- canvas #view is inserted by src/topdown/renderer.js -->
+  <div id="tdHurt" aria-hidden="true"></div>
+  <div class="tdhud">
+    <div class="tdTop">
+      <div class="tdHp"><div class="tdHpBar"><div id="tdHpFill"></div></div><b id="tdHpText">100</b></div>
+      <div class="tdMid"><div id="tdWave">ВОЛНА 1/3</div><div id="tdKills">УБИТО 0</div></div>
+      <div class="tdGun"><div id="tdWeapon">RAVEN</div><div id="tdAmmo">30 / 120</div><div class="tdReload"><div id="tdReload"></div></div></div>
+    </div>
+    <div id="tdBanner" role="status" aria-live="polite"></div>
+  </div>
+  <div id="stickL" class="stick" aria-hidden="true"><i></i></div>
+  <div id="stickR" class="stick aim" aria-hidden="true"><i></i></div>
+  <div class="tdButtons">
+    <button type="button" id="btnWeapon" class="tdBtn small" aria-label="Сменить оружие">ОРУЖ.</button>
+    <button type="button" id="btnReload" class="tdBtn small" aria-label="Перезарядка">ПЕРЕЗ.</button>
+    <button type="button" id="btnDash" class="tdBtn big" aria-label="Рывок">РЫВОК</button>
+  </div>
+  <button type="button" id="btnPause" class="tdPause" aria-label="Пауза"><span></span><span></span></button>
+  <div class="tdHint">ЛЕВЫЙ ПАЛЕЦ — ДВИЖЕНИЕ · ПРАВЫЙ — ПРИЦЕЛ И ОГОНЬ</div>
+</div>
+
+<section id="menu" class="screen">
+  <div class="panel">
+    <h1>DARK <span>ARENA</span></h1>
+    <p class="sub">M3.0 TOPDOWN · OUTPOST ZERO</p>
+    <p>Три волны заражённых: ходоки, громилы, мутанты. Продержись.</p>
+    <div class="load"><div id="loadFill"></div></div><p id="loadText" class="small">Загрузка моделей…</p>
+    <button type="button" id="playBtn" class="primary">ИГРАТЬ</button>
+    <p class="keys">ПК: WASD — движение · мышь — прицел · ЛКМ — огонь · R — перезарядка · Пробел — рывок · 1/2/3 — оружие · Esc — пауза<br>
+      iPhone: левый джойстик — движение · правый — прицел, дальше от центра — огонь · РЫВОК · ПЕРЕЗ. · ОРУЖ.</p>
+  </div>
+</section>
+<section id="paused" class="screen hidden"><div class="panel"><h2>ПАУЗА</h2>
+  <button type="button" id="resumeBtn" class="primary">ПРОДОЛЖИТЬ</button><button type="button" id="restartBtn">ЗАНОВО</button></div></section>
+<section id="dead" class="screen hidden"><div class="panel"><h2>ВЫ ПОГИБЛИ</h2><p>Заражённые захватили заставу.</p>
+  <button type="button" id="againBtn" class="primary">ЗАНОВО</button></div></section>
+<section id="victory" class="screen hidden"><div class="panel"><h2>ПОБЕДА</h2><p>Все три волны отбиты.</p><p id="victoryKills"></p>
+  <button type="button" id="againBtn2" class="primary">ЕЩЁ РАЗ</button></div></section>
+
+<script type="module" src="./src/topdown/main.js"></script>
+</body>
+</html>
