@@ -14,6 +14,9 @@ Browser FPS (survival vs. waves of infected). Owner makes key decisions; work in
 1. Must run on GitHub Pages as static files. No build step unless the owner approves one; no server.
 2. No new runtime dependencies without justification. Three.js is pinned to an exact version.
 3. No AI asset generators, external paid services or API keys.
+   **Owner exception (2026-11-16, M3.0):** 3D models, textures and animations that the owner personally supplied for
+   DARK ARENA are allowed (`prototype-3d/assets/models/*.glb`; optimized / rigged offline, provenance in
+   `docs/M3.0-REPORT.md`). The exception covers only those owner assets; every other restriction stays.
 4. iPhone Safari (landscape, multitouch) is a first-class target; desktop keeps full mouse/keyboard control.
    For anything touching input/HUD use the `dark-arena-mobile` skill.
 5. Never delete existing mechanics or old builds without agreement. Keep a restore point (git tag) before big changes.
@@ -26,7 +29,8 @@ Browser FPS (survival vs. waves of infected). Owner makes key decisions; work in
    + `node tests/sim-m1.7.test.mjs` + `node tests/m1.7-outpost.test.js`
    + `node tests/sim-m1.8.test.mjs` + `node tests/m1.8-visual.test.js`
    + `node tests/sim-m1.9.test.mjs` + `node tests/m1.9-fp-combat.test.js`
-   + `node tests/sim-m2.0.test.mjs` + `node tests/m2.0-arsenal.test.js` + `node tests/m2.0-hud-ergonomics.test.js`; report changed files,
+   + `node tests/sim-m2.0.test.mjs` + `node tests/m2.0-arsenal.test.js` + `node tests/m2.0-hud-ergonomics.test.js`
+   + `node tests/sim-m3.0.test.mjs` + `node tests/m3.0-topdown.test.js`; report changed files,
    test results, how to verify on PC and iPhone, and known limitations. Not accepted until the owner confirms.
 7. Test hooks and the debug panel are allowed only behind `?debug=1`.
 8. Gameplay values reach the HUD only through `prototype-3d/src/sim/game-state.js` (GameState + events);
@@ -61,3 +65,10 @@ Browser FPS (survival vs. waves of infected). Owner makes key decisions; work in
     12 px gap. Check ergonomics with real touches (`m2.0-hud-ergonomics`), not only coordinates.
 13. The alarm between waves is a view of the existing intermission: `sim/waves/alarm.js` (pure) → `GameState.alarm`
     (written by the wave director) → renderer / HUD / audio read it. No separate timer; it resets on restart.
+17. M3.0 TOPDOWN is a second entry of the same prototype: `prototype-3d/topdown.html` + `src/topdown/` (55° follow camera,
+    twin-stick touch / WASD + mouse, owner GLB characters). It reuses the M2.0 sim, map, weapons, audio and quality code;
+    the Game gets top-down options (`aimHeight`, `flatAim`, `dash`, top-down waves) that are OFF by default, so the FPS
+    game is unchanged. Top-down types `walker` / `brute` / `mutant` (`TOPDOWN_TYPES`) use the generic AI and the
+    hollow-rig hit zones (rule 11); their clips are only the look. Three.js addons (GLTFLoader, BufferGeometryUtils,
+    SkeletonUtils, meshopt_decoder) are vendored from the SAME three@0.186.0 in `vendor/three/addons/`. Walls are drawn
+    cut at 1.5 m in top-down only (clipping on the level materials); the sim keeps full-height walls.

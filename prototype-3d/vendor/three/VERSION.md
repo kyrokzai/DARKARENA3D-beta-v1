@@ -9,3 +9,8 @@
 
 Mapped in `prototype-3d/index.html` via `<script type="importmap">` as `"three": "./vendor/three/three.module.js"`.
 To upgrade: replace both files from a newer tarball, update this note, re-run the tests.
+
+## Addons (M3.0 TOPDOWN, owner-approved 2026-11-16)
+Copied unmodified from the same verified `three@0.186.0` tarball (`examples/jsm/`) into `addons/`, same relative layout:
+`loaders/GLTFLoader.js`, `utils/BufferGeometryUtils.js` (imported by GLTFLoader), `utils/SkeletonUtils.js`,
+`libs/meshopt_decoder.module.js`. Used only by `topdown.html` (import map `"three/addons/": "./vendor/three/addons/"`).
