@@ -21,6 +21,21 @@ export async function loadModels(onProgress = () => {}) {
   return out;
 }
 
+// M3.2: the owner's OUTPOST ZERO lab GLBs (M3.1, assets/models/lab) + the baked modular floor / wall maps.
+export const LAB_FILES = Object.freeze({ capsule: 'lab/capsule.glb', console: 'lab/console.glb', door: 'lab/door.glb', arch: 'lab/arch.glb', lamp_wall: 'lab/lamp_wall.glb' });
+export const LAB_TEXTURES = Object.freeze(['floor_plate', 'floor_grate', 'wall_panel', 'hazard']);
+/** Loads the lab models and maps; onProgress(fraction). Resolves to { models, textures }. */
+export async function loadLab(onProgress = () => {}) {
+  const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder), tl = new THREE.TextureLoader();
+  const jobs = [], models = {}, textures = {};
+  for (const [id, f] of Object.entries(LAB_FILES)) jobs.push(loader.loadAsync(BASE + f).then(g => { models[id] = g; }));
+  for (const n of LAB_TEXTURES) { textures[n] = {}; for (const k of ['albedo', 'normal', 'orm']) jobs.push(tl.loadAsync(BASE + 'lab/textures/' + n + '_' + k + '.webp').then(t => { textures[n][k] = t; })); }
+  jobs.push(tl.loadAsync(BASE + 'hero/kz_patch.webp').then(t => { textures.kz_patch = t; })); // M3.2 shoulder patch (own drawing)
+  let done = 0; jobs.forEach(j => j.then(() => onProgress(++done / jobs.length)));
+  await Promise.all(jobs);
+  return { models, textures };
+}
+
 /** Soft round shadow texture shared by every character (no shadow maps on phones). */
 let blobTex = null;
 export function blobShadowTexture() {

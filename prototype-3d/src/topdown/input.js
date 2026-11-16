@@ -2,7 +2,8 @@
 // Touch (rules of the dark-arena-mobile skill): Pointer Events only, one pointerId per control, floating twin sticks
 // (left half = move, right half = aim + fire), buttons own their pointer; every pointer is released on up / cancel /
 // lostpointercapture / blur / pagehide / hidden / resize. Desktop: WASD / arrows move, mouse aims, LMB fires,
-// R reload, Space / Shift dash, 1-3 / wheel weapons, Esc / P pause.
+// R reload, V rifle-butt strike, Space / Shift dash, 1-3 / wheel weapons, Esc / P pause. M3.2: touch button for the
+// strike (btnMelee, the M1.9 melee of the active weapon) and the stick state for the HUD rings (layer classes).
 // Directions are in SCREEN space = world space (the camera never rotates): x → right (+sim x), y → down (+sim y).
 export const STICK = Object.freeze({ radius: 62, moveDead: 0.12, aimDead: 0.22, fireAt: 0.45 });
 
@@ -30,7 +31,7 @@ export function createTopdownInput({ layer, input, buttons, sticks, onPause, isP
     const side = e.clientX < innerWidth * 0.5 ? 'move' : 'aim';
     if (touch[side]) return; // a second finger on the same stick is ignored
     e.preventDefault();
-    touch[side] = { id: e.pointerId, ox: e.clientX, oy: e.clientY };
+    touch[side] = { id: e.pointerId, ox: e.clientX, oy: e.clientY }; layer.classList.add(side === 'move' ? 'stickL' : 'stickR');
     try { layer.setPointerCapture(e.pointerId); } catch (_) {}
     onMoveEv(e);
   }
@@ -46,7 +47,7 @@ export function createTopdownInput({ layer, input, buttons, sticks, onPause, isP
   function onUp(e) {
     for (const side of ['move', 'aim']) {
       const t = touch[side]; if (!t || t.id !== e.pointerId) continue;
-      touch[side] = null; hide(sticks[side]);
+      touch[side] = null; hide(sticks[side]); layer.classList.remove(side === 'move' ? 'stickL' : 'stickR');
       if (side === 'move') move.x = move.y = 0; else { aim.firing = false; aim.active = false; }
     }
   }
@@ -66,7 +67,7 @@ export function createTopdownInput({ layer, input, buttons, sticks, onPause, isP
       else if (name === 'weapon') input.selectWeapon('next');
       else input.setAction(name, true);
     }, { passive: false });
-    const up = e => { if (e.pointerId !== id) return; id = null; el.classList.remove('down'); if (name === 'dash' || name === 'reload') input.setAction(name, false); };
+    const up = e => { if (e.pointerId !== id) return; id = null; el.classList.remove('down'); if (name === 'dash' || name === 'reload' || name === 'melee') input.setAction(name, false); };
     for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) el.addEventListener(ev, up);
   }
 
@@ -101,7 +102,7 @@ export function createTopdownInput({ layer, input, buttons, sticks, onPause, isP
   layer.addEventListener('touchend', e => { const now = performance.now(); if (now - lastTouchEnd < 300 && e.cancelable) e.preventDefault(); lastTouchEnd = now; }, { passive: false });
 
   function releaseAll() {
-    touch.move = touch.aim = null; hide(sticks.move); hide(sticks.aim);
+    touch.move = touch.aim = null; hide(sticks.move); hide(sticks.aim); layer.classList.remove('stickL', 'stickR');
     move.x = move.y = 0; aim.firing = false; aim.active = false; mouseFire = false; keys.clear();
     for (const el of Object.values(buttons)) el && el.classList.remove('down');
     input.clear();

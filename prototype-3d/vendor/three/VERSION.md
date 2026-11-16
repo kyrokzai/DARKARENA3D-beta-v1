@@ -14,3 +14,9 @@ To upgrade: replace both files from a newer tarball, update this note, re-run th
 Copied unmodified from the same verified `three@0.186.0` tarball (`examples/jsm/`) into `addons/`, same relative layout:
 `loaders/GLTFLoader.js`, `utils/BufferGeometryUtils.js` (imported by GLTFLoader), `utils/SkeletonUtils.js`,
 `libs/meshopt_decoder.module.js`. Used only by `topdown.html` (import map `"three/addons/": "./vendor/three/addons/"`).
+
+## Addons (M3.2 — bloom post-processing)
+Copied unmodified from the same verified `three@0.186.0` tarball: `postprocessing/EffectComposer.js`, `RenderPass.js`,
+`UnrealBloomPass.js`, `OutputPass.js`, `ShaderPass.js`, `Pass.js`, `MaskPass.js` (imported by EffectComposer) and
+`shaders/CopyShader.js`, `LuminosityHighPassShader.js`, `OutputShader.js`. Used only by the top-down renderer for the
+Среднее / Высокое graphics levels (Низкое renders without a composer). No new package, same pinned version.

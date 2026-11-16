@@ -38,10 +38,10 @@ const ang = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
     await page.evaluate(() => { setInterval(() => { const g = window.__DA3TD.game; if (!g.player.dead) g.state.setHealth(100); }, 100); });
     let s = await S(page);
     check('ИГРАТЬ starts a run', s.state === 'play' && s.clip === 'Idle', `${s.state} ${s.clip}`);
-    const buttons = await page.evaluate(() => ['btnDash', 'btnReload', 'btnWeapon', 'btnPause'].map(id => { const r = document.getElementById(id).getBoundingClientRect(); return { id, w: r.width, h: r.height, in: r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight }; }));
+    const buttons = await page.evaluate(() => ['btnDash', 'btnReload', 'btnWeapon', 'btnMelee', 'btnPause'].map(id => { const r = document.getElementById(id).getBoundingClientRect(); return { id, w: r.width, h: r.height, in: r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight }; }));
     check('Touch buttons visible, inside the screen, ≥ 44 px', buttons.every(b => b.in && b.w >= 44 && b.h >= 44), JSON.stringify(buttons.map(b => b.id + ':' + Math.round(b.w))));
     const overlap = await page.evaluate(() => {
-      const ids = ['btnDash', 'btnReload', 'btnWeapon', 'btnPause', 'tdAmmo', 'tdWeapon', 'tdWave', 'tdHpText'];
+      const ids = ['btnDash', 'btnReload', 'btnWeapon', 'btnMelee', 'btnPause', 'tdCards', 'tdWave', 'tdHpText', 'tdTasks']; // M3.2 HUD (REF-02)
       const r = ids.map(id => [id, document.getElementById(id).getBoundingClientRect()]), hits = [];
       for (let i = 0; i < r.length; i++) for (let j = i + 1; j < r.length; j++) { const a = r[i][1], b = r[j][1];
         if (a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) hits.push(r[i][0] + '×' + r[j][0]); }
@@ -59,8 +59,9 @@ const ang = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
     check('Walking plays a step clip', s.clip === 'Walk' || s.clip === 'Run', s.clip);
     // + right stick at the same time → aim up and fire (multitouch)
     const shots0 = s.shots;
-    await touch(cdp, 'touchStart', [{ x: 210, y: 260, id: 1 }, { x: 640, y: 260, id: 2 }]); // finger 1 stays where it is
-    for (let i = 1; i <= 6; i++) { await touch(cdp, 'touchMove', [{ x: 210, y: 260, id: 1 }, { x: 640, y: 260 - i * 10, id: 2 }]); await sleep(16); }
+    // M3.2: the right thumb lands on the aim ring in the bottom-right corner (REF-02 layout)
+    await touch(cdp, 'touchStart', [{ x: 210, y: 260, id: 1 }, { x: 760, y: 300, id: 2 }]); // finger 1 stays where it is
+    for (let i = 1; i <= 6; i++) { await touch(cdp, 'touchMove', [{ x: 210, y: 260, id: 1 }, { x: 760, y: 300 - i * 10, id: 2 }]); await sleep(16); }
     await sleep(500);
     s = await S(page);
     check('Right stick: aim follows the stick (screen up → yaw −90°)', ang(s.yaw, -Math.PI / 2) < 0.25, `yaw ${(s.yaw * 180 / Math.PI).toFixed(0)}°`);
@@ -81,8 +82,8 @@ const ang = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
     await sleep(1600); await tap('btnWeapon'); await sleep(900); s = await S(page);
     check('ОРУЖ. switches to the next weapon of the M2.0 loadout', s.short === 'AK-47', s.short);
     // aim stick while a button is held: the button keeps its own finger
-    await touch(cdp, 'touchStart', [{ x: 640, y: 260, id: 3 }]); await sleep(30);
-    await touch(cdp, 'touchMove', [{ x: 700, y: 260, id: 3 }]); await sleep(250);
+    await touch(cdp, 'touchStart', [{ x: 745, y: 300, id: 3 }]); await sleep(30);
+    await touch(cdp, 'touchMove', [{ x: 805, y: 300, id: 3 }]); await sleep(250);
     // the facing is set when a frame is drawn: wait for two rendered frames, not only a fixed pause (software GL is slow
     // right after a weapon switch — the fixed 250 ms read the previous facing here)
     await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
@@ -117,7 +118,7 @@ const ang = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
     const pr = await openTD(browser, base, { ...PHONE, viewport: { width: 390, height: 844 } });
     await pr.page.evaluate(() => document.getElementById('playBtn').click()); await sleep(600);
     const pb = await pr.page.evaluate(() => ({ state: window.__DA3TD.state, rotate: getComputedStyle(document.getElementById('rotate')).display !== 'none',
-      controls: ['btnDash', 'btnReload', 'btnWeapon', 'btnPause'].filter(id => getComputedStyle(document.getElementById(id)).display !== 'none' && document.getElementById(id).getBoundingClientRect().width > 0) }));
+      controls: ['btnDash', 'btnReload', 'btnWeapon', 'btnMelee', 'btnPause'].filter(id => getComputedStyle(document.getElementById(id)).display !== 'none' && document.getElementById(id).getBoundingClientRect().width > 0) }));
     check('Portrait phone: "rotate the phone" screen, no game controls, the run does not start', pb.rotate && !pb.controls.length && pb.state !== 'play', JSON.stringify(pb));
     await pr.page.screenshot({ path: path.join(SHOTS, 'iphone_portrait.png') });
     await pr.ctx.close();
@@ -125,11 +126,15 @@ const ang = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
     // ---------------- desktop: mouse aim + fire ----------------
     const dk = await openTD(browser, base, { viewport: { width: 1280, height: 720 } });
     await dk.page.evaluate(() => document.getElementById('playBtn').click()); await sleep(400);
-    await dk.page.mouse.move(1150, 360); await sleep(250);
+    const frames2 = pg => pg.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))); // software GL: wait for drawn frames, not a fixed pause
+    await dk.page.mouse.move(1150, 360); await sleep(250); await frames2(dk.page);
     let k = await S(dk.page);
     check('PC: the hero faces the mouse (right of the screen → yaw ≈ 0°)', ang(k.yaw, 0) < 0.3, `yaw ${(k.yaw * 180 / Math.PI).toFixed(0)}°`);
-    await dk.page.mouse.move(640, 80); await sleep(250); k = await S(dk.page);
-    check('PC: mouse above the hero → yaw ≈ −90°', ang(k.yaw, -Math.PI / 2) < 0.3, `yaw ${(k.yaw * 180 / Math.PI).toFixed(0)}°`);
+    await dk.page.mouse.move(640, 80); await sleep(250); await frames2(dk.page); k = await S(dk.page);
+    // M3.2: the camera leads towards the aim (and flies in from the menu), so the hero is not at the screen centre —
+    // the requirement is that he faces the point under the mouse (projected on the shot plane), i.e. roughly "up"
+    const want = await dk.page.evaluate(() => { const T = window.__DA3TD, pt = T.view.screenToSim(640, 80, 1.15), p = T.game.player; return Math.atan2(pt.y - p.y, pt.x - p.x); });
+    check('PC: mouse above the hero → the hero faces the point under the mouse (up-ish)', ang(k.yaw, want) < 0.12 && Math.sin(k.yaw) < -0.7, `yaw ${(k.yaw * 180 / Math.PI).toFixed(0)}°, point ${(want * 180 / Math.PI).toFixed(0)}°`);
     const sh = k.shots; await dk.page.mouse.down(); await sleep(500); await dk.page.mouse.up(); await sleep(100); k = await S(dk.page);
     check('PC: holding the left button fires', k.shots > sh + 2, `${k.shots - sh} shots`);
     await dk.page.screenshot({ path: path.join(SHOTS, 'desktop_1280x720.png') });

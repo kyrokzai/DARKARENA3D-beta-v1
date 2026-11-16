@@ -24,6 +24,8 @@ export class GameState {
     // `countdown` = whole seconds until the wave starts (0 = none), `remaining` includes infected not spawned yet.
     this.wave = { number: 1, of: 1, remaining: 0, total: 0, phase: 'idle', countdown: 0 };
     this.kills = 0; // infected killed in this run (M1.5)
+    this.typeKills = {}; // M3.2: kills per infected type in this run (top-down objectives); FPS does not read it
+    this.runTime = 0;    // M3.2: seconds of play in this run (sim time while the player is alive and the match runs)
     // Emergency alarm between waves (M1.7): written every tick by the wave director (sim/waves/alarm.js),
     // POLLED by the renderer / HUD / audio (k changes continuously); 'alarm' is emitted only on phase / siren / warn change.
     this.alarm = { active: false, phase: 'off', k: 0, siren: false, warn: false, t: 0 };
@@ -104,11 +106,12 @@ export class GameState {
     this.setWave({ remaining, phase: remaining === 0 ? 'cleared' : this.wave.phase });
   }
 
-  addKill() { this.kills++; this.emit('kills', { kills: this.kills }); }
+  addKill(type = null) { this.kills++; if (type) this.typeKills[type] = (this.typeKills[type] || 0) + 1; this.emit('kills', { kills: this.kills }); }
+  tickRun(dt) { this.runTime += dt; }
   /** New run (restart after death / from the menu): full health, kills 0. Ammo is reset by the weapon. */
   resetRun() {
     this.setHealth(this.health.max);
-    this.kills = 0; this.emit('kills', { kills: 0 });
+    this.kills = 0; this.typeKills = {}; this.runTime = 0; this.emit('kills', { kills: 0 });
     this.setWave({ number: 1, remaining: 0, total: 0, phase: 'idle', countdown: 0 });
     this.setAlarm(ALARM_OFF); this.waveTime = 0;
   }

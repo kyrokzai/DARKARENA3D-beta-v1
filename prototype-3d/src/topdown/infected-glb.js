@@ -21,6 +21,7 @@ export function createGlbInfectedView(scene, models) {
     let s = pool.pop();
     if (!s) {
       const src = models[type], root = new THREE.Group(), model = cloneSkinned(src.scene);
+      model.traverse(o => { if (o.isMesh) o.castShadow = true; }); // used only when the profile has shadows (M3.2)
       root.add(model, createBlob(BLOB[type] || 0.6)); scene.add(root);
       const mixer = new THREE.AnimationMixer(model), act = {};
       for (const [n, c] of Object.entries(src.clips)) act[n] = mixer.clipAction(c);

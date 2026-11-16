@@ -80,7 +80,7 @@ export class Game {
   onInfectedKilled(e) {
     if (e.alive || e.killCounted) return;
     e.killCounted = true;
-    this.state.addKill();
+    this.state.addKill(e.type);
     this.state.enemyKilled(); // wave remaining − 1 (→ 'cleared' + waveCleared when it reaches 0)
     this.emit('infectedKilled', { id: e.id, x: e.x, y: e.y, dir: { x: e.killDir.x, y: e.killDir.y } });
   }
@@ -138,6 +138,7 @@ export class Game {
     }
     this.noise = false;
     this.waves.step(dt);
+    if (alive && !this.matchOver) this.state.tickRun(dt); // M3.2 run clock (GameState.runTime)
     this.tick++;
   }
   /** M3.0 TOPDOWN dash: a new presses.dash starts a burst along the move direction (or the facing when standing).
