@@ -98,7 +98,7 @@ export function createTopdownInput({ layer, input, buttons, sticks, onPause, isP
   for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) layer.addEventListener(ev, e => e.preventDefault());
   layer.addEventListener('dblclick', e => e.preventDefault());
   let lastTouchEnd = 0;
-  layer.addEventListener('touchend', e => { const now = performance.now(); if (now - lastTouchEnd < 300) e.preventDefault(); lastTouchEnd = now; }, { passive: false });
+  layer.addEventListener('touchend', e => { const now = performance.now(); if (now - lastTouchEnd < 300 && e.cancelable) e.preventDefault(); lastTouchEnd = now; }, { passive: false });
 
   function releaseAll() {
     touch.move = touch.aim = null; hide(sticks.move); hide(sticks.aim);

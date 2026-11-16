@@ -35,16 +35,22 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07090d;col
 .stick.aim i{background:#ffd08a99}
 
 /* buttons (right side, above the aim stick area) */
-.tdButtons{position:absolute;right:calc(14px + var(--sr));bottom:calc(150px + var(--sb));display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+/* thumb arc in the bottom-right corner: РЫВОК in the corner, ПЕРЕЗ. to its left, ОРУЖ. above it */
+.tdButtons{position:absolute;inset:0;pointer-events:none}
+#btnDash{position:absolute;right:calc(16px + var(--sr));bottom:calc(18px + var(--sb))}
+#btnReload{position:absolute;right:calc(108px + var(--sr));bottom:calc(14px + var(--sb))}
+#btnWeapon{position:absolute;right:calc(22px + var(--sr));bottom:calc(110px + var(--sb))}
 .tdBtn{pointer-events:auto;touch-action:none;border:2px solid #ffffff40;color:#fff;background:#121820b0;font:800 12px system-ui;letter-spacing:.08em;border-radius:50%;-webkit-tap-highlight-color:transparent}
 .tdBtn.small{width:56px;height:56px}
 .tdBtn.big{width:78px;height:78px;font-size:13px;border-color:#ffcf80aa;position:relative;overflow:hidden}
 .tdBtn.big::after{content:"";position:absolute;inset:0;background:#000a;transform-origin:bottom;transform:scaleY(var(--cd,0))}
 .tdBtn.down{background:#ffcf8066}
-.tdPause{position:absolute;right:calc(12px + var(--sr));top:calc(62px + var(--st));width:44px;height:44px;border-radius:8px;border:1px solid #ffffff40;background:#121820b0;pointer-events:auto;touch-action:none;display:flex;gap:6px;align-items:center;justify-content:center}
+.tdPause{position:absolute;left:calc(12px + var(--sl));top:calc(34px + var(--st));width:44px;height:44px;border-radius:8px;border:1px solid #ffffff40;background:#121820b0;pointer-events:auto;touch-action:none;display:flex;gap:6px;align-items:center;justify-content:center}
 .tdPause span{display:block;width:5px;height:16px;background:#fff;border-radius:1px}
 body:not(.playing) .tdButtons,body:not(.playing) .tdPause,body:not(.playing) .tdHint{display:none}
 @media (pointer:fine){.tdButtons,.tdHint{display:none}}
+/* the move hint sits between the thumbs; hide it on very short screens where the reload button reaches it */
+@media (max-height:340px),(orientation:portrait){.tdHint{display:none}}
 
 /* screens */
 .screen{position:fixed;inset:0;display:grid;place-items:center;background:#05080ce6;z-index:10;padding:16px;overflow:auto;touch-action:pan-y;overscroll-behavior:contain}
