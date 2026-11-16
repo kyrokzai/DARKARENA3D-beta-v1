@@ -1,6 +1,9 @@
 // M3.0 TOPDOWN — the player's character: owner-supplied rigged model + the existing DA-R1 RAVEN mesh.
 // Reads the simulation (position, facing, dash, death); never writes it. Legs come from the clips; the arms are
 // placed on the rifle by a small two-bone IK every frame (the clips have no rifle pose).
+// M3.2: lower / upper body split — the legs (root) turn towards the movement (or its opposite when backpedalling) and
+// the spine twists back to the aim (≤ TWIST_MAX, spread over Spine / Spine1 / Spine2); the gun sits on an aim pivot,
+// so it always points along the sim yaw. Strafing no longer slides the feet sideways; the step cycle follows the speed.
 import * as THREE from 'three';
 import { CELL_SIZE as S } from '../config.js';
 import { createRavenModel } from '../render/weapons/raven-model.js';
@@ -11,6 +14,14 @@ import { createBlob } from './models.js';
 const A = new THREE.Vector3(), B = new THREE.Vector3(), C = new THREE.Vector3(), D = new THREE.Vector3(), E = new THREE.Vector3();
 const EL = new THREE.Vector3(), U = new THREE.Vector3(), V = new THREE.Vector3(), Q = new THREE.Quaternion(), WQ = new THREE.Quaternion(), PQ = new THREE.Quaternion();
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const wrapA = a => Math.atan2(Math.sin(a), Math.cos(a));
+export const TWIST_MAX = 75 * Math.PI / 180;   // upper-body twist limit (rad)
+const UPV = new THREE.Vector3(0, 1, 0), AX = new THREE.Vector3(), TQ = new THREE.Quaternion(), PWQ = new THREE.Quaternion();
+/** Rotates `bone` by `angle` about the WORLD up axis (keeps the clip pose, adds a twist). */
+function twistBone(bone, angle) {
+  bone.parent.getWorldQuaternion(PWQ); AX.copy(UPV).applyQuaternion(PWQ.invert());
+  TQ.setFromAxisAngle(AX, angle); bone.quaternion.premultiply(TQ); bone.updateMatrixWorld(true);
+}
 
 /** Rotate `bone` (world space) so that the point `childWorld` moves onto the ray towards `desiredWorld`. */
 function aimBone(bone, childWorld, desiredWorld) {
@@ -110,7 +121,8 @@ export function createHero(gltf, scene) {
     ak47: { make: createAk47Model, fore: [0, -0.015, -0.39] },
     krait: { make: createKraitModel, fore: [0, -0.02, -0.35] },
   };
-  const mount = new THREE.Group(); mount.position.set(-0.14, 1.27, 0.16); root.add(mount);
+  const aimPivot = new THREE.Group(); aimPivot.name = 'aim-pivot'; root.add(aimPivot);   // turns with the upper body
+  const mount = new THREE.Group(); mount.position.set(-0.14, 1.27, 0.16); aimPivot.add(mount);
   const guns = {};
   for (const [id, g] of Object.entries(GUNS)) {
     const m = g.make(); m.group.rotation.y = Math.PI; m.group.visible = id === 'raven'; mount.add(m.group);
@@ -123,12 +135,13 @@ export function createHero(gltf, scene) {
   let gun = guns.raven, gunId = 'raven';
   const rifle = guns.raven.model;
   function setWeapon(id) { if (!guns[id] || id === gunId) return; gun.model.group.visible = false; gun = guns[id]; gunId = id; gun.model.group.visible = true; }
-  const poleR = new THREE.Object3D(); poleR.position.set(-0.55, 0.85, -0.15); root.add(poleR);    // elbows down and out
-  const poleL = new THREE.Object3D(); poleL.position.set(0.5, 0.8, 0.15); root.add(poleL);
+  const poleR = new THREE.Object3D(); poleR.position.set(-0.55, 0.85, -0.15); aimPivot.add(poleR);    // elbows down and out
+  const poleL = new THREE.Object3D(); poleL.position.set(0.5, 0.8, 0.15); aimPivot.add(poleL);
   root.add(createBlob(0.55));
   scene.add(root);
 
-  let current = null, lastDash = 0, dead = false, prevX = null, prevZ = null, speed = 0;
+  let current = null, lastDash = 0, dead = false, prevX = null, prevZ = null, speed = 0, legsYaw = null, twist = 0, vx = 0, vz = 0;
+  const spine = ['Spine', 'Spine1', 'Spine2'].map(n => bones[n]).filter(Boolean);
   function play(name, fade = 0.18) {
     const a = act[name]; if (current === a) return a;
     a.reset(); a.enabled = true; a.setEffectiveWeight(1); a.setEffectiveTimeScale(1);
@@ -147,10 +160,23 @@ export function createHero(gltf, scene) {
       const dip = view.switching || 0; mount.rotation.x = dip * 0.9; mount.position.y = 1.27 - dip * 0.12;
       const x = (p.prevX + (p.x - p.prevX) * alpha) * S, z = (p.prevY + (p.y - p.prevY) * alpha) * S;
       root.position.set(x, 0, z);
-      root.rotation.y = Math.PI / 2 - p.yaw;            // model faces +Z; sim yaw points along (cos, sin) in (x, z)
-      if (dt > 0 && prevX !== null) speed += (Math.hypot(x - prevX, z - prevZ) / dt - speed) * Math.min(1, dt * 12);
+      if (dt > 0 && prevX !== null) { const k = Math.min(1, dt * 12); vx += ((x - prevX) / dt - vx) * k; vz += ((z - prevZ) / dt - vz) * k; speed = Math.hypot(vx, vz); }
       prevX = x; prevZ = z;
-      const dashing = p.dashT > 0;
+      const dashing = p.dashT > 0, aim = p.yaw;
+      // lower body: face the movement (or its opposite when moving against the aim); turn in place past the limit
+      let back = false;
+      if (legsYaw === null || p.dead) legsYaw = aim;
+      let want = legsYaw;
+      if (dashing) want = Math.atan2(p.dashY || Math.sin(aim), p.dashX || Math.cos(aim));
+      else if (speed > 0.5) {
+        const mv = Math.atan2(vz, vx); back = Math.abs(wrapA(mv - aim)) > 1.75; // > 100°: backpedal, legs face away from the move
+        want = back ? mv + Math.PI : mv;
+      } else if (Math.abs(wrapA(aim - legsYaw)) > TWIST_MAX * 0.8) want = aim; // standing: step round when the twist gets large
+      if (dt > 0) legsYaw += wrapA(want - legsYaw) * Math.min(1, dt * (dashing ? 18 : 9));
+      twist = clamp(wrapA(aim - legsYaw), -TWIST_MAX, TWIST_MAX);
+      legsYaw = aim - twist;                            // the legs never lag further than the twist limit
+      root.rotation.y = Math.PI / 2 - legsYaw;          // model faces +Z; sim yaw points along (cos, sin) in (x, z)
+      aimPivot.rotation.y = -twist;
       if (p.dead) {
         if (!dead) { dead = true; const a = play('Death', 0.2); a.time = 2.5; }
       } else {
@@ -158,8 +184,7 @@ export function createHero(gltf, scene) {
         if (dashing) {
           if ((p.dashes || 0) !== lastDash) { lastDash = p.dashes; const a = play('DodgeRoll', 0.06); a.reset(); a.timeScale = 2.6; a.play(); }
         } else if (speed > 0.5) {
-          // walking backwards (relative to the aim) plays the step cycle in reverse
-          const mvx = p.x - p.prevX, mvy = p.y - p.prevY, back = mvx * Math.cos(p.yaw) + mvy * Math.sin(p.yaw) < -0.002;
+          // the step cycle follows the real speed (no foot sliding); backpedalling plays it in reverse
           const run = speed > 3.0 && !back, a = play(run ? 'Run' : 'Walk', 0.2);
           a.timeScale = (back ? -1 : 1) * (run ? clamp(speed / 3.6, 0.8, 1.5) : clamp(speed / 1.9, 0.6, 1.6));
         } else play('Idle', 0.25);
@@ -168,6 +193,7 @@ export function createHero(gltf, scene) {
       const armed = !p.dead && !dashing;
       mount.visible = !p.dead;
       root.updateMatrixWorld(true);
+      if (!p.dead && !dashing && spine.length && Math.abs(twist) > 1e-3) for (const b of spine) twistBone(b, -twist / spine.length); // upper body back to the aim (same turn as aimPivot)
       if (armed && bones.RightArm && bones.LeftArm) {
         gun.grip.getWorldPosition(tG); poleR.getWorldPosition(tPo);
         solveArm(bones.RightArm, bones.RightForeArm, bones.RightHand, tP.copy(tG), tPo);
@@ -181,6 +207,7 @@ export function createHero(gltf, scene) {
     setSkin(id) { guns.raven.model.setSkin(id); },
     mount, guns,
     get clip() { return current ? current.getClip().name : null; },
-    reset() { dead = false; lastDash = 0; speed = 0; prevX = prevZ = null; mixer.stopAllAction(); current = null; play('Idle', 0); },
+    reset() { dead = false; lastDash = 0; speed = 0; vx = vz = 0; legsYaw = null; twist = 0; prevX = prevZ = null; mixer.stopAllAction(); current = null; play('Idle', 0); },
+    get twist() { return twist; }, get legsYaw() { return legsYaw; },
   };
 }

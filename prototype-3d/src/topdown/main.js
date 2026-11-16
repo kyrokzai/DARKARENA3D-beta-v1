@@ -4,7 +4,7 @@
 // M3.2: main menu (REF-01, 3D hero in the lab), weapon selection (REF-03, real defs + live 3D previews; the equipped
 // weapon is the one in the hands at the start, all three are carried), settings / about, graphics levels
 // Низкое / Среднее / Высокое switched at runtime, Продолжить for a paused run, saved settings (versioned key).
-import { SIM_HZ, DEFAULT_SETTINGS } from '../config.js';
+import { SIM_HZ, DEFAULT_SETTINGS, CELL_SIZE } from '../config.js';
 import arena from '../data/maps/outpost-zero.js';
 import { Game } from '../sim/game.js';
 import { startLoop } from '../core/loop.js';
@@ -12,7 +12,8 @@ import { InputState } from '../input/input.js';
 import { TOPDOWN_WAVES, TOPDOWN_MATCH } from '../sim/waves/wave-defs.js';
 import { LOADOUT } from '../sim/weapons/defs.js';
 import { loadoutStats, GEAR } from './loadout-data.js';
-import { TD_GRAPHICS, TD_GRAPHICS_ORDER } from './graphics.js';
+import { TD_GRAPHICS } from './graphics.js';
+import { getProfile } from '../render/quality.js';
 import { SKINS } from '../render/weapons/raven-skins.js';
 import { alarmVisual } from '../sim/waves/alarm.js';
 import { createSfx } from '../audio/sfx.js';
@@ -90,8 +91,11 @@ Promise.all([loadModels(f => { loadF.m = f; showLoad(); }), loadLab(f => { loadF
 
 function startRun() {
   if (portrait) return;
-  game.arsenal.start = settings.startSlot; // the equipped weapon is in the hands at the start (all three are carried)
-  game.restart(); view.hero.reset(); hud.reset(); deathTimer = 0; runActive = true; show('play');
+  const go = () => { game.arsenal.start = settings.startSlot; // the equipped weapon is in the hands at the start (all three are carried)
+    game.restart(); view.hero.reset(); hud.reset(); deathTimer = 0; runActive = true; show('play'); };
+  // from the menus: a short fade hides the hero leaving the menu stage, then the camera flies down to the follow view
+  if (state === 'menu' || state === 'loadout') { const f = $('fade'); f.classList.add('on'); setTimeout(() => { go(); f.classList.remove('on'); }, 190); }
+  else go();
 }
 function endRun(won) {
   runActive = false;
@@ -112,7 +116,7 @@ $('againBtn').addEventListener('click', startRun);
 $('againBtn2').addEventListener('click', startRun);
 $('restartBtn').addEventListener('click', startRun);
 $('resumeBtn').addEventListener('click', () => show('play'));
-$('continueBtn').addEventListener('click', () => { if (runActive) show('play'); });
+$('continueBtn').addEventListener('click', () => { if (!runActive) return; const f = $('fade'); f.classList.add('on'); setTimeout(() => { show('play'); f.classList.remove('on'); }, 190); });
 $('menuBtn').addEventListener('click', () => show('menu'));
 for (const b of document.querySelectorAll('[data-to-menu]')) b.addEventListener('click', () => show('menu'));
 $('loadoutBtn').addEventListener('click', () => show('loadout'));
@@ -129,9 +133,10 @@ function setGraphics(id) {
   if (view) view.setProfile(id);
   for (const b of document.querySelectorAll('[data-gfx]')) b.classList.toggle('on', b.dataset.gfx === id);
   const g = TD_GRAPHICS[id];
-  $('gfxDesc').textContent = { performance: 'Низкое: без теней и свечения, сниженное разрешение — для старых iPhone и длительной игры.',
-    balanced: 'Среднее: тени 1024, свечение в половинном разрешении, MSAA — рекомендуемо для iPhone 11+.',
-    quality: 'Высокое: тени 2048, полное свечение, максимум частиц — для новых iPhone и ПК.' }[id] + ` (${g.label})`;
+  const msaaNote = view && getProfile(id).msaa !== view.contextMsaa ? ' Сглаживание (MSAA) изменится после перезапуска игры.' : '';
+  $('gfxDesc').textContent = { performance: 'Низкое: без теней, отражений и пост-обработки, сниженное разрешение, свечение — световыми пятнами. Для длительной игры и старых устройств.',
+    balanced: 'Среднее: тени персонажей 1024, карты нормалей, MSAA, свечение — световыми пятнами, пар. Рекомендуется для iPhone 11+.',
+    quality: 'Высокое: тени 2048 (и от лаборатории), отражения, настоящее свечение (bloom), максимум частиц — для новых iPhone и ПК.' }[id] + msaaNote;
 }
 for (const b of document.querySelectorAll('[data-gfx]')) b.addEventListener('click', () => setGraphics(b.dataset.gfx));
 setGraphics(settings.graphicsProfile);
@@ -276,6 +281,9 @@ function wireEvents() {
   game.on('hit', e => sfx.hit(e.headshot, e.kill));
   game.on('dash', () => sfx.meleeSwing());
   game.on('targetHit', e => { const en = byId(e.id); if (en && !e.killed && e.first !== false) { const r = rel(en.x, en.y); sfx.infected('hurt', r.pan, r.dist); } });
+  // M3.2 gates (visual only): they slide open for infected arriving nearby and at the start of every wave
+  game.on('infectedSpawn', e => view.level.openDoorsNear(e.x * CELL_SIZE, e.y * CELL_SIZE));
+  game.on('waveIntermission', () => setTimeout(() => view.level.openAllDoors(4), 4000));
   game.on('infectedAlert', e => { const r = rel(e.x, e.y); sfx.infected('alert', r.pan, r.dist); });
   game.on('infectedAttack', e => { const r = rel(e.x, e.y); sfx.infected('attack', r.pan, r.dist); });
   game.on('infectedKilled', e => { const en = byId(e.id); if (en) view.infected.onDeath(en); view.bloodSplat(e.x + e.dir.x * 0.25, e.y + e.dir.y * 0.25, 1.1); const r = rel(e.x, e.y); sfx.infected('death', r.pan, r.dist); });

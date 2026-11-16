@@ -31,7 +31,7 @@ Browser FPS (survival vs. waves of infected). Owner makes key decisions; work in
    + `node tests/sim-m1.9.test.mjs` + `node tests/m1.9-fp-combat.test.js`
    + `node tests/sim-m2.0.test.mjs` + `node tests/m2.0-arsenal.test.js` + `node tests/m2.0-hud-ergonomics.test.js`
    + `node tests/sim-m3.0.test.mjs` + `node tests/m3.0-topdown.test.js` + `node tests/m3.0-aim-orientation.test.js`
-   + `node tests/m3.1-assets.test.mjs`; report changed files,
+   + `node tests/m3.1-assets.test.mjs` + `node tests/m3.2-premium.test.js`; report changed files,
    test results, how to verify on PC and iPhone, and known limitations. Not accepted until the owner confirms.
 7. Test hooks and the debug panel are allowed only behind `?debug=1`.
 8. Gameplay values reach the HUD only through `prototype-3d/src/sim/game-state.js` (GameState + events);
@@ -78,3 +78,14 @@ Browser FPS (survival vs. waves of infected). Owner makes key decisions; work in
     snap the facing → stepwise turning on iPhone). Phones are landscape-only: portrait (touch device, height > width)
     shows the rotate screen, hides the controls, releases every finger / aim / fire and pauses a running match (wave,
     health, ammo kept); back in landscape it stays paused until ПРОДОЛЖИТЬ. A tall desktop window is not portrait.
+18. M3.2 top-down overhaul. Lab = `src/topdown/lab.js` built from the same grid (props only on the exact interior solid
+    cells, perimeter decor ≤ 0.22 m, 4 pooled point lights, floors / walls are clean modular geometry with offline-baked
+    tileable maps `scripts/bake-lab-textures.js`; the owner's lab GLBs are never deformed — the door leaves are split at
+    load by triangle position). Wall faces must be wound towards the room (tested). Graphics levels Низкое / Среднее /
+    Высокое = `render/quality.js` profiles + `src/topdown/graphics.js` knobs (shadows, bloom composer only on Высокое,
+    PMREM reflections, normal maps, decor, light pools); they switch at runtime, MSAA only at the next start. UI: menu
+    (REF-01), loadout (REF-03) and HUD (REF-02) show ONLY real data — stats come from `defs.js` via the documented
+    normalisation in `loadout-data.js`; missing mechanics (armour, level / XP, grenades, medkit, plate, secondary) are
+    hidden or marked "в разработке". The HUD reads GameState only (rule 8; `runTime`, `typeKills` added for it).
+    The Kazakhstan patch is an own drawing (`scripts/make-kz-patch.py` → `bake-patch.js`) projected in the hero's
+    material — 0 extra draw calls. The top-down loop starts one frame after the set-up (a negative first dt stalls it).

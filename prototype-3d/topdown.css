@@ -19,6 +19,8 @@ button{font-family:var(--font)}
 body.booting #view{opacity:0}
 #view{transition:opacity .6s}
 
+#fade{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:40;transition:opacity .18s}
+#fade.on{opacity:1}
 /* ---------- rotate (portrait phones) ---------- */
 .rotate{display:none;position:fixed;inset:0;z-index:50;place-items:center;align-content:center;gap:10px;text-align:center;padding:24px;background:#05080cf2;color:#e6f2f4}
 .rotate h2{margin:0;font-size:20px;letter-spacing:.06em}
@@ -196,7 +198,7 @@ body:not(.booting) .loadBox{opacity:0;transition:opacity 1s .4s;pointer-events:n
 @media (max-height:360px){.mButtons{top:calc(62px + var(--st));gap:4px}.mBtn{height:33px;font-size:16px}.mBtn.primary{height:40px;font-size:20px}.menu .logo h1{font-size:30px}.menu .gfxSel{bottom:calc(28px + var(--sb))}}
 
 /* ----- loadout ----- */
-.loadout{background:linear-gradient(90deg,#0000 0%,#0000 18%,#05070acc 30%,#05070ae6 100%)}
+.loadout{background:none} /* the darkening behind the cards is drawn in WebGL (under the live previews) */
 .loadout .logo{left:calc(14px + var(--sl));top:calc(10px + var(--st));text-align:left}
 .loadout .logo h1{font-size:calc(22px*var(--s))}
 .loadout .logo p{letter-spacing:.24em;font-size:calc(9px*var(--s))}

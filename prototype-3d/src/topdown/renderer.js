@@ -27,8 +27,9 @@ const ease = t => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
 export function createTopdownRenderer({ container, world, models, lab: labAssets, getProfileId = () => 'balanced' }) {
   let profId = getProfileId(), prof = getProfile(profId), gfx = tdGraphics(profId);
-  // MSAA: on the default framebuffer for Низкое-without-bloom profiles that ask for it, else inside the composer target
-  const renderer = new THREE.WebGLRenderer({ antialias: prof.msaa && !gfx.bloom, powerPreference: 'high-performance' });
+  // MSAA lives on the default framebuffer (Среднее / Высокое; the context's antialias is fixed when it is created — a
+  // switch to / from Низкое changes MSAA after a restart, everything else switches live) and in the bloom target (Высокое)
+  const renderer = new THREE.WebGLRenderer({ antialias: prof.msaa, powerPreference: 'high-performance' });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.35;
   renderer.shadowMap.type = THREE.PCFShadowMap; // r186: PCFSoft was removed; soft edges come from shadow.radius
@@ -68,6 +69,7 @@ export function createTopdownRenderer({ container, world, models, lab: labAssets
     composer.setPixelRatio(ratio); composer.setSize(cssW || 1, cssH || 1);
   }
   function applyShadows() {
+    scene.environment = gfx.env ? labEnvironment(renderer) : null; // Низкое: no PMREM reflections
     const on = gfx.shadowMap > 0;
     if (renderer.shadowMap.enabled !== on) { renderer.shadowMap.enabled = on; scene.traverse(o => { if (o.material) [].concat(o.material).forEach(m => { m.needsUpdate = true; }); }); }
     level.setProfile(gfx);
@@ -171,13 +173,13 @@ export function createTopdownRenderer({ container, world, models, lab: labAssets
   // ---- cameras: game follow camera, showcase (menu / loadout) camera, flight between them ----
   const target = new THREE.Vector3(), camT = new THREE.Vector3(), lightPos = new THREE.Vector3();
   const pitch = CAMERA.pitchDeg * Math.PI / 180, off = new THREE.Vector3(0, Math.sin(pitch) * CAMERA.distance, Math.cos(pitch) * CAMERA.distance);
-  const bank = level.bankCentre();   // metres: centre of the capsule bank (the showcase backdrop)
+  const stage = level.showcaseSpot();  // metres: the menu stage in front of the capsule bank (the green backdrop)
   const gamePos = new THREE.Vector3(), gameLook = new THREE.Vector3(), showPos = new THREE.Vector3(), showLook = new THREE.Vector3();
   const fromPos = new THREE.Vector3(), fromLook = new THREE.Vector3(), curLook = new THREE.Vector3();
   let mode = 'menu', flightT = 1, flightFrom = 'menu', fromFov = SHOWCASE.fov, first = true, showYaw = 0;
-  function showcase(hx, hz, shift) {
-    // camera on the far side of the hero from the capsule bank → the bank glows behind the hero; hero on the left
-    let dx = bank.x - hx, dz = bank.z - hz; const d = Math.hypot(dx, dz) || 1; dx /= d; dz /= d;
+  function showcase(shift) {
+    // the hero stands on the stage with the capsule bank behind him; the camera looks at the bank over his shoulder line
+    const dx = stage.dx, dz = stage.dz, hx = stage.x, hz = stage.z;           // (dx, dz): from the hero towards the bank
     showPos.set(hx - dx * SHOWCASE.distance, SHOWCASE.height, hz - dz * SHOWCASE.distance);
     const rx = -dz, rz = dx; // screen right when looking along (dx, dz)
     showLook.set(hx + rx * shift + dx * 0.4, SHOWCASE.look, hz + rz * shift + dz * 0.4);
@@ -193,7 +195,7 @@ export function createTopdownRenderer({ container, world, models, lab: labAssets
   const pvDim = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({
     transparent: true, depthTest: false, depthWrite: false,
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
-    fragmentShader: 'varying vec2 vUv; uniform float uK; void main(){ float a = smoothstep(0.14, 0.34, vUv.x) * 0.78 * uK; gl_FragColor = vec4(0.02, 0.027, 0.04, a); }',
+    fragmentShader: 'varying vec2 vUv; uniform float uK; void main(){ float a = smoothstep(0.12, 0.27, vUv.x) * 0.86 * uK; gl_FragColor = vec4(0.02, 0.027, 0.04, a); }',
     uniforms: { uK: { value: 1 } } }));
   pvDim.frustumCulled = false;
   const dimScene = new THREE.Scene(); dimScene.add(pvDim); const dimCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -223,18 +225,12 @@ export function createTopdownRenderer({ container, world, models, lab: labAssets
       // hero: sim player in game; in the menus the same position, turned to the showcase camera, animated by uiDt
       const ws = game.state.weapon, ars = game.state.arsenal;
       const heroView = { weapon: ws.id || 'raven', switching: ars.phase === 'holster' ? ars.progress : ars.phase === 'draw' ? 1 - ars.progress : 0 };
-      if (!inGame || flightT < 1) {
-        const hx = (p.prevX + (p.x - p.prevX) * alpha) * S, hz = (p.prevY + (p.y - p.prevY) * alpha) * S;
-        showcase(hx, hz, mode === 'loadout' || flightFrom === 'loadout' ? SHOWCASE.loadoutShift : SHOWCASE.menuShift);
-      }
-      if (!inGame && !p.dead) {
-        Object.assign(proxy, { x: p.x, y: p.y, prevX: p.x, prevY: p.y, yaw: showYaw, dead: false, dashT: 0, dashes: p.dashes || 0 });
+      if (!inGame || flightT < 1) showcase(mode === 'loadout' || flightFrom === 'loadout' ? SHOWCASE.loadoutShift : SHOWCASE.menuShift);
+      if (!inGame) {
+        // menus: the hero stands on the stage (not at the sim position); the switch to the game is hidden by a fade
+        Object.assign(proxy, { x: stage.x / S, y: stage.z / S, prevX: stage.x / S, prevY: stage.z / S, yaw: showYaw, dead: false, dashT: 0, dashes: p.dashes || 0 });
         hero.update(proxy, 1, uiDt, heroView);
-      } else if (inGame && flightT < 1 && !p.dead) {
-        const k = ease(flightT); let dy = p.yaw - showYaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
-        Object.assign(proxy, { x: p.x, y: p.y, prevX: p.prevX, prevY: p.prevY, yaw: showYaw + dy * k, dead: false, dashT: p.dashT, dashes: p.dashes || 0 });
-        hero.update(proxy, alpha, Math.max(dt, uiDt), heroView);
-      } else hero.update(p, alpha, dt, heroView);
+      } else hero.update(p, alpha, Math.max(dt, flightT < 1 ? uiDt : 0), heroView);
       infected.update(game.enemies, dt, alpha);
       impacts.update(dt);
       stepCasings(dt);
@@ -254,9 +250,10 @@ export function createTopdownRenderer({ container, world, models, lab: labAssets
       camera.aspect = cssW / cssH; camera.updateProjectionMatrix();
       camera.lookAt(curLook);
       if (this.debugCamera) { const d = this.debugCamera(); camera.position.copy(d.pos); camera.fov = d.fov || camera.fov; camera.updateProjectionMatrix(); camera.lookAt(d.look); }
-      lightPos.set(inGame ? camT.x : hero.root.position.x, 0, inGame ? camT.z : hero.root.position.z);
+      lightPos.set(inGame ? camT.x : stage.x, 0, inGame ? camT.z : stage.z);
       if (view.alarm !== undefined) level.setAlarm(view.alarm);
       level.update(lightPos, Math.max(dt, uiDt));
+      if (!inGame) { const kl = level.keyLight; kl.position.set(showPos.x + (showPos.x - stage.x) * 0.6 - stage.dz * 3, 6, showPos.z + (showPos.z - stage.z) * 0.6 + stage.dx * 3); kl.target.position.set(stage.x, 1, stage.z); }
       updateBars(game.enemies, alpha, inGame && flightT >= 1);
       // aim line + reticle
       aimPivot.position.set(hero.root.position.x, 0, hero.root.position.z); aimPivot.rotation.y = Math.PI / 2 - p.yaw;
@@ -269,6 +266,7 @@ export function createTopdownRenderer({ container, world, models, lab: labAssets
       if (any) trGeo.attributes.position.needsUpdate = true;
       flashT = Math.max(0, flashT - dt); flashMat.opacity = flashT > 0 ? 0.95 : 0;
       if (flashT > 0) hero.muzzleWorld(flash.position);
+      if (bloom) bloom.strength = gfx.bloomStrength * (inGame ? 1 : 0.4 + 0.6 * (flightT < 1 && inGame ? flightT : 0)); // menus: the capsules fill the frame → softer glow
       if (composer) composer.render(dt); else renderer.render(scene, camera);
       // loadout: darken the right side (behind the cards), then the live weapon previews in the card windows
       if (mode === 'loadout' && pvList) {
@@ -315,6 +313,7 @@ export function createTopdownRenderer({ container, world, models, lab: labAssets
       return { x: pt.x / S, y: pt.z / S };
     },
     get pixelRatio() { return ratio; },
+    contextMsaa: !!prof.msaa,
     get profileId() { return profId; },
   };
 }

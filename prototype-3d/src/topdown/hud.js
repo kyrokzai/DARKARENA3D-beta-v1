@@ -63,7 +63,6 @@ export function createTopdownHud(root, game, { waves = [], weaponIcons = {} } = 
         c.classList.toggle('empty', sl.mag === 0);
         c.classList.toggle('switching', ars.phase !== 'ready' && i === ars.active);
       });
-      const counting = s.waveTime > 0 && wv.phase !== 'active';
       set('wave', el.wave, `Волна <em>${wv.number}/${wv.of}</em>`, 'innerHTML');
       set('kills', el.kills, wv.total ? `${Math.max(0, wv.total - wv.remaining)} / ${wv.total}` : '— / —');
       set('time', el.time, mmss(s.runTime));
