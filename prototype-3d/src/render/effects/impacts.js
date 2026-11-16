@@ -17,12 +17,19 @@ export function createImpacts(scene) {
   decals.frustumCulled = false; decals.count = 0; scene.add(decals);
   let next = 0, placed = 0;
 
+  // M2.0: soft round sprite + on-screen size cap for the point effects (sparks / dust). Points grow as 1/distance, so
+  // shooting a wall at point blank made them big squares over the crosshair; capped, they stay small dots.
+  const dc = document.createElement('canvas'); dc.width = dc.height = 32; { const g = dc.getContext('2d'), gr = g.createRadialGradient(16, 16, 0, 16, 16, 16);
+    gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.55, 'rgba(255,255,255,0.45)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 32, 32); }
+  const dtex = new THREE.CanvasTexture(dc);
+  const POINT_MAX_PX = 28; // drawing-buffer pixels
+  const capPoints = mat => { mat.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace('#include <fog_vertex>', '#include <fog_vertex>\n\tgl_PointSize = min(gl_PointSize, ' + POINT_MAX_PX.toFixed(1) + ');'); }; mat.customProgramCacheKey = () => 'cap' + POINT_MAX_PX; return mat; };
   const pos = new Float32Array(SPARKS * 3), col = new Float32Array(SPARKS * 3);
   const vel = new Float32Array(SPARKS * 3), life = new Float32Array(SPARKS);
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  const sparks = new THREE.Points(geo, new THREE.PointsMaterial({ size: 0.05, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+  const sparks = new THREE.Points(geo, capPoints(new THREE.PointsMaterial({ size: 0.07, map: dtex, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }))); // round (size +40 %: the sprite's soft edge)
   sparks.frustumCulled = false; scene.add(sparks);
   let sNext = 0, activeSparks = 0;
   for (let i = 0; i < SPARKS; i++) pos[i * 3 + 1] = -100; // parked below the floor
@@ -34,10 +41,7 @@ export function createImpacts(scene) {
   // ---- concrete dust (grey, slow, fades) ----
   const DUST = 60, dpos = new Float32Array(DUST * 3), dvel = new Float32Array(DUST * 3), dlife = new Float32Array(DUST), dcol = new Float32Array(DUST * 4), dbase = new Float32Array(DUST);
   const dgeo = new THREE.BufferGeometry(); dgeo.setAttribute('position', new THREE.BufferAttribute(dpos, 3)); dgeo.setAttribute('color', new THREE.BufferAttribute(dcol, 4)); // RGBA: the puff fades by alpha, never towards black (review fix)
-  const dc = document.createElement('canvas'); dc.width = dc.height = 32; { const g = dc.getContext('2d'), gr = g.createRadialGradient(16, 16, 0, 16, 16, 16);
-    gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.55, 'rgba(255,255,255,0.45)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 32, 32); }
-  const dtex = new THREE.CanvasTexture(dc);
-  const dust = new THREE.Points(dgeo, new THREE.PointsMaterial({ size: 0.11, map: dtex, vertexColors: true, transparent: true, opacity: 0.6, depthWrite: false }));
+  const dust = new THREE.Points(dgeo, capPoints(new THREE.PointsMaterial({ size: 0.11, map: dtex, vertexColors: true, transparent: true, opacity: 0.6, depthWrite: false })));
   dust.frustumCulled = false; scene.add(dust);
   for (let i = 0; i < DUST; i++) dpos[i * 3 + 1] = -100;
   let dNext = 0, activeDust = 0;
