@@ -53,8 +53,11 @@ export function createImpacts(scene) {
       gr.addColorStop(0, 'rgba(70,6,8,0.95)'); gr.addColorStop(0.7, 'rgba(48,4,6,0.7)'); gr.addColorStop(1, 'rgba(30,2,4,0)'); bg.fillStyle = gr; bg.beginPath(); bg.arc(32 + Math.cos(a) * d, 32 + Math.sin(a) * d, rad, 0, 6.28); bg.fill(); } }
   const btex = new THREE.CanvasTexture(bc); btex.colorSpace = THREE.SRGBColorSpace;
   const blood = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.7, 0.7).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: btex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 }), BLOOD);
-  blood.frustumCulled = false; blood.count = 0; scene.add(blood);
-  let bNext = 0, bPlaced = 0;
+  blood.frustumCulled = false; scene.add(blood);
+  // Warm-up: one instance parked below the floor is drawn for the first frames, so the geometry, the canvas texture and
+  // the shader are on the GPU at load — not created at the first kill in the middle of a fight (a hitch on phones).
+  blood.setMatrixAt(0, new THREE.Matrix4().makeTranslation(0, -100, 0)); blood.count = 1;
+  let bNext = 0, bPlaced = 0, bloodWarm = 2;
   /** A splat on the floor at sim (x, y) — size 0.4…1.2 (kills larger than headshots). */
   function bloodSplat(x, y, size = 1) {
     q.setFromAxisAngle(yAxis, Math.random() * Math.PI * 2); const s = size * (0.75 + Math.random() * 0.4); sc.set(s, 1, s);
@@ -93,6 +96,7 @@ export function createImpacts(scene) {
   }
 
   function update(dt) {
+    if (bloodWarm > 0 && --bloodWarm === 0 && bPlaced === 0) blood.count = 0; // warm-up done (drawn once)
     activeSparks = 0;
     for (let i = 0; i < SPARKS; i++) {
       if (life[i] <= 0) continue;
