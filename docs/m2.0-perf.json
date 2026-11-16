@@ -1,0 +1,2167 @@
+{
+"note": "Chromium headless, software WebGL (SwiftShader) in a cloud container; 1280x720; frame ms (120 frames per scene after 10 warm-up). Not an iPhone measurement. M1.9 = tag m1.9 (c67944a); M2.0 = branch claude/m2.0-heavy-arsenal (bb7e3e1 for the benchmark, flashlight budget included). Infected pinned and invulnerable so both versions render the same scene. 2 runs per version and profile, interleaved.",
+"profiles": {
+"perf960": "PERFORMANCE, render scale 0.9375, fixed resolution",
+"baldefault": "BALANCED, default settings"
+},
+"benchmark": {
+"perf960": {
+"m19": [
+{
+"idle-0": {
+"dist": [],
+"mean": 240.65,
+"median": 231.3,
+"p95": 357.2,
+"calls": 39,
+"tris": 25066,
+"gpu": {
+"geometries": 44,
+"textures": 29
+},
+"texMB": 6.9,
+"fx": {
+"sparks": 0,
+"dust": null,
+"decals": 0,
+"blood": null
+},
+"cpuStepMs": {
+"mean": 0.006,
+"p95": 0
+}
+},
+"raven-0-fire": {
+"dist": [],
+"mean": 218.2,
+"median": 211.3,
+"p95": 293.7,
+"calls": 39,
+"tris": 25136,
+"gpu": {
+"geometries": 44,
+"textures": 29
+},
+"texMB": 6.9,
+"fx": {
+"sparks": 16,
+"dust": null,
+"decals": 40,
+"blood": null
+},
+"cpuStepMs": {
+"mean": 0.098,
+"p95": 0.5
+}
+},
+"raven-5": {
+"dist": [
+6,
+8.5,
+9,
+11.1,
+11.7
+],
+"mean": 220.06,
+"median": 205.7,
+"p95": 307.2,
+"calls": 42,
+"tris": 37586,
+"gpu": {
+"geometries": 57,
+"textures": 35
+},
+"texMB": 70.8,
+"fx": {
+"sparks": 0,
+"dust": null,
+"decals": 40,
+"blood": null
+},
+"cpuStepMs": {
+"mean": 0.014,
+"p95": 0.1
+}
+},
+"raven-5-fire": {
+"dist": [
+5.5,
+8.5,
+8.6,
+10.6,
+11.3
+],
+"mean": 240.43,
+"median": 237.9,
+"p95": 362.3,
+"calls": 39,
+"tris": 25136,
+"gpu": {
+"geometries": 57,
+"textures": 40
+},
+"texMB": 70.8,
+"fx": {
+"sparks": 17,
+"dust": null,
+"decals": 40,
+"blood": null
+},
+"cpuStepMs": {
+"mean": 0.132,
+"p95": 0.6
+}
+}
+},
+{
+"idle-0": {
+"dist": [],
+"mean": 228.22,
+"median": 222.5,
+"p95": 319.4,
+"calls": 39,
+"tris": 25066,
+"gpu": {
+"geometries": 44,
+"textures": 29
+},
+"texMB": 6.9,
+"fx": {
+"sparks": 0,
+"dust": null,
+"decals": 0,
+"blood": null
+},
+"cpuStepMs": {
+"mean": 0.005,
+"p95": 0.1
+}
+},
+"raven-0-fire": {
+"dist": [],
+"mean": 230.34,
+"median": 224.8,
+"p95": 316.1,
+"calls": 39,
+"tris": 25136,
+"gpu": {
+"geometries": 44,
+"textures": 29
+},
+"texMB": 6.9,
+"fx": {
+"sparks": 17,
+"dust": null,
+"decals": 40,
+"blood": null
+},
+"cpuStepMs": {
+"mean": 0.095,
+"p95": 0.5
+}
+},
+"raven-5": {
+"dist": [
+6,
+8.5,
+9,
+11.1,
+11.7
+],
+"mean": 215.31,
+"median": 200.7,
+"p95": 307.2,
+"calls": 42,
+"tris": 37586,
+"gpu": {
+"geometries": 57,
+"textures": 35
+},
+"texMB": 70.8,
+"fx": {
+"sparks": 0,
+"dust": null,
+"decals": 40,
+"blood": null
+},
+"cpuStepMs": {
+"mean": 0.011,
+"p95": 0.1
+}
+},
+"raven-5-fire": {
+"dist": [
+5,
+8.5,
+8.1,
+10.2,
+10.9
+],
+"mean": 214.87,
+"median": 204.7,
+"p95": 304.8,
+"calls": 39,
+"tris": 25136,
+"gpu": {
+"geometries": 57,
+"textures": 40
+},
+"texMB": 70.8,
+"fx": {
+"sparks": 15,
+"dust": null,
+"decals": 40,
+"blood": null
+},
+"cpuStepMs": {
+"mean": 0.107,
+"p95": 0.5
+}
+}
+}
+],
+"m20": [
+{
+"idle-0": {
+"dist": [],
+"mean": 239.74,
+"median": 239.7,
+"p95": 320.2,
+"calls": 41,
+"tris": 25306,
+"gpu": {
+"geometries": 47,
+"textures": 31
+},
+"texMB": 7,
+"fx": {
+"sparks": 0,
+"dust": 0,
+"decals": 0,
+"blood": 0
+},
+"cpuStepMs": {
+"mean": 0.006,
+"p95": 0.1
+}
+},
+"raven-0-fire": {
+"dist": [],
+"mean": 232.38,
+"median": 224.7,
+"p95": 317.6,
+"calls": 41,
+"tris": 25376,
+"gpu": {
+"geometries": 47,
+"textures": 31
+},
+"texMB": 7,
+"fx": {
+"sparks": 10,
+"dust": 41,
+"decals": 40,
+"blood": 0
+},
+"cpuStepMs": {
+"mean": 0.1,
+"p95": 0.6
+}
+},
+"raven-5": {
+"dist": [
+6,
+8.5,
+9,
+11.1,
+11.7
+],
+"mean": 227.39,
+"median": 215.6,
+"p95": 316.8,
+"calls": 44,
+"tris": 37826,
+"gpu": {
+"geometries": 60,
+"textures": 37
+},
+"texMB": 70.8,
+"fx": {
+"sparks": 0,
+"dust": 0,
+"decals": 40,
+"blood": 0
+},
+"cpuStepMs": {
+"mean": 0.017,
+"p95": 0.1
+}
+},
+"raven-5-fire": {
+"dist": [
+5.5,
+8.5,
+8.6,
+10.6,
+11.3
+],
+"mean": 254.57,
+"median": 245.4,
+"p95": 369,
+"calls": 42,
+"tris": 25378,
+"gpu": {
+"geometries": 60,
+"textures": 42
+},
+"texMB": 70.8,
+"fx": {
+"sparks": 9,
+"dust": 44,
+"decals": 40,
+"blood": 1
+},
+"cpuStepMs": {
+"mean": 0.139,
+"p95": 0.7
+}
+},
+"ak-0-fire": {
+"dist": [],
+"mean": 189.47,
+"median": 190.8,
+"p95": 241.2,
+"calls": 36,
+"tris": 22396,
+"gpu": {
+"geometries": 71,
+"textures": 43
+},
+"texMB": 70.8,
+"fx": {
+"sparks": 8,
+"dust": 41,
+"decals": 40,
+"blood": 1
+},
+"cpuStepMs": {
+"mean": 0.121,
+"p95": 0.6
+}
+},
+"krait-0-fire": {
+"dist": [],
+"mean": 196.19,
+"median": 190.5,
+"p95": 268.9,
+"calls": 40,
+"tris": 21858,
+"gpu": {
+"geometries": 81,
+"textures": 43
+},
+"texMB": 70.8,
+"fx": {
+"sparks": 24,
+"dust": 38,
+"decals": 40,
+"blood": 1
+},
+"cpuStepMs": {
+"mean": 0.027,
+"p95": 0.1
+}
+},
+"ak-5": {
+"dist": [
+6,
+8.5,
+9,
+11.1,
+11.7
+],
+"mean": 191.75,
+"median": 185.1,
+"p95": 255,
+"calls": 52,
+"tris": 59866,
+"gpu": {
+"geometries": 81,
+"textures": 43
+},
+"texMB": 70.8,
+"fx": {
+"sparks": 0,
+"dust": 0,
+"decals": 40,
+"blood": 1
+},
+"cpuStepMs": {
+"mean": 0.012,
+"p95": 0.1
+}
+},
+"ak-5-fire": {
+"dist": [
+5,
+8.5,
+8.1,
+10.2,
+10.9
+],
+"mean": 194.58,
+"median": 187.1,
+"p95": 287.9,
+"calls": 36,
+"tris": 22396,
+"gpu": {
+"geometries": 81,
+"textures": 43
+},
+"texMB": 70.8,
+"fx": {
+"sparks": 10,
+"dust": 42,
+"decals": 40,
+"blood": 1
+},
+"cpuStepMs": {
+"mean": 0.134,
+"p95": 0.6
+}
+},
+"krait-5": {
+"dist": [
+6,
+8.5,
+9,
+11.1,
+11.7
+],
+"mean": 195.84,
+"median": 189.7,
+"p95": 281.9,
+"calls": 44,
+"tris": 46445,
+"gpu": {
+"geometries": 81,
+"textures": 43
+},
+"texMB": 70.8,
+"fx": {
+"sparks": 0,
+"dust": 0,
+"decals": 40,
+"blood": 1
+},
+"cpuStepMs": {
+"mean": 0.011,
+"p95": 0.1
+}
+},
+"krait-5-fire": {
+"dist": [
+5,
+8.5,
+8.1,
+10.2,
+10.9
+],
+"mean": 254.14,
+"median": 249,
+"p95": 334.4,
+"calls": 57,
+"tris": 59328,
+"gpu": {
+"geometries": 81,
+"textures": 43
+},
+"texMB": 70.8,
+"fx": {
+"sparks": 0,
+"dust": 17,
+"decals": 40,
+"blood": 4
+},
+"cpuStepMs": {
+"mean": 0.033,
+"p95": 0.1
+}
+},
+"raven-5-light": {
+"dist": [
+6,
+8.5,
+9,
+11.1,
+11.7
+],
+"mean": 295.95,
+"median": 295.3,
+"p95": 358.4,
+"calls": 58,
+"tris": 62854,
+"gpu": {
+"geometries": 81,
+"textures": 43
+},
+"texMB": 70.8,
+"fx": {
+"sparks": 0,
+"dust": 0,
+"decals": 40,
+"blood": 4
+},
+"cpuStepMs": {
+"mean": 0.013,
+"p95": 0.1
+}
+},
+"ak-5-fire-light": {
+"dist": [
+5.5,
+8.5,
+8.6,
+10.6,
+11.3
+],
+"mean": 231.4,
+"median": 216.6,
+"p95": 335.5,
+"calls": 36,
+"tris": 22404,
+"gpu": {
+"geometries": 81,
+"textures": 43
+},
+"texMB": 70.8,
+"fx": {
+"sparks": 10,
+"dust": 42,
+"decals": 40,
+"blood": 5
+},
+"cpuStepMs": {
+"mean": 0.126,
+"p95": 0.6
+}
+},
+"krait-5-fire-light": {
+"dist": [
+5,
+8.5,
+8.1,
+10.2,
+10.9
+],
+"mean": 269.27,
+"median": 269.1,
+"p95": 334.3,
+"calls": 57,
+"tris": 59330,
+"gpu": {
+"geometries": 81,
+"textures": 43
+},
+"texMB": 70.8,
+"fx": {
+"sparks": 0,
+"dust": 13,
+"decals": 40,
+"blood": 5
+},
+"cpuStepMs": {
+"mean": 0.043,
+"p95": 0.1
+}
+}
+},
+{
+"idle-0": {
+"dist": [],
+"mean": 218.07,
+"median": 208.9,
+"p95": 289.1,
+"calls": 41,
+"tris": 25306,
+"gpu": {
+"geometries": 47,
+"textures": 31
+},
+"texMB": 7,
+"fx": {
+"sparks": 0,
+"dust": 0,
+"decals": 0,
+"blood": 0
+},
+"cpuStepMs": {
+"mean": 0.008,
+"p95": 0.1
+}
+},
+"raven-0-fire": {
+"dist": [],
+"mean": 218.74,
+"median": 215,
+"p95": 293.3,
+"calls": 41,
+"tris": 25376,
+"gpu": {
+"geometries": 47,
+"textures": 31
+},
+"texMB": 7,
+"fx": {
+"sparks": 9,
+"dust": 38,
+"decals": 40,
+"blood": 0
+},
+"cpuStepMs": {
+"mean": 0.14,
+"p95": 0.6
+}
+},
+"raven-5": {
+"dist": [
+6,
+8.5,
+9,
+11.1,
+11.7
+],
+"mean": 218.99,
+"median": 209.2,
+"p95": 301.9,
+"calls": 44,
+"tris": 37826,
+"gpu": {
+"geometries": 60,
+"textures": 37
+},
+"texMB": 70.8,
+"fx": {
+"sparks": 0,
+"dust": 0,
+"decals": 40,
+"blood": 0
+},
+"cpuStepMs": {
+"mean": 0.015,
+"p95": 0.1
+}
+},
+"raven-5-fire": {
+"dist": [
+5.5,
+8.5,
+8.6,
+10.6,
+11.3
+],
+"mean": 235.12,
+"median": 224.9,
+"p95": 332.5,
+"calls": 42,
+"tris": 25382,
+"gpu": {
+"geometries": 60,
+"textures": 42
+},
+"texMB": 70.8,
+"fx": {
+"sparks": 10,
+"dust": 43,
+"decals": 40,
+"blood": 3
+},
+"cpuStepMs": {
+"mean": 0.128,
+"p95": 0.6
+}
+},
+"ak-0-fire": {
+"dist": [],
+"mean": 173.33,
+"median": 169.2,
+"p95": 223,
+"calls": 36,
+"tris": 22400,
+"gpu": {
+"geometries": 71,
+"textures": 43
+},
+"texMB": 70.8,
+"fx": {
+"sparks": 10,
+"dust": 41,
+"decals": 40,
+"blood": 3
+},
+"cpuStepMs": {
+"mean": 0.113,
+"p95": 0.6
+}
+},
+"krait-0-fire": {
+"dist": [],
+"mean": 198.73,
+"median": 193.2,
+"p95": 260.9,
+"calls": 42,
+"tris": 21866,
+"gpu": {
+"geometries": 81,
+"textures": 43
+},
+"texMB": 70.8,
+"fx": {
+"sparks": 0,
+"dust": 19,
+"decals": 40,
+"blood": 3
+},
+"cpuStepMs": {
+"mean": 0.033,
+"p95": 0.1
+}
+},
+"ak-5": {
+"dist": [
+6,
+8.5,
+9,
+11.1,
+11.7
+],
+"mean": 201.23,
+"median": 190.7,
+"p95": 290.9,
+"calls": 52,
+"tris": 59870,
+"gpu": {
+"geometries": 81,
+"textures": 43
+},
+"texMB": 70.8,
+"fx": {
+"sparks": 0,
+"dust": 0,
+"decals": 40,
+"blood": 3
+},
+"cpuStepMs": {
+"mean": 0.015,
+"p95": 0.1
+}
+},
+"ak-5-fire": {
+"dist": [
+5,
+8.5,
+8.1,
+10.2,
+10.9
+],
+"mean": 196.26,
+"median": 183.8,
+"p95": 282.6,
+"calls": 36,
+"tris": 22400,
+"gpu": {
+"geometries": 81,
+"textures": 43
+},
+"texMB": 70.8,
+"fx": {
+"sparks": 11,
+"dust": 39,
+"decals": 40,
+"blood": 3
+},
+"cpuStepMs": {
+"mean": 0.117,
+"p95": 0.6
+}
+},
+"krait-5": {
+"dist": [
+6,
+8.5,
+9,
+11.1,
+11.7
+],
+"mean": 193.08,
+"median": 189.9,
+"p95": 256.9,
+"calls": 44,
+"tris": 46449,
+"gpu": {
+"geometries": 81,
+"textures": 43
+},
+"texMB": 70.8,
+"fx": {
+"sparks": 0,
+"dust": 0,
+"decals": 40,
+"blood": 3
+},
+"cpuStepMs": {
+"mean": 0.017,
+"p95": 0.1
+}
+},
+"krait-5-fire": {
+"dist": [
+5,
+8.5,
+8.1,
+10.2,
+10.9
+],
+"mean": 239.65,
+"median": 237.3,
+"p95": 299.4,
+"calls": 57,
+"tris": 59332,
+"gpu": {
+"geometries": 81,
+"textures": 43
+},
+"texMB": 70.8,
+"fx": {
+"sparks": 0,
+"dust": 14,
+"decals": 40,
+"blood": 6
+},
+"cpuStepMs": {
+"mean": 0.032,
+"p95": 0.1
+}
+},
+"raven-5-light": {
+"dist": [
+6,
+8.5,
+9,
+11.1,
+11.7
+],
+"mean": 288.59,
+"median": 286.9,
+"p95": 357.9,
+"calls": 58,
+"tris": 62858,
+"gpu": {
+"geometries": 81,
+"textures": 43
+},
+"texMB": 70.8,
+"fx": {
+"sparks": 0,
+"dust": 0,
+"decals": 40,
+"blood": 6
+},
+"cpuStepMs": {
+"mean": 0.01,
+"p95": 0.1
+}
+},
+"ak-5-fire-light": {
+"dist": [
+5.5,
+8.5,
+8.6,
+10.6,
+11.3
+],
+"mean": 207.66,
+"median": 200.4,
+"p95": 287.9,
+"calls": 36,
+"tris": 22410,
+"gpu": {
+"geometries": 81,
+"textures": 43
+},
+"texMB": 70.8,
+"fx": {
+"sparks": 10,
+"dust": 42,
+"decals": 40,
+"blood": 8
+},
+"cpuStepMs": {
+"mean": 0.119,
+"p95": 0.6
+}
+},
+"krait-5-fire-light": {
+"dist": [
+5,
+8.5,
+8.1,
+10.2,
+10.9
+],
+"mean": 270.28,
+"median": 267.7,
+"p95": 351.6,
+"calls": 57,
+"tris": 59336,
+"gpu": {
+"geometries": 81,
+"textures": 43
+},
+"texMB": 70.8,
+"fx": {
+"sparks": 0,
+"dust": 15,
+"decals": 40,
+"blood": 8
+},
+"cpuStepMs": {
+"mean": 0.058,
+"p95": 0.1
+}
+}
+}
+]
+},
+"baldefault": {
+"m19": [
+{
+"idle-0": {
+"dist": [],
+"mean": 842.05,
+"median": 834.4,
+"p95": 995.3,
+"calls": 39,
+"tris": 25066,
+"gpu": {
+"geometries": 44,
+"textures": 40
+},
+"texMB": 7.9,
+"fx": {
+"sparks": 0,
+"dust": null,
+"decals": 0,
+"blood": null
+},
+"cpuStepMs": {
+"mean": 0.005,
+"p95": 0
+}
+},
+"raven-0-fire": {
+"dist": [],
+"mean": 713.58,
+"median": 693.2,
+"p95": 902.3,
+"calls": 39,
+"tris": 25136,
+"gpu": {
+"geometries": 44,
+"textures": 40
+},
+"texMB": 7.9,
+"fx": {
+"sparks": 17,
+"dust": null,
+"decals": 40,
+"blood": null
+},
+"cpuStepMs": {
+"mean": 0.104,
+"p95": 0.5
+}
+},
+"raven-5": {
+"dist": [
+6,
+8.5,
+9,
+11.1,
+11.7
+],
+"mean": 670.85,
+"median": 621.1,
+"p95": 935.1,
+"calls": 42,
+"tris": 37586,
+"gpu": {
+"geometries": 57,
+"textures": 46
+},
+"texMB": 71.7,
+"fx": {
+"sparks": 0,
+"dust": null,
+"decals": 40,
+"blood": null
+},
+"cpuStepMs": {
+"mean": 0.01,
+"p95": 0.1
+}
+},
+"raven-5-fire": {
+"dist": [
+5,
+8.5,
+8.1,
+10.2,
+10.9
+],
+"mean": 728.02,
+"median": 687,
+"p95": 999.7,
+"calls": 39,
+"tris": 25136,
+"gpu": {
+"geometries": 57,
+"textures": 51
+},
+"texMB": 71.7,
+"fx": {
+"sparks": 12,
+"dust": null,
+"decals": 40,
+"blood": null
+},
+"cpuStepMs": {
+"mean": 0.132,
+"p95": 0.6
+}
+}
+},
+{
+"idle-0": {
+"dist": [],
+"mean": 775.63,
+"median": 766.9,
+"p95": 935.2,
+"calls": 39,
+"tris": 25066,
+"gpu": {
+"geometries": 44,
+"textures": 40
+},
+"texMB": 7.9,
+"fx": {
+"sparks": 0,
+"dust": null,
+"decals": 0,
+"blood": null
+},
+"cpuStepMs": {
+"mean": 0.007,
+"p95": 0.1
+}
+},
+"raven-0-fire": {
+"dist": [],
+"mean": 682.75,
+"median": 673,
+"p95": 901.1,
+"calls": 39,
+"tris": 25136,
+"gpu": {
+"geometries": 44,
+"textures": 40
+},
+"texMB": 7.9,
+"fx": {
+"sparks": 14,
+"dust": null,
+"decals": 40,
+"blood": null
+},
+"cpuStepMs": {
+"mean": 0.109,
+"p95": 0.5
+}
+},
+"raven-5": {
+"dist": [
+6,
+8.5,
+9,
+11.1,
+11.7
+],
+"mean": 667.73,
+"median": 625.3,
+"p95": 950,
+"calls": 42,
+"tris": 37586,
+"gpu": {
+"geometries": 57,
+"textures": 46
+},
+"texMB": 71.7,
+"fx": {
+"sparks": 0,
+"dust": null,
+"decals": 40,
+"blood": null
+},
+"cpuStepMs": {
+"mean": 0.013,
+"p95": 0.1
+}
+},
+"raven-5-fire": {
+"dist": [
+5.5,
+8.5,
+8.6,
+10.6,
+11.3
+],
+"mean": 715.51,
+"median": 708.6,
+"p95": 947.7,
+"calls": 39,
+"tris": 25136,
+"gpu": {
+"geometries": 57,
+"textures": 51
+},
+"texMB": 71.7,
+"fx": {
+"sparks": 17,
+"dust": null,
+"decals": 40,
+"blood": null
+},
+"cpuStepMs": {
+"mean": 0.122,
+"p95": 0.6
+}
+}
+}
+],
+"m20": [
+{
+"idle-0": {
+"dist": [],
+"mean": 802.61,
+"median": 806.6,
+"p95": 942.2,
+"calls": 41,
+"tris": 25306,
+"gpu": {
+"geometries": 47,
+"textures": 42
+},
+"texMB": 7.9,
+"fx": {
+"sparks": 0,
+"dust": 0,
+"decals": 0,
+"blood": 0
+},
+"cpuStepMs": {
+"mean": 0.006,
+"p95": 0.1
+}
+},
+"raven-0-fire": {
+"dist": [],
+"mean": 698.64,
+"median": 695.1,
+"p95": 876.1,
+"calls": 41,
+"tris": 25376,
+"gpu": {
+"geometries": 47,
+"textures": 42
+},
+"texMB": 7.9,
+"fx": {
+"sparks": 7,
+"dust": 42,
+"decals": 40,
+"blood": 0
+},
+"cpuStepMs": {
+"mean": 0.127,
+"p95": 0.6
+}
+},
+"raven-5": {
+"dist": [
+6,
+8.5,
+9,
+11.1,
+11.7
+],
+"mean": 685.91,
+"median": 638.6,
+"p95": 1024.3,
+"calls": 44,
+"tris": 37826,
+"gpu": {
+"geometries": 60,
+"textures": 48
+},
+"texMB": 71.7,
+"fx": {
+"sparks": 0,
+"dust": 0,
+"decals": 40,
+"blood": 0
+},
+"cpuStepMs": {
+"mean": 0.017,
+"p95": 0.1
+}
+},
+"raven-5-fire": {
+"dist": [
+5,
+8.5,
+8.1,
+10.2,
+10.9
+],
+"mean": 737.76,
+"median": 687.1,
+"p95": 998.5,
+"calls": 42,
+"tris": 25384,
+"gpu": {
+"geometries": 60,
+"textures": 53
+},
+"texMB": 71.7,
+"fx": {
+"sparks": 9,
+"dust": 42,
+"decals": 40,
+"blood": 4
+},
+"cpuStepMs": {
+"mean": 0.16,
+"p95": 0.7
+}
+},
+"ak-0-fire": {
+"dist": [],
+"mean": 556.76,
+"median": 536.2,
+"p95": 752.4,
+"calls": 36,
+"tris": 22402,
+"gpu": {
+"geometries": 71,
+"textures": 55
+},
+"texMB": 71.7,
+"fx": {
+"sparks": 8,
+"dust": 37,
+"decals": 40,
+"blood": 4
+},
+"cpuStepMs": {
+"mean": 0.123,
+"p95": 0.6
+}
+},
+"krait-0-fire": {
+"dist": [],
+"mean": 686.94,
+"median": 682,
+"p95": 826.3,
+"calls": 42,
+"tris": 21868,
+"gpu": {
+"geometries": 81,
+"textures": 55
+},
+"texMB": 71.7,
+"fx": {
+"sparks": 0,
+"dust": 32,
+"decals": 40,
+"blood": 4
+},
+"cpuStepMs": {
+"mean": 0.032,
+"p95": 0.1
+}
+},
+"ak-5": {
+"dist": [
+6,
+8.5,
+9,
+11.1,
+11.7
+],
+"mean": 605.51,
+"median": 558,
+"p95": 919,
+"calls": 45,
+"tris": 47007,
+"gpu": {
+"geometries": 81,
+"textures": 55
+},
+"texMB": 71.7,
+"fx": {
+"sparks": 0,
+"dust": 0,
+"decals": 40,
+"blood": 4
+},
+"cpuStepMs": {
+"mean": 0.011,
+"p95": 0.1
+}
+},
+"ak-5-fire": {
+"dist": [
+5,
+8.5,
+8.1,
+10.2,
+10.9
+],
+"mean": 565.41,
+"median": 525.3,
+"p95": 846.7,
+"calls": 36,
+"tris": 22406,
+"gpu": {
+"geometries": 81,
+"textures": 55
+},
+"texMB": 71.7,
+"fx": {
+"sparks": 8,
+"dust": 40,
+"decals": 40,
+"blood": 6
+},
+"cpuStepMs": {
+"mean": 0.14,
+"p95": 0.7
+}
+},
+"krait-5": {
+"dist": [
+6,
+8.5,
+9,
+11.1,
+11.7
+],
+"mean": 641.15,
+"median": 594,
+"p95": 900.7,
+"calls": 44,
+"tris": 46455,
+"gpu": {
+"geometries": 81,
+"textures": 55
+},
+"texMB": 71.7,
+"fx": {
+"sparks": 0,
+"dust": 0,
+"decals": 40,
+"blood": 6
+},
+"cpuStepMs": {
+"mean": 0.015,
+"p95": 0.1
+}
+},
+"krait-5-fire": {
+"dist": [
+5,
+8.5,
+8.1,
+10.2,
+10.9
+],
+"mean": 811.98,
+"median": 813.6,
+"p95": 931.5,
+"calls": 57,
+"tris": 59336,
+"gpu": {
+"geometries": 81,
+"textures": 55
+},
+"texMB": 71.7,
+"fx": {
+"sparks": 0,
+"dust": 12,
+"decals": 40,
+"blood": 8
+},
+"cpuStepMs": {
+"mean": 0.046,
+"p95": 0.1
+}
+},
+"raven-5-light": {
+"dist": [
+6,
+8.5,
+9,
+11.1,
+11.7
+],
+"mean": 980.45,
+"median": 973.3,
+"p95": 1142.1,
+"calls": 58,
+"tris": 62862,
+"gpu": {
+"geometries": 81,
+"textures": 55
+},
+"texMB": 71.7,
+"fx": {
+"sparks": 0,
+"dust": 0,
+"decals": 40,
+"blood": 8
+},
+"cpuStepMs": {
+"mean": 0.012,
+"p95": 0.1
+}
+},
+"ak-5-fire-light": {
+"dist": [
+5.5,
+8.5,
+8.6,
+10.6,
+11.3
+],
+"mean": 600.36,
+"median": 540.4,
+"p95": 917.8,
+"calls": 36,
+"tris": 22412,
+"gpu": {
+"geometries": 81,
+"textures": 55
+},
+"texMB": 71.7,
+"fx": {
+"sparks": 11,
+"dust": 41,
+"decals": 40,
+"blood": 9
+},
+"cpuStepMs": {
+"mean": 0.138,
+"p95": 0.6
+}
+},
+"krait-5-fire-light": {
+"dist": [
+5,
+8.5,
+8.1,
+10.2,
+10.9
+],
+"mean": 850.9,
+"median": 844.1,
+"p95": 975.1,
+"calls": 57,
+"tris": 59338,
+"gpu": {
+"geometries": 81,
+"textures": 55
+},
+"texMB": 71.7,
+"fx": {
+"sparks": 0,
+"dust": 24,
+"decals": 40,
+"blood": 9
+},
+"cpuStepMs": {
+"mean": 0.058,
+"p95": 0.1
+}
+}
+},
+{
+"idle-0": {
+"dist": [],
+"mean": 777.77,
+"median": 768.9,
+"p95": 910,
+"calls": 41,
+"tris": 25306,
+"gpu": {
+"geometries": 47,
+"textures": 42
+},
+"texMB": 7.9,
+"fx": {
+"sparks": 0,
+"dust": 0,
+"decals": 0,
+"blood": 0
+},
+"cpuStepMs": {
+"mean": 0.007,
+"p95": 0.1
+}
+},
+"raven-0-fire": {
+"dist": [],
+"mean": 674.27,
+"median": 669.7,
+"p95": 848.9,
+"calls": 41,
+"tris": 25376,
+"gpu": {
+"geometries": 47,
+"textures": 42
+},
+"texMB": 7.9,
+"fx": {
+"sparks": 8,
+"dust": 39,
+"decals": 40,
+"blood": 0
+},
+"cpuStepMs": {
+"mean": 0.122,
+"p95": 0.6
+}
+},
+"raven-5": {
+"dist": [
+6,
+8.5,
+9,
+11.1,
+11.7
+],
+"mean": 679.61,
+"median": 639.6,
+"p95": 1001.4,
+"calls": 44,
+"tris": 37826,
+"gpu": {
+"geometries": 60,
+"textures": 48
+},
+"texMB": 71.7,
+"fx": {
+"sparks": 0,
+"dust": 0,
+"decals": 40,
+"blood": 0
+},
+"cpuStepMs": {
+"mean": 0.015,
+"p95": 0.1
+}
+},
+"raven-5-fire": {
+"dist": [
+5.5,
+8.5,
+8.6,
+10.6,
+11.3
+],
+"mean": 715.48,
+"median": 675,
+"p95": 976,
+"calls": 42,
+"tris": 25384,
+"gpu": {
+"geometries": 60,
+"textures": 53
+},
+"texMB": 71.7,
+"fx": {
+"sparks": 11,
+"dust": 41,
+"decals": 40,
+"blood": 4
+},
+"cpuStepMs": {
+"mean": 0.146,
+"p95": 0.6
+}
+},
+"ak-0-fire": {
+"dist": [],
+"mean": 552.93,
+"median": 535.5,
+"p95": 713.1,
+"calls": 36,
+"tris": 22402,
+"gpu": {
+"geometries": 71,
+"textures": 55
+},
+"texMB": 71.7,
+"fx": {
+"sparks": 9,
+"dust": 42,
+"decals": 40,
+"blood": 4
+},
+"cpuStepMs": {
+"mean": 0.125,
+"p95": 0.6
+}
+},
+"krait-0-fire": {
+"dist": [],
+"mean": 677.13,
+"median": 676.5,
+"p95": 758.7,
+"calls": 42,
+"tris": 21868,
+"gpu": {
+"geometries": 81,
+"textures": 55
+},
+"texMB": 71.7,
+"fx": {
+"sparks": 0,
+"dust": 32,
+"decals": 40,
+"blood": 4
+},
+"cpuStepMs": {
+"mean": 0.035,
+"p95": 0.1
+}
+},
+"ak-5": {
+"dist": [
+6,
+8.5,
+9,
+11.1,
+11.7
+],
+"mean": 621.33,
+"median": 588.2,
+"p95": 865.9,
+"calls": 51,
+"tris": 59862,
+"gpu": {
+"geometries": 81,
+"textures": 55
+},
+"texMB": 71.7,
+"fx": {
+"sparks": 0,
+"dust": 0,
+"decals": 40,
+"blood": 4
+},
+"cpuStepMs": {
+"mean": 0.012,
+"p95": 0.1
+}
+},
+"ak-5-fire": {
+"dist": [
+5.5,
+8.5,
+8.6,
+10.6,
+11.3
+],
+"mean": 593.89,
+"median": 558.1,
+"p95": 872.4,
+"calls": 36,
+"tris": 22404,
+"gpu": {
+"geometries": 81,
+"textures": 55
+},
+"texMB": 71.7,
+"fx": {
+"sparks": 10,
+"dust": 36,
+"decals": 40,
+"blood": 5
+},
+"cpuStepMs": {
+"mean": 0.135,
+"p95": 0.7
+}
+},
+"krait-5": {
+"dist": [
+6,
+8.5,
+9,
+11.1,
+11.7
+],
+"mean": 621.23,
+"median": 575.2,
+"p95": 894.6,
+"calls": 44,
+"tris": 46453,
+"gpu": {
+"geometries": 81,
+"textures": 55
+},
+"texMB": 71.7,
+"fx": {
+"sparks": 0,
+"dust": 0,
+"decals": 40,
+"blood": 5
+},
+"cpuStepMs": {
+"mean": 0.012,
+"p95": 0.1
+}
+},
+"krait-5-fire": {
+"dist": [
+5,
+8.5,
+8.1,
+10.2,
+10.9
+],
+"mean": 803.08,
+"median": 800.4,
+"p95": 924.2,
+"calls": 57,
+"tris": 59338,
+"gpu": {
+"geometries": 81,
+"textures": 55
+},
+"texMB": 71.7,
+"fx": {
+"sparks": 0,
+"dust": 32,
+"decals": 40,
+"blood": 9
+},
+"cpuStepMs": {
+"mean": 0.044,
+"p95": 0.1
+}
+},
+"raven-5-light": {
+"dist": [
+6,
+8.5,
+9,
+11.1,
+11.7
+],
+"mean": 952.17,
+"median": 942,
+"p95": 1090.8,
+"calls": 58,
+"tris": 62864,
+"gpu": {
+"geometries": 81,
+"textures": 55
+},
+"texMB": 71.7,
+"fx": {
+"sparks": 0,
+"dust": 0,
+"decals": 40,
+"blood": 9
+},
+"cpuStepMs": {
+"mean": 0.011,
+"p95": 0.1
+}
+},
+"ak-5-fire-light": {
+"dist": [
+5,
+8.5,
+8.1,
+10.2,
+10.9
+],
+"mean": 590.45,
+"median": 553.7,
+"p95": 929.7,
+"calls": 36,
+"tris": 22412,
+"gpu": {
+"geometries": 81,
+"textures": 55
+},
+"texMB": 71.7,
+"fx": {
+"sparks": 9,
+"dust": 41,
+"decals": 40,
+"blood": 9
+},
+"cpuStepMs": {
+"mean": 0.136,
+"p95": 0.6
+}
+},
+"krait-5-fire-light": {
+"dist": [
+5,
+8.5,
+8.1,
+10.2,
+10.9
+],
+"mean": 927.28,
+"median": 930.2,
+"p95": 1090.8,
+"calls": 57,
+"tris": 59338,
+"gpu": {
+"geometries": 81,
+"textures": 55
+},
+"texMB": 71.7,
+"fx": {
+"sparks": 0,
+"dust": 24,
+"decals": 40,
+"blood": 9
+},
+"cpuStepMs": {
+"mean": 0.057,
+"p95": 0.1
+}
+}
+}
+]
+}
+},
+"flashlight_pair": {
+"perf960": {
+"m1.9": [
+[
+{
+"off": {
+"mean": 268.8,
+"p95": 336.2,
+"calls": 54,
+"tris": 62526,
+"lod": "01111"
+},
+"on": null,
+"off2": null
+},
+{
+"off": {
+"mean": 255.1,
+"p95": 337.6,
+"calls": 54,
+"tris": 62526,
+"lod": "01111"
+},
+"on": null,
+"off2": null
+}
+],
+[
+{
+"off": {
+"mean": 280.4,
+"p95": 366.6,
+"calls": 54,
+"tris": 62526,
+"lod": "01111"
+},
+"on": null,
+"off2": null
+},
+{
+"off": {
+"mean": 280.6,
+"p95": 379.6,
+"calls": 54,
+"tris": 62526,
+"lod": "01111"
+},
+"on": null,
+"off2": null
+}
+]
+],
+"m2.0": [
+[
+{
+"off": {
+"mean": 270.8,
+"p95": 348.8,
+"calls": 56,
+"tris": 62766,
+"lod": "01111"
+},
+"on": {
+"mean": 287.8,
+"p95": 352,
+"calls": 56,
+"tris": 62766,
+"lod": "01111"
+},
+"off2": {
+"mean": 271.7,
+"p95": 359.4,
+"calls": 56,
+"tris": 62766,
+"lod": "01111"
+}
+},
+{
+"off": {
+"mean": 263.6,
+"p95": 331.7,
+"calls": 56,
+"tris": 62766,
+"lod": "01111"
+},
+"on": {
+"mean": 283.7,
+"p95": 352.8,
+"calls": 56,
+"tris": 62766,
+"lod": "01111"
+},
+"off2": {
+"mean": 266.4,
+"p95": 336.5,
+"calls": 56,
+"tris": 62766,
+"lod": "01111"
+}
+}
+],
+[
+{
+"off": {
+"mean": 280,
+"p95": 367.3,
+"calls": 56,
+"tris": 62766,
+"lod": "01111"
+},
+"on": {
+"mean": 300.9,
+"p95": 368.4,
+"calls": 56,
+"tris": 62766,
+"lod": "01111"
+},
+"off2": {
+"mean": 256.2,
+"p95": 325.5,
+"calls": 56,
+"tris": 62766,
+"lod": "01111"
+}
+},
+{
+"off": {
+"mean": 273.6,
+"p95": 359.3,
+"calls": 56,
+"tris": 62766,
+"lod": "01111"
+},
+"on": {
+"mean": 290,
+"p95": 360.4,
+"calls": 56,
+"tris": 62766,
+"lod": "01111"
+},
+"off2": {
+"mean": 266.7,
+"p95": 350.4,
+"calls": 56,
+"tris": 62766,
+"lod": "01111"
+}
+}
+]
+]
+},
+"baldefault": {
+"m1.9": [
+[
+{
+"off": {
+"mean": 968.5,
+"p95": 1128.3,
+"calls": 54,
+"tris": 62526,
+"lod": "01111"
+},
+"on": null,
+"off2": null
+},
+{
+"off": {
+"mean": 973.1,
+"p95": 1120.8,
+"calls": 54,
+"tris": 62526,
+"lod": "01111"
+},
+"on": null,
+"off2": null
+}
+],
+[
+{
+"off": {
+"mean": 907.2,
+"p95": 1039.5,
+"calls": 54,
+"tris": 62526,
+"lod": "01111"
+},
+"on": null,
+"off2": null
+},
+{
+"off": {
+"mean": 942.3,
+"p95": 1088.5,
+"calls": 54,
+"tris": 62526,
+"lod": "01111"
+},
+"on": null,
+"off2": null
+}
+]
+],
+"m2.0": [
+[
+{
+"off": {
+"mean": 934.2,
+"p95": 1092.9,
+"calls": 56,
+"tris": 62766,
+"lod": "01111"
+},
+"on": {
+"mean": 943.7,
+"p95": 1101,
+"calls": 56,
+"tris": 62766,
+"lod": "01111"
+},
+"off2": {
+"mean": 927.6,
+"p95": 1072.7,
+"calls": 56,
+"tris": 62766,
+"lod": "01111"
+}
+},
+{
+"off": {
+"mean": 923.2,
+"p95": 1078.2,
+"calls": 56,
+"tris": 62766,
+"lod": "01111"
+},
+"on": {
+"mean": 919.1,
+"p95": 1063.8,
+"calls": 56,
+"tris": 62766,
+"lod": "01111"
+},
+"off2": {
+"mean": 887.4,
+"p95": 1019.5,
+"calls": 56,
+"tris": 62766,
+"lod": "01111"
+}
+}
+],
+[
+{
+"off": {
+"mean": 918.6,
+"p95": 1048.6,
+"calls": 56,
+"tris": 62766,
+"lod": "01111"
+},
+"on": {
+"mean": 937.5,
+"p95": 1084.3,
+"calls": 56,
+"tris": 62766,
+"lod": "01111"
+},
+"off2": {
+"mean": 919.1,
+"p95": 1054.7,
+"calls": 56,
+"tris": 62766,
+"lod": "01111"
+}
+},
+{
+"off": {
+"mean": 924.6,
+"p95": 1044.3,
+"calls": 56,
+"tris": 62766,
+"lod": "01111"
+},
+"on": {
+"mean": 945.8,
+"p95": 1098.7,
+"calls": 56,
+"tris": 62766,
+"lod": "01111"
+},
+"off2": {
+"mean": 911.5,
+"p95": 1070.7,
+"calls": 56,
+"tris": 62766,
+"lod": "01111"
+}
+}
+]
+]
+}
+}
+}
