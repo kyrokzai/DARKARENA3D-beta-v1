@@ -98,6 +98,9 @@ export function createViewmodel({ renderer, skin }) {
   const smokeMat = new THREE.SpriteMaterial({ map: tex.smoke, transparent: true, depthWrite: false, opacity: 0 });
   const smoke = Array.from({ length: 10 }, () => { const s = new THREE.Sprite(smokeMat.clone()); s.visible = false; s.userData = { life: 0, v: new THREE.Vector3() }; scene.add(s); return s; });
   let smokeNext = 0;
+  // Warm-up (M2.0): the first puff used to create the sprite program / smoke texture mid-fight; one invisible puff
+  // (opacity 0) is drawn for the first frames instead, so they exist from load.
+  smoke[0].visible = true; smoke[0].userData.warm = 2;
 
   // ---- ejected casings: brass (rifles, on the shot) + 12-gauge shells (KRAIT, when the pump is racked back) ----
   const CASES = 10, SHELLS = 6;
@@ -143,7 +146,7 @@ export function createViewmodel({ renderer, skin }) {
   function emitSmoke(n) {
     model.anchors.muzzle.getWorldPosition(tmpV); scene.worldToLocal(tmpV);
     for (let i = 0; i < n; i++) {
-      const s = smoke[smokeNext]; smokeNext = (smokeNext + 1) % smoke.length;
+      const s = smoke[smokeNext]; smokeNext = (smokeNext + 1) % smoke.length; s.userData.warm = 0;
       s.position.copy(tmpV).add(new THREE.Vector3((Math.random() - 0.5) * 0.02, i * 0.01, (Math.random() - 0.5) * 0.02));
       s.userData.life = 1.3 + Math.random() * 0.4; s.userData.max = s.userData.life;
       s.userData.v.set((Math.random() - 0.5) * 0.03, 0.05 + Math.random() * 0.04, -0.02);
@@ -226,7 +229,9 @@ export function createViewmodel({ renderer, skin }) {
     // smoke
     for (const sm of smoke) {
       if (!sm.visible) continue;
-      const u = sm.userData; u.life -= dt;
+      const u = sm.userData;
+      if (u.warm) { if (--u.warm === 0) sm.visible = false; continue; }
+      u.life -= dt;
       if (u.life <= 0) { sm.visible = false; continue; }
       const t = 1 - u.life / u.max;
       sm.position.addScaledVector(u.v, dt);
