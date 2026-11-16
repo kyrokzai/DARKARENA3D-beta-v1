@@ -30,7 +30,7 @@ Browser FPS (survival vs. waves of infected). Owner makes key decisions; work in
    + `node tests/sim-m1.8.test.mjs` + `node tests/m1.8-visual.test.js`
    + `node tests/sim-m1.9.test.mjs` + `node tests/m1.9-fp-combat.test.js`
    + `node tests/sim-m2.0.test.mjs` + `node tests/m2.0-arsenal.test.js` + `node tests/m2.0-hud-ergonomics.test.js`
-   + `node tests/sim-m3.0.test.mjs` + `node tests/m3.0-topdown.test.js`; report changed files,
+   + `node tests/sim-m3.0.test.mjs` + `node tests/m3.0-topdown.test.js` + `node tests/m3.0-aim-orientation.test.js`; report changed files,
    test results, how to verify on PC and iPhone, and known limitations. Not accepted until the owner confirms.
 7. Test hooks and the debug panel are allowed only behind `?debug=1`.
 8. Gameplay values reach the HUD only through `prototype-3d/src/sim/game-state.js` (GameState + events);
@@ -72,3 +72,8 @@ Browser FPS (survival vs. waves of infected). Owner makes key decisions; work in
     hollow-rig hit zones (rule 11); their clips are only the look. Three.js addons (GLTFLoader, BufferGeometryUtils,
     SkeletonUtils, meshopt_decoder) are vendored from the SAME three@0.186.0 in `vendor/three/addons/`. Walls are drawn
     cut at 1.5 m in top-down only (clipping on the level materials); the sim keeps full-height walls.
+    Aim: the hero's facing is exactly the right finger / mouse point every frame (shortest way through ±π, no smoothing,
+    no assist); the touch aim assist only bends the SHOT inside the sim step (`shotYaw`), never the facing (it used to
+    snap the facing → stepwise turning on iPhone). Phones are landscape-only: portrait (touch device, height > width)
+    shows the rotate screen, hides the controls, releases every finger / aim / fire and pauses a running match (wave,
+    health, ammo kept); back in landscape it stays paused until ПРОДОЛЖИТЬ. A tall desktop window is not portrait.
