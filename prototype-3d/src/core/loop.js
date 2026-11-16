@@ -8,6 +8,7 @@ export function startLoop({ hz, update, frame }) {
     let dt = (now - last) / 1000;
     last = now;
     if (dt > 0.25) dt = 0.25; // tab was in background: don't fast-forward the world
+    if (dt < 0) dt = 0;       // a frame timestamp from before a long synchronous start-up: never drive the accumulator negative (it stalled the sim for seconds)
     acc += dt;
     let n = 0;
     while (acc >= step && n < 8) { update(step); acc -= step; n++; }

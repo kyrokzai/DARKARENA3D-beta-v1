@@ -88,4 +88,5 @@ Browser FPS (survival vs. waves of infected). Owner makes key decisions; work in
     normalisation in `loadout-data.js`; missing mechanics (armour, level / XP, grenades, medkit, plate, secondary) are
     hidden or marked "в разработке". The HUD reads GameState only (rule 8; `runTime`, `typeKills` added for it).
     The Kazakhstan patch is an own drawing (`scripts/make-kz-patch.py` → `bake-patch.js`) projected in the hero's
-    material — 0 extra draw calls. The top-down loop starts one frame after the set-up (a negative first dt stalls it).
+    material — 0 extra draw calls. `core/loop.js` clamps a negative frame dt to 0 (a frame timestamp from before a long
+    synchronous start-up used to drive the accumulator negative and stall the sim for seconds — FPS and top-down).

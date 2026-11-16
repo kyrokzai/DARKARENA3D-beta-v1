@@ -368,8 +368,8 @@ export function createLab(scene, { world, models, textures, profile = {} }) {
   const steamTex = keep(blobTexture());
   const steamMat = keep(new THREE.SpriteMaterial({ map: steamTex, color: 0x9fb5a8, transparent: true, opacity: 0, depthWrite: false }));
   const steam = [];
-  const steamCells = grates.filter((_, i) => i % 3 === 0).slice(0, 6);
-  for (let i = 0; i < steamCells.length * 3; i++) { const sp = new THREE.Sprite(steamMat.clone()); keep(sp.material); const c = steamCells[i % steamCells.length]; sp.userData = { x: (c[0] + 0.5) * S, z: (c[1] + 0.5) * S, t: rng() * 4 }; group.add(sp); steam.push(sp); }
+  const steamCells = grates.filter((_, i) => i % 3 === 0).slice(0, 4); // 8 sprites (each one is a draw call)
+  for (let i = 0; i < steamCells.length * 2; i++) { const sp = new THREE.Sprite(steamMat.clone()); keep(sp.material); const c = steamCells[i % steamCells.length]; sp.userData = { x: (c[0] + 0.5) * S, z: (c[1] + 0.5) * S, t: rng() * 4 }; group.add(sp); steam.push(sp); }
 
 
   // light pools: additive soft discs on the floor under every light source (+ a small upright glow at lamps), merged
