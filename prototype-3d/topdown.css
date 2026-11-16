@@ -1,4 +1,13 @@
-/* DARK ARENA M3.0 TOPDOWN — layout for phones (landscape and portrait) and desktop. */
+/* DARK ARENA M3.0 TOPDOWN — layout for phones (landscape only: portrait shows the rotate screen) and desktop. */
+/* Portrait on a touch device (body.portrait, set by main.js): no game controls, the rotate screen above everything. */
+.rotate{display:none;position:fixed;inset:0;z-index:50;place-items:center;align-content:center;gap:10px;text-align:center;padding:24px;background:#05080cf2;color:#e6f2f4}
+.rotate h2{margin:0;font-size:20px;letter-spacing:.06em}
+.rotate p{margin:0;max-width:300px;font-size:14px;opacity:.75;line-height:1.4}
+.rotIcon{width:64px;height:64px;display:grid;place-items:center;margin-bottom:6px}
+.rotIcon i{display:block;width:30px;height:52px;border:3px solid #ffd08a;border-radius:7px;animation:rotHint 1.8s ease-in-out infinite}
+@keyframes rotHint{0%,25%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
+body.portrait .rotate{display:grid}
+body.portrait .tdButtons,body.portrait .tdPause,body.portrait .tdHint,body.portrait .stick{display:none!important}
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07090d;color:#e6eef2;font:14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 #game{position:fixed;inset:0;touch-action:none;overflow:hidden}

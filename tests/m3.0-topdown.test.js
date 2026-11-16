@@ -33,6 +33,9 @@ const ang = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
     const info = await page.evaluate(() => ({ models: Object.keys(window.__DA3TD.view).length > 0, ver: window.__DA3TD.VERSION, load: document.getElementById('loadText').textContent }));
     check('Top-down page loads the four owner models (hero, walker, brute, mutant)', info.load === 'ГОТОВО', info.load);
     await page.evaluate(() => document.getElementById('playBtn').click()); await sleep(400);
+    // the run plays the real wave 1: keep the hero alive so the controls checks below do not depend on how fast the
+    // infected arrive (a slow software-GL machine took long enough for them to kill the standing hero → "aim right" read a dead hero)
+    await page.evaluate(() => { setInterval(() => { const g = window.__DA3TD.game; if (!g.player.dead) g.state.setHealth(100); }, 100); });
     let s = await S(page);
     check('ИГРАТЬ starts a run', s.state === 'play' && s.clip === 'Idle', `${s.state} ${s.clip}`);
     const buttons = await page.evaluate(() => ['btnDash', 'btnReload', 'btnWeapon', 'btnPause'].map(id => { const r = document.getElementById(id).getBoundingClientRect(); return { id, w: r.width, h: r.height, in: r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight }; }));
@@ -80,6 +83,9 @@ const ang = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
     // aim stick while a button is held: the button keeps its own finger
     await touch(cdp, 'touchStart', [{ x: 640, y: 260, id: 3 }]); await sleep(30);
     await touch(cdp, 'touchMove', [{ x: 700, y: 260, id: 3 }]); await sleep(250);
+    // the facing is set when a frame is drawn: wait for two rendered frames, not only a fixed pause (software GL is slow
+    // right after a weapon switch — the fixed 250 ms read the previous facing here)
+    await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
     s = await S(page);
     check('Aim to the right → yaw 0°', ang(s.yaw, 0) < 0.25, `yaw ${(s.yaw * 180 / Math.PI).toFixed(0)}°`);
     await page.evaluate(() => document.getElementById('btnPause').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 11, pointerType: 'touch' })));
@@ -106,11 +112,13 @@ const ang = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
     check('No page errors on the phone', errors.length === 0, errors.slice(0, 2).join(' | '));
     await ctx.close();
 
-    // ---------------- portrait phone: still usable ----------------
+    // ---------------- portrait phone: landscape only (owner decision after the iPhone test) ----------------
+    // Was: "Portrait phone: buttons inside the screen" (portrait play). Now portrait shows the rotate screen instead.
     const pr = await openTD(browser, base, { ...PHONE, viewport: { width: 390, height: 844 } });
     await pr.page.evaluate(() => document.getElementById('playBtn').click()); await sleep(600);
-    const pb = await pr.page.evaluate(() => ['btnDash', 'btnReload', 'btnWeapon', 'btnPause'].every(id => { const r = document.getElementById(id).getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight; }));
-    check('Portrait phone: buttons inside the screen', pb);
+    const pb = await pr.page.evaluate(() => ({ state: window.__DA3TD.state, rotate: getComputedStyle(document.getElementById('rotate')).display !== 'none',
+      controls: ['btnDash', 'btnReload', 'btnWeapon', 'btnPause'].filter(id => getComputedStyle(document.getElementById(id)).display !== 'none' && document.getElementById(id).getBoundingClientRect().width > 0) }));
+    check('Portrait phone: "rotate the phone" screen, no game controls, the run does not start', pb.rotate && !pb.controls.length && pb.state !== 'play', JSON.stringify(pb));
     await pr.page.screenshot({ path: path.join(SHOTS, 'iphone_portrait.png') });
     await pr.ctx.close();
 
