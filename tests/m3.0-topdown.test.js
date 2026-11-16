@@ -79,7 +79,8 @@ const ang = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
     check('ОРУЖ. switches to the next weapon of the M2.0 loadout', s.short === 'AK-47', s.short);
     // aim stick while a button is held: the button keeps its own finger
     await touch(cdp, 'touchStart', [{ x: 640, y: 260, id: 3 }]); await sleep(30);
-    await touch(cdp, 'touchMove', [{ x: 700, y: 260, id: 3 }]); await sleep(250);
+    for (let i = 1; i <= 6; i++) { await touch(cdp, 'touchMove', [{ x: 640 + i * 10, y: 260, id: 3 }]); await sleep(16); } // a real thumb moves in steps
+    await sleep(250);
     s = await S(page);
     check('Aim to the right → yaw 0°', ang(s.yaw, 0) < 0.25, `yaw ${(s.yaw * 180 / Math.PI).toFixed(0)}°`);
     await page.evaluate(() => document.getElementById('btnPause').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 11, pointerType: 'touch' })));
