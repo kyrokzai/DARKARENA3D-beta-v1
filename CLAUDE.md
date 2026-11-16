@@ -30,7 +30,8 @@ Browser FPS (survival vs. waves of infected). Owner makes key decisions; work in
    + `node tests/sim-m1.8.test.mjs` + `node tests/m1.8-visual.test.js`
    + `node tests/sim-m1.9.test.mjs` + `node tests/m1.9-fp-combat.test.js`
    + `node tests/sim-m2.0.test.mjs` + `node tests/m2.0-arsenal.test.js` + `node tests/m2.0-hud-ergonomics.test.js`
-   + `node tests/sim-m3.0.test.mjs` + `node tests/m3.0-topdown.test.js` + `node tests/m3.0-aim-orientation.test.js`; report changed files,
+   + `node tests/sim-m3.0.test.mjs` + `node tests/m3.0-topdown.test.js` + `node tests/m3.0-aim-orientation.test.js`
+   + `node tests/m3.1-assets.test.mjs`; report changed files,
    test results, how to verify on PC and iPhone, and known limitations. Not accepted until the owner confirms.
 7. Test hooks and the debug panel are allowed only behind `?debug=1`.
 8. Gameplay values reach the HUD only through `prototype-3d/src/sim/game-state.js` (GameState + events);
