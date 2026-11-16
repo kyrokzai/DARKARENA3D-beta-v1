@@ -1,0 +1,64 @@
+/* DARK ARENA M3.0 TOPDOWN — layout for phones (landscape and portrait) and desktop. */
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07090d;color:#e6eef2;font:14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#game{position:fixed;inset:0;touch-action:none;overflow:hidden}
+#view{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+:root{--sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px);--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px)}
+
+/* HUD */
+.tdhud{position:absolute;inset:0;pointer-events:none}
+.tdTop{position:absolute;left:calc(12px + var(--sl));right:calc(12px + var(--sr));top:calc(8px + var(--st));display:flex;justify-content:space-between;align-items:flex-start;gap:12px;text-shadow:0 2px 3px #000;font-weight:700;letter-spacing:.06em}
+.tdHp{display:flex;align-items:center;gap:8px;min-width:150px}
+.tdHpBar{width:min(28vw,190px);height:12px;background:#0009;border:1px solid #ffffff30;border-radius:3px;overflow:hidden}
+#tdHpFill{height:100%;width:100%;background:linear-gradient(90deg,#5fd18a,#a5e66a);transition:width .15s}
+#tdHpFill.low{background:#e0453d;animation:pulse .8s infinite alternate}
+@keyframes pulse{to{opacity:.55}}
+.tdMid{text-align:center;font-size:13px}
+#tdKills{opacity:.75;font-size:12px}
+.tdGun{text-align:right;min-width:120px}
+#tdWeapon{font-size:12px;opacity:.8}
+#tdAmmo{font-size:20px}
+#tdAmmo.empty{color:#ff7466}
+.tdReload{height:3px;background:#0006;margin-top:3px}
+#tdReload{height:100%;width:0;background:#ffd27a}
+#tdBanner{position:absolute;left:0;right:0;top:28%;text-align:center;font-size:clamp(22px,5vw,40px);font-weight:800;letter-spacing:.2em;opacity:0;transition:opacity .25s;text-shadow:0 3px 8px #000}
+#tdBanner.show{opacity:1}
+#tdHurt{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,transparent 45%,#b0141088 100%)}
+.tdHint{position:absolute;left:0;right:0;bottom:calc(6px + var(--sb));text-align:center;font-size:11px;opacity:.45;pointer-events:none;letter-spacing:.08em}
+
+/* floating sticks (shown where the thumb lands) */
+.stick{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;opacity:0;transition:opacity .1s}
+.stick.on{opacity:1}
+.stick::before{content:"";position:absolute;width:124px;height:124px;left:-62px;top:-62px;border-radius:50%;border:2px solid #9fd3de55;background:#90d6e012}
+.stick i{position:absolute;width:52px;height:52px;left:-26px;top:-26px;border-radius:50%;background:#b6e5ee88;box-shadow:0 0 12px #0008}
+.stick.aim::before{border-color:#ffcf8066;background:#ffb04012}
+.stick.aim i{background:#ffd08a99}
+
+/* buttons (right side, above the aim stick area) */
+.tdButtons{position:absolute;right:calc(14px + var(--sr));bottom:calc(150px + var(--sb));display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.tdBtn{pointer-events:auto;touch-action:none;border:2px solid #ffffff40;color:#fff;background:#121820b0;font:800 12px system-ui;letter-spacing:.08em;border-radius:50%;-webkit-tap-highlight-color:transparent}
+.tdBtn.small{width:56px;height:56px}
+.tdBtn.big{width:78px;height:78px;font-size:13px;border-color:#ffcf80aa;position:relative;overflow:hidden}
+.tdBtn.big::after{content:"";position:absolute;inset:0;background:#000a;transform-origin:bottom;transform:scaleY(var(--cd,0))}
+.tdBtn.down{background:#ffcf8066}
+.tdPause{position:absolute;right:calc(12px + var(--sr));top:calc(62px + var(--st));width:44px;height:44px;border-radius:8px;border:1px solid #ffffff40;background:#121820b0;pointer-events:auto;touch-action:none;display:flex;gap:6px;align-items:center;justify-content:center}
+.tdPause span{display:block;width:5px;height:16px;background:#fff;border-radius:1px}
+body:not(.playing) .tdButtons,body:not(.playing) .tdPause,body:not(.playing) .tdHint{display:none}
+@media (pointer:fine){.tdButtons,.tdHint{display:none}}
+
+/* screens */
+.screen{position:fixed;inset:0;display:grid;place-items:center;background:#05080ce6;z-index:10;padding:16px;overflow:auto;touch-action:pan-y;overscroll-behavior:contain}
+.screen.hidden{display:none}
+.panel{max-width:620px;text-align:center}
+h1{font-size:clamp(30px,7vw,60px);letter-spacing:.14em;margin:0}
+h1 span{color:#f05a4d}
+h2{letter-spacing:.14em;margin:0 0 12px}
+.sub{color:#ffcf80;letter-spacing:.2em;margin:4px 0 14px}
+p{color:#b5c8cd}
+.keys{font-size:12px;opacity:.75;margin-top:16px}
+.small{font-size:12px}
+.load{height:4px;background:#ffffff18;margin:14px auto 4px;max-width:320px}
+#loadFill{height:100%;width:0;background:#ffcf80;transition:width .2s}
+button.primary,.panel button{margin:6px;padding:14px 28px;border:0;border-radius:6px;font:700 15px system-ui;letter-spacing:.08em;background:#2a3540;color:#fff;cursor:pointer;touch-action:manipulation}
+button.primary{background:#df4d46}
+button:disabled{opacity:.4}
