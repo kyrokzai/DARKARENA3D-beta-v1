@@ -1,0 +1,210 @@
+{
+  "version": "M3.1-sync",
+  "created": "2026-11-17",
+  "origin": "owner-supplied models (DARK ARENA, CLAUDE.md rule 3 owner exception); sources kept unchanged in the owner folder",
+  "units": "metres; source models are normalised by the generator to 1.9 m on the longest side — apply `scale` to get the real size; pivot = bottom centre (y = 0)",
+  "pipeline": "Blender 5.2.3: import → merge by distance 1e-5 → Decimate (collapse) to `triangles` → glTF export; gltf-transform 4.5.1: emissive map of the same generator set attached (same UV) → optimize (WebP 1024², meshopt, no simplify)",
+  "lab": [
+    {
+      "id": "capsule",
+      "name": "Стазис-капсула",
+      "file": "lab/capsule.glb",
+      "sha256": "0217a490d7e75393e521c3cdb530cb4cd655b7fd974fa375dab5bde45d223e89",
+      "bytes": 384824,
+      "triangles": 8000,
+      "emissive": true,
+      "scale": 1.158,
+      "realSizeM": [
+        1.46,
+        2.2,
+        1.4
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "front": "+Z",
+      "place": "на полу, в любой ориентации; зелёное свечение колбы",
+      "use": "лаборатория: декор / точка появления заражённых",
+      "source": {
+        "glb": "стены и двери/Капсула/base_basic_pbr.glb",
+        "glbSha256": "be20e92f0fcf5ea3735698ba750a7e98040ddef0f4c95448e332fdb91b4f313d",
+        "glbTriangles": 1000000,
+        "emissive": "стены и двери/Капсула/texture_emissive.png",
+        "emissiveSha256": "595c65caae0e0d4a80401b2af4ccd694cf4b7c329e37b640acb82cf895c2a777"
+      }
+    },
+    {
+      "id": "console",
+      "name": "Пульт управления (с креслом)",
+      "file": "lab/console.glb",
+      "sha256": "adbfa32f72ffa73389b6d73487654bcfa1c351f699c882d10fdf0677240d7833",
+      "bytes": 315800,
+      "triangles": 8000,
+      "emissive": true,
+      "scale": 1,
+      "realSizeM": [
+        1.9,
+        1.2,
+        1.88
+      ],
+      "footprintCells": [
+        1,
+        1
+      ],
+      "front": "+Z",
+      "place": "задняя глухая сторона к стене (−Z); кресло — часть модели, перед пультом",
+      "use": "лаборатория / центр наблюдения; светятся мониторы",
+      "source": {
+        "glb": "стены и двери/пульт управления/base_basic_pbr.glb",
+        "glbSha256": "d29e28032ba6192e68b5cb7f3b7c93e634010f91b69f47c8531f01b870fd9281",
+        "glbTriangles": 1000000,
+        "emissive": "стены и двери/пульт управления/texture_emissive.png",
+        "emissiveSha256": "d3a7d1c531efde74ab76f33b98c9a5d2a5fbd5bfe3c138febcb5ff662d041471"
+      }
+    },
+    {
+      "id": "door",
+      "name": "Гермодверь (закрытая, двустворчатая)",
+      "file": "lab/door.glb",
+      "sha256": "f8b2e66eeaf4597e61c3e2660694b15ded265b5a003208b84337a98bb61057d2",
+      "bytes": 283212,
+      "triangles": 6000,
+      "emissive": true,
+      "scale": 1.061,
+      "realSizeM": [
+        2,
+        1.5,
+        0.64
+      ],
+      "footprintCells": [
+        1,
+        0.32
+      ],
+      "front": "±Z (двусторонняя)",
+      "place": "в проёме стены шириной 1 клетку; створки неподвижны (одна модель с рамой)",
+      "use": "запертые проходы / декор шлюза",
+      "source": {
+        "glb": "стены и двери/Дверь 1/base_basic_pbr.glb",
+        "glbSha256": "091606d356a81a56cb385f8427ffe6a56703c8e1bc706c9d4ce3c689b1d5f1c6",
+        "glbTriangles": 1000000,
+        "emissive": "стены и двери/Дверь 1/texture_emissive.png",
+        "emissiveSha256": "5bdbd50b99876bc43849bae900540eb8c272c381b72179261948a1abe48e250c"
+      }
+    },
+    {
+      "id": "arch",
+      "name": "Арка-шлюз (открытый проход)",
+      "file": "lab/arch.glb",
+      "sha256": "2b935ed3e5d93f439a44a4601c7ddedf60766cd10fe836f7c40ae9627c385f92",
+      "bytes": 395564,
+      "triangles": 6000,
+      "emissive": true,
+      "scale": 1.054,
+      "realSizeM": [
+        2,
+        1.66,
+        0.63
+      ],
+      "footprintCells": [
+        1,
+        0.32
+      ],
+      "front": "±Z (двусторонняя)",
+      "place": "в проёме стены шириной 1 клетку",
+      "use": "проходы между зонами; оранжевая подсветка",
+      "source": {
+        "glb": "стены и двери/Арка/base_basic_pbr.glb",
+        "glbSha256": "79191e7da8cd9202e43900b1b1bbb3f8df3ff647f63836a0d72d250ac1fb1158",
+        "glbTriangles": 1000000,
+        "emissive": "стены и двери/Арка/texture_emissive.png",
+        "emissiveSha256": "2911a743cdfaf492c787262891b6cb530f5b5f770b0bea004266f679aa20b7f5"
+      }
+    },
+    {
+      "id": "lamp_wall",
+      "name": "Настенная аварийная лампа",
+      "file": "lab/lamp_wall.glb",
+      "sha256": "bbebaac3d9530a769c64592e3663b29b651b387add3edb105f83b16cae9ed52e",
+      "bytes": 329760,
+      "triangles": 3000,
+      "emissive": true,
+      "scale": 0.263,
+      "realSizeM": [
+        0.36,
+        0.5,
+        0.42
+      ],
+      "footprintCells": [
+        0.18,
+        0.21
+      ],
+      "front": "+Z (крепление сзади, −Z)",
+      "place": "на грани стены, центр ≈ 1,1 м (ниже среза стен 1,5 м в top-down)",
+      "use": "тревога между волнами (красное свечение, без отдельного источника света — правило 12)",
+      "source": {
+        "glb": "стены и двери/фонарь настенный/base_basic_pbr.glb",
+        "glbSha256": "e73ce6f8fafa40c57c2dfa03499e158d68b842a5a0d447bc86847036c14d0123",
+        "glbTriangles": 1000000,
+        "emissive": "стены и двери/фонарь настенный/texture_emissive.png",
+        "emissiveSha256": "4416211708b62ff2d7839284ff9193a05222deb2ed7dda6afe309ada03f24262"
+      }
+    }
+  ],
+  "characters": [
+    {
+      "id": "walker",
+      "file": "walker.glb",
+      "sha256": "3fb80659d9096cc3a8eadafa1cc42aa6785d6f7e2fab1be8dd420d461e16cbc8",
+      "bytes": 664648,
+      "triangles": 5757,
+      "bones": 52,
+      "clips": [
+        "Attack",
+        "Death",
+        "Hit",
+        "Idle",
+        "Run",
+        "Walk"
+      ],
+      "fix": "M3.0.1 skin weights transferred from the hero rig (see docs/M3.1-SYNC.md)",
+      "source": {
+        "rigged": "_OPTIMIZED/characters_rigged_v2/zombie01_walker_rigged.glb",
+        "rawSha256": "9227510c161ca8db68a05af149b0ca79385d133e12bd7fb1bb61920fe17a05b7",
+        "raw": "1 Зомби/base_basic_pbr.glb"
+      }
+    },
+    {
+      "id": "brute",
+      "file": "brute.glb",
+      "sha256": "937ed0b58a73a4428a0058cbad05da87584b7a5dc582f252fd6c7d23ac0b6a1f",
+      "bytes": 681516,
+      "triangles": 5896,
+      "bones": 52,
+      "clips": [
+        "Attack",
+        "Death",
+        "Hit",
+        "Idle",
+        "Run",
+        "Walk"
+      ],
+      "fix": "M3.0.1 skin weights transferred from the hero rig (see docs/M3.1-SYNC.md)",
+      "source": {
+        "rigged": "_OPTIMIZED/characters_rigged_v2/zombie02_brute_rigged.glb",
+        "rawSha256": "5a0d171754e1c828f3369607da8684ff74ab6da8d83e73b680db9640ca7a7eb3",
+        "raw": "2 Зомби/base_basic_pbr.glb"
+      }
+    }
+  ],
+  "excluded": [
+    {
+      "id": "lamp_ceiling",
+      "reason": "висит выше среза стен 1,5 м: камера top-down видит только крепления; оставлен на будущее (FPS)"
+    },
+    {
+      "id": "wall_plain / wall_window / floor_tile",
+      "reason": "плоские панели: после упрощения появляются вмятины в бликах (тест оптимизации M3.0); стены и пол OUTPOST ZERO процедурные — пересборка боксами + запекание в отдельном этапе"
+    }
+  ]
+}
