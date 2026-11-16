@@ -45,6 +45,31 @@ export const INFECTED_TYPES = Object.freeze({
   }),
 });
 
+// M3.0 TOPDOWN types — the same generic AI (infected.js) and the same pose / hit-zone rig (hollow-rig.js) as THE HOLLOW;
+// only the numbers differ. Each type has its own 3D model and animation clips in the top-down renderer
+// (render/topdown/glb-infected-view.js). attackDuration / attackHitAt are matched to the clips (strike frame / length).
+// The FPS game never spawns these types.
+const H = INFECTED_TYPES.hollow;
+const derive = (id, name, over) => Object.freeze({ ...H, id, name, ...over, hitboxes: Object.freeze({ ...H.hitboxes, ...(over.hitboxes || {}) }) });
+export const TOPDOWN_TYPES = Object.freeze({
+  // Walker: THE HOLLOW's stats; the swing is stretched to the walker's claw-swipe clip (1.08 s, strike at 45 %).
+  walker: derive('walker', 'DA-INF01 WALKER', { attackDuration: 0.95, attackHitAt: 0.45 }),
+  // Brute: slow, tough, heavy two-fist smash (clip 1.38 s, strike at 48 %).
+  brute: derive('brute', 'DA-INF02 BRUTE', {
+    hp: 260, radius: 0.45, walkSpeed: 0.9, runSpeed: 2.8, accel: 5, turnRate: 3.5,
+    attackRange: 1.7, attackReach: 2.0, attackArcDeg: 90, attackDamage: 30, attackDuration: 1.38, attackHitAt: 0.48,
+    attackCooldown: 1.6, recoverTime: 0.45, hitStun: 0.1, fallLength: 2.2, fallHalfWidth: 0.55,
+    hitboxes: { headR: 0.17, chestR: 0.3, bellyR: 0.28, legsR: 0.3 },
+  }),
+  // Mutant: fast four-legged hunter, wide body, rear-up claw slam (clip 1.17 s, strike at 44 %).
+  mutant: derive('mutant', 'DA-INF03 MUTANT', {
+    hp: 150, radius: 0.45, walkSpeed: 1.4, runSpeed: 4.8, accel: 10, turnRate: 7,
+    attackRange: 2.0, attackReach: 2.3, attackArcDeg: 100, attackDamage: 20, attackDuration: 1.17, attackHitAt: 0.44,
+    attackCooldown: 1.0, recoverTime: 0.25, hitStun: 0.15, fallLength: 2.0, fallHalfWidth: 0.6,
+    hitboxes: { headR: 0.2, chestR: 0.32, bellyR: 0.3, legsR: 0.34 },
+  }),
+});
+
 // Visual variants (M1.7 OUTPOST ZERO) — COSMETIC ONLY. A variant picks an outfit / build / infection look for the
 // renderer; it never changes stats, AI, speed, damage or hit zones (those come from the type above, shared by all).
 // 'hollow' = the original M1.6 look (default when a spawn names no variant).
@@ -61,7 +86,7 @@ export function checkVariant(v = 'hollow') {
 }
 
 export function getInfectedDef(id = 'hollow') {
-  const d = INFECTED_TYPES[id];
+  const d = INFECTED_TYPES[id] || TOPDOWN_TYPES[id]; // M3.0: top-down types
   if (!d) throw new Error('Unknown infected type: ' + id);
   return d;
 }

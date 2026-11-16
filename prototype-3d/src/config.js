@@ -12,6 +12,9 @@ export const PITCH_LIMIT = 1.4;      // radians (~80°)
 export const GRAVITY = 11;           // cells/s² (22 m/s²)
 export const JUMP_SPEED = 3.3;       // cells/s (6.6 m/s) → apex ≈ 0.5 cells (≈ 1.0 m), airtime ≈ 0.6 s
 export const JUMP_BUFFER = 0.12;     // s: a press this long before landing still jumps on touchdown
+// M3.0 TOPDOWN dash (only when the Game is created with { dash: true }): a short burst along the move direction with
+// a brief invulnerability window. Units: cells / seconds (1 cell = 2 m → 6 cells/s = 12 m/s, ≈ 3.4 m per dash).
+export const DASH = Object.freeze({ speed: 6, time: 0.28, cooldown: 1.1, invuln: 0.38 });
 
 export const SETTINGS_KEY = 'darkarena_proto3d_settings_v1';
 export const LAYOUT_KEY = 'darkarena_proto3d_layout_v1';

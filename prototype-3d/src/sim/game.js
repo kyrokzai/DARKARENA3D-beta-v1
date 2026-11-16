@@ -3,6 +3,8 @@
 // (shot, hit, infectedAlert, infectedAttack, playerHurt, playerDied, infectedKilled, waveCleared…)
 // that render / UI / audio subscribe to. Gameplay values for the HUD live only in GameState.
 import { World } from './world.js';
+import { CELL_SIZE, DASH, PLAYER_RADIUS } from '../config.js';
+import { moveEntity } from './collision.js';
 import { createPlayer, stepPlayer, applyLook } from './player.js';
 import { GameState } from './game-state.js';
 import { WeaponSystem } from './weapons/weapon-system.js';
@@ -20,6 +22,10 @@ export class Game {
     this.world = new World(map);
     this.map = map;
     this.player = createPlayer(map.playerStart);
+    // M3.0 TOPDOWN options (all off by default → the FPS game is unchanged): muzzle height in metres, horizontal shots, dash.
+    this.aimZ = opts.aimHeight != null ? opts.aimHeight / CELL_SIZE : null;
+    this.flatAim = !!opts.flatAim;
+    this.dashEnabled = !!opts.dash; this.lastDashPress = 0; this.dashResync = true;
     this.tick = 0;
     this.listeners = new Map();
     // Health / ammo / wave model read by the HUD; future weapon & enemy systems write into it.
@@ -81,6 +87,7 @@ export class Game {
   /** Infected blow (or any other damage source) → GameState health; death at 0 HP (once). */
   damagePlayer(n, from = null) {
     const p = this.player; if (p.dead) return;
+    if (p.invuln > 0) { this.emit('dodged', { damage: n }); return; } // M3.0 TOPDOWN: dash invulnerability
     this.state.damage(n);
     this.emit('playerHurt', { damage: n, from: from ? { id: from.id, x: from.x, y: from.y } : null, hp: this.state.health.hp });
     if (this.state.health.hp === 0) { p.dead = true; this.weapon.release(); this.melee.release(); this.emit('playerDied', { tick: this.tick }); }
@@ -93,16 +100,16 @@ export class Game {
   restart({ waves = true } = {}) {
     for (const e of [...this.enemies]) this.removeInfected(e);
     const s = this.map.playerStart, p = this.player;
-    Object.assign(p, { x: s.x, y: s.y, prevX: s.x, prevY: s.y, z: 0, prevZ: 0, vz: 0, onGround: true, jumpBuffer: 0, yaw: s.yaw || 0, pitch: 0, dead: false });
+    Object.assign(p, { x: s.x, y: s.y, dashT: 0, dashCd: 0, invuln: 0, prevX: s.x, prevY: s.y, z: 0, prevZ: 0, vz: 0, onGround: true, jumpBuffer: 0, yaw: s.yaw || 0, pitch: 0, dead: false });
     this.state.resetRun();
     this.arsenal.reset(); this.state.setFlashlight(false);
     this.flow.tx = this.flow.ty = -1;
-    this.jumpResync = true; this.matchOver = false; this.noise = false;
+    this.jumpResync = true; this.dashResync = true; this.matchOver = false; this.noise = false;
     this.waves.reset(); if (waves) this.startWaves(1);
     this.emit('restart', {});
   }
   /** Pause / focus loss / menus: stop firing, leave ADS. */
-  releaseCombat() { this.weapon.release(); this.melee.release(); this.arsenal.release(); this.jumpResync = true; this.lightResync = true; } // a press made just before pausing is dropped
+  releaseCombat() { this.weapon.release(); this.melee.release(); this.arsenal.release(); this.jumpResync = true; this.lightResync = true; this.dashResync = true; } // a press made just before pausing is dropped
   /** Fixed-step update. cmd = InputState snapshot {move:{x,y}} */
   step(cmd, dt) {
     const jp = cmd.presses ? cmd.presses.jump : 0;
@@ -110,7 +117,7 @@ export class Game {
     const jumpPressed = jp !== this.lastJumpPress; this.lastJumpPress = jp;
     const alive = !this.player.dead;
     if (alive) {
-      stepPlayer(this.world, this.player, cmd.move, dt, jumpPressed);
+      if (!this.stepDash(cmd, dt)) stepPlayer(this.world, this.player, cmd.move, dt, jumpPressed);
       if (cmd.actions) {
         this.arsenal.step(cmd, dt);                         // M2.0: weapon change first (blocks fire / strike while switching)
         this.melee.step(cmd, dt); this.weapon.step(cmd, dt); // melee before the weapon: a strike blocks this tick's shot
@@ -132,6 +139,29 @@ export class Game {
     this.noise = false;
     this.waves.step(dt);
     this.tick++;
+  }
+  /** M3.0 TOPDOWN dash: a new presses.dash starts a burst along the move direction (or the facing when standing).
+   *  Returns true while dashing (the normal move step is skipped). Does nothing unless the Game was created with opts.dash. */
+  stepDash(cmd, dt) {
+    if (!this.dashEnabled) return false;
+    const p = this.player;
+    p.dashCd = Math.max(0, (p.dashCd || 0) - dt); p.invuln = Math.max(0, (p.invuln || 0) - dt);
+    const dp = cmd.presses ? cmd.presses.dash || 0 : 0;
+    if (this.dashResync) { this.lastDashPress = dp; this.dashResync = false; }
+    const pressed = dp !== this.lastDashPress; this.lastDashPress = dp;
+    if (pressed && !(p.dashT > 0) && p.dashCd === 0) {
+      const c = Math.cos(p.yaw), n = Math.sin(p.yaw), mx = cmd.move.x, my = cmd.move.y;
+      let dx = c * my - n * mx, dy = n * my + c * mx; const m = Math.hypot(dx, dy);
+      if (m < 0.2) { dx = c; dy = n; } else { dx /= m; dy /= m; }
+      p.dashT = DASH.time; p.dashCd = DASH.cooldown + DASH.time; p.invuln = DASH.invuln; p.dashX = dx; p.dashY = dy; p.dashes = (p.dashes || 0) + 1;
+      this.emit('dash', { x: p.x, y: p.y, dx, dy });
+    }
+    if (!(p.dashT > 0)) return false;
+    p.prevX = p.x; p.prevY = p.y; p.prevZ = p.z;
+    const s = DASH.speed * dt;
+    moveEntity(this.world, p, p.dashX * s, p.dashY * s, PLAYER_RADIUS);
+    p.dashT = Math.max(0, p.dashT - dt);
+    return true;
   }
   look(dYaw, dPitch) { applyLook(this.player, dYaw, dPitch); }
   on(type, fn) { (this.listeners.get(type) || this.listeners.set(type, []).get(type)).push(fn); }

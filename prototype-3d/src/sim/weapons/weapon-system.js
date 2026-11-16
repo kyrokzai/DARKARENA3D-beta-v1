@@ -184,8 +184,8 @@ export class WeaponSystem {
     this.dryLatched = false;
     st.setAmmo(w.mag - 1, w.reserve);
     const spread = this.currentSpread();
-    const origin = { x: p.x, y: p.y, z: EYE_Z + (p.z || 0) }; // shots come from the eye, also mid-jump
-    const base = aimDir(p.yaw, p.pitch);
+    const origin = { x: p.x, y: p.y, z: (g.aimZ ?? EYE_Z) + (p.z || 0) }; // shots come from the eye, also mid-jump (M3.0 top-down: muzzle height)
+    const base = aimDir(p.yaw, g.flatAim ? 0 : p.pitch); // M3.0 top-down: shots stay horizontal (pitch / recoil climb ignored)
     // one aim deviation per shot (same random sequence as before for single-pellet weapons), then each pellet in its cone
     const pellets = def.pellets || 1, shotDir = spreadDir(base, spread, this.rng);
     const cone = pellets > 1 ? (def.pelletSpread || 0) * (1 - this.adsT * (1 - (def.adsPelletMult ?? 1))) : 0;

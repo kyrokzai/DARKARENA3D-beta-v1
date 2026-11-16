@@ -39,3 +39,13 @@ export const SPAWN_RULES = Object.freeze({
   minSpacing: 3,           // between spawns / living infected
   clearance: 0.45,         // m of free floor around the spawn point
 });
+
+// M3.0 TOPDOWN match — three waves with the three top-down types (data only; the FPS game keeps WAVES / MATCH above).
+const tgroup = (type, count) => Object.freeze({ type, variant: 'hollow', count });
+const twave = (number, groups) => Object.freeze({ number, order: Object.freeze(groups.map(g => g.type)), enemies: Object.freeze(groups) });
+export const TOPDOWN_WAVES = Object.freeze([
+  twave(1, [tgroup('walker', 7)]),
+  twave(2, [tgroup('walker', 6), tgroup('brute', 2)]),
+  twave(3, [tgroup('walker', 5), tgroup('mutant', 3), tgroup('brute', 2)]),
+]);
+export const TOPDOWN_MATCH = Object.freeze({ ...MATCH, maxActive: 6, startDelay: 2.5, spawnInterval: 1.1, intermission: 5.0 });
