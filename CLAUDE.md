@@ -82,7 +82,7 @@ Browser FPS (survival vs. waves of infected). Owner makes key decisions; work in
     cells, perimeter decor ≤ 0.22 m, 4 pooled point lights, floors / walls are clean modular geometry with offline-baked
     tileable maps `scripts/bake-lab-textures.js`; the owner's lab GLBs are never deformed — the door leaves are split at
     load by triangle position). Wall faces must be wound towards the room (tested). Graphics levels Низкое / Среднее /
-    Высокое = `render/quality.js` profiles + `src/topdown/graphics.js` knobs (shadows, bloom composer only on Высокое,
+    Высокое = `render/quality.js` profiles + `src/topdown/graphics.js` knobs (shadow map + bloom composer only on Высокое,
     PMREM reflections, normal maps, decor, light pools); they switch at runtime, MSAA only at the next start. UI: menu
     (REF-01), loadout (REF-03) and HUD (REF-02) show ONLY real data — stats come from `defs.js` via the documented
     normalisation in `loadout-data.js`; missing mechanics (armour, level / XP, grenades, medkit, plate, secondary) are

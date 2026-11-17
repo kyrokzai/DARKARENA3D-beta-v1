@@ -158,7 +158,7 @@ export function createTopdownRenderer({ container, world, models, lab: labAssets
 
   // ---- sizing ----
   const autoRes = new AutoResolution();
-  let cssW = 0, cssH = 0, ratio = 1;
+  let cssW = 0, cssH = 0, ratio = 1, pendingAuto = false;
   function resize(force = false) {
     const w = container.clientWidth || innerWidth, h = container.clientHeight || innerHeight;
     const r = computePixelRatio(w, h, devicePixelRatio || 1, profId, 1, autoRes.factor).ratio;
@@ -218,7 +218,7 @@ export function createTopdownRenderer({ container, world, models, lab: labAssets
      * alarm, uiDt (real frame delta: menu animation / camera flight) }.
      */
     render(game, alpha, dt, view = {}) {
-      resize();
+      resize(pendingAuto); pendingAuto = false; // a new adaptive size is applied BEFORE drawing (resizing after it cleared the shown frame → black flash)
       renderer.info.reset();
       const uiDt = view.uiDt ?? dt, p = game.player, inGame = mode === 'game';
       const showing = !inGame || flightT < 1;
@@ -277,7 +277,7 @@ export function createTopdownRenderer({ container, world, models, lab: labAssets
           previews.renderInto(list.map((it, i) => ({ ...it, yaw: Math.sin(pvT * 0.6 + i * 1.7) * 0.32 })), cssH);
         }
       }
-      if (dt > 0 && inGame && autoRes.sample(dt, prof.minAuto)) resize(true); // adaptive resolution (M1.8 guard)
+      if (dt > 0 && inGame && autoRes.sample(dt, prof.minAuto)) pendingAuto = true; // adaptive resolution (M1.8 guard): resize next frame
     },
     /** Sim 'shot' event: tracer from the muzzle to the hit point (cells → metres). */
     onShot(e) {

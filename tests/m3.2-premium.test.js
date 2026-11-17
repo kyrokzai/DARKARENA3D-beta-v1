@@ -43,7 +43,7 @@ const frames = (page, n = 2) => page.evaluate(n => new Promise(r => { const f = 
     const lo = await lvl('performance'), hi = await lvl('quality'), md = await lvl('balanced');
     check('Низкое: no composer, no shadow map, no PMREM reflections', lo.id === 'performance' && !lo.composer && !lo.shadows && !lo.env, JSON.stringify(lo));
     check('Высокое: bloom composer, shadows, reflections', hi.id === 'quality' && hi.composer && hi.shadows && hi.env, JSON.stringify(hi));
-    check('Среднее: shadows, no composer (MSAA framebuffer), choice saved', md.id === 'balanced' && !md.composer && md.shadows && md.saved === 'balanced', JSON.stringify(md));
+    check('Среднее: no composer (MSAA framebuffer), no shadow map (blob shadows; measured cost), choice saved', md.id === 'balanced' && !md.composer && !md.shadows && md.saved === 'balanced', JSON.stringify(md));
     check('Switching levels at runtime raises no errors', errors.length === 0, errors.slice(0, 2).join(' | '));
 
     // ---------------- gates (in the menu: no waves, so no spawn opens them meanwhile) ----------------

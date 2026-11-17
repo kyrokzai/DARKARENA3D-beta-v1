@@ -135,7 +135,7 @@ function setGraphics(id) {
   const g = TD_GRAPHICS[id];
   const msaaNote = view && getProfile(id).msaa !== view.contextMsaa ? ' Сглаживание (MSAA) изменится после перезапуска игры.' : '';
   $('gfxDesc').textContent = { performance: 'Низкое: без теней, отражений и пост-обработки, сниженное разрешение, свечение — световыми пятнами. Для длительной игры и старых устройств.',
-    balanced: 'Среднее: тени персонажей 1024, карты нормалей, MSAA, свечение — световыми пятнами, пар. Рекомендуется для iPhone 11+.',
+    balanced: 'Среднее: карты нормалей, MSAA, мягкие тени под персонажами, свечение — световыми пятнами, пар. Рекомендуется для iPhone 11+.',
     quality: 'Высокое: тени 2048 (и от лаборатории), отражения, настоящее свечение (bloom), максимум частиц — для новых iPhone и ПК.' }[id] + msaaNote;
 }
 for (const b of document.querySelectorAll('[data-gfx]')) b.addEventListener('click', () => setGraphics(b.dataset.gfx));
