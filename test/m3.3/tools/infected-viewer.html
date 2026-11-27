@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>DA-INF01 HOLLOW · Viewer</title>
+<script type="importmap">{ "imports": { "three": "../vendor/three/three.module.js" } }</script>
+<style>
+  html, body { margin: 0; height: 100%; background: #0a0b0f; color: #eeebe4; font-family: "Avenir Next Condensed", "Arial Narrow", system-ui, sans-serif; overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  #ui { position: fixed; left: 12px; top: 10px; right: 12px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; pointer-events: none; }
+  #ui h1 { margin: 0 14px 0 0; font-size: 20px; letter-spacing: 2px; color: #ff6170; }
+  #ui button { pointer-events: auto; min-height: 34px; padding: 0 12px; border: 1px solid #59647a; background: #171c27; color: #eee; font-weight: 700; letter-spacing: 1px; cursor: pointer; }
+  #ui button.on { border-color: #e0414f; background: #3a1520; }
+  #note { position: fixed; left: 12px; bottom: 10px; font-size: 13px; color: #9aa2b4; }
+</style>
+</head>
+<body>
+<div id="ui"><h1>DA-INF01 · THE HOLLOW</h1><span id="anims"></span><span id="views"></span></div>
+<div id="note">Перетаскивание — вращение · колесо — масштаб · инструмент разработчика, не часть игры</div>
+<script type="module" src="../src/tools/infected-viewer.js"></script>
+</body>
+</html>

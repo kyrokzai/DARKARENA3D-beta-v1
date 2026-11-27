@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#07090d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>DARK ARENA · M3.2 TOPDOWN</title>
+<link rel="stylesheet" href="./topdown.css">
+<script type="importmap">{ "imports": { "three": "./vendor/three/three.module.js", "three/addons/": "./vendor/three/addons/" } }</script>
+</head>
+<body class="booting">
+<!-- M3.2 icon set: own drawings (no icon fonts / external art) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-bio" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"><circle cx="32" cy="34" r="7"/><path d="M32 27a13 13 0 0 1-12-17M32 27a13 13 0 0 0 12-17M26 38a13 13 0 0 1-15 9M38 38a13 13 0 0 0 15 9M18 25a16 16 0 0 0 2 18M46 25a16 16 0 0 1-2 18M24 52a16 16 0 0 0 16 0"/></g></symbol>
+    <symbol id="i-crowd" viewBox="0 0 64 64"><g fill="currentColor"><circle cx="32" cy="18" r="8"/><path d="M18 50c0-10 6-17 14-17s14 7 14 17z"/><circle cx="14" cy="24" r="6"/><path d="M2 50c0-8 5-13 11-13 2 0 4 .5 5 1.5-3 3-5 7-5 11.5z"/><circle cx="50" cy="24" r="6"/><path d="M62 50c0-8-5-13-11-13-2 0-4 .5-5 1.5 3 3 5 7 5 11.5z"/></g></symbol>
+    <symbol id="i-timer" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"><circle cx="32" cy="36" r="21"/><path d="M32 36V24M26 6h12M49 15l4-4"/></g></symbol>
+    <symbol id="i-cross" viewBox="0 0 64 64"><path fill="currentColor" d="M24 6h16v18h18v16H40v18H24V40H6V24h18z"/></symbol>
+    <symbol id="i-swap" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 22h40M40 10l12 12-12 12M54 42H14M24 30L12 42l12 12"/></g></symbol>
+    <symbol id="i-ammo" viewBox="0 0 64 64"><g fill="currentColor"><path d="M10 26c0-8 4-14 6-16 2 2 6 8 6 16v30H10z"/><path d="M26 26c0-8 4-14 6-16 2 2 6 8 6 16v30H26z"/><path d="M42 26c0-8 4-14 6-16 2 2 6 8 6 16v30H42z"/></g></symbol>
+    <symbol id="i-run" viewBox="0 0 64 64"><g fill="currentColor"><circle cx="40" cy="10" r="6"/><path d="M30 18l12 4 6 10 8 2-2 5-11-3-4-6-4 10 8 8-2 14h-6l2-12-9-7-6 12H8l4-5h7l7-15 2-9-5 2-4 8-5-2 5-10z"/></g><g stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M2 24h12M4 32h10M2 40h8"/></g></symbol>
+    <symbol id="i-aim" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"><circle cx="32" cy="32" r="18"/><path d="M32 4v14M32 46v14M4 32h14M46 32h14"/></g><circle cx="32" cy="32" r="3" fill="currentColor"/></symbol>
+    <symbol id="i-butt" viewBox="0 0 64 64"><g fill="currentColor"><path d="M6 22h30l6-4h16v8H44l-4 4H22l-4 18c-1 3-3 4-6 4H6l4-20H6z"/></g><g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M50 36l8 6M48 44l6 8M44 48l2 10"/></g></symbol>
+    <symbol id="i-play" viewBox="0 0 64 64"><path fill="currentColor" d="M18 10l36 22-36 22z"/></symbol>
+    <symbol id="i-cont" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="currentColor" stroke-width="5"/><path fill="currentColor" d="M26 20l18 12-18 12z"/></symbol>
+    <symbol id="i-rifle" viewBox="0 0 96 40"><path fill="currentColor" d="M2 14h8l2-4h30l2-4h10l2 4h22v4h16v4H78v4h-8l-4 6h-8l-2-6H44l-6 14H28l4-14h-6l-4 6H6l2-8H2z"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 64 64"><path fill="currentColor" d="M28 4h8l2 8 6 3 7-4 6 6-4 7 3 6 8 2v8l-8 2-3 6 4 7-6 6-7-4-6 3-2 8h-8l-2-8-6-3-7 4-6-6 4-7-3-6-8-2v-8l8-2 3-6-4-7 6-6 7 4 6-3zm4 18a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/></symbol>
+    <symbol id="i-info" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="currentColor" stroke-width="5"/><g fill="currentColor"><rect x="28" y="27" width="8" height="22" rx="2"/><circle cx="32" cy="18" r="4.5"/></g></symbol>
+    <symbol id="i-monitor" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"><rect x="6" y="10" width="52" height="34" rx="3"/><path d="M24 56h16M32 44v12"/></g></symbol>
+    <symbol id="i-chevrons" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="6" stroke-linejoin="round"><path d="M10 30l22-14 22 14M10 46l22-14 22 14"/></g></symbol>
+    <symbol id="i-reload" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"><path d="M52 32a20 20 0 1 1-6-14"/><path d="M48 6v13H35"/></g></symbol>
+    <symbol id="i-back" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><path d="M54 32H12M28 14L10 32l18 18"/></g></symbol>
+    <symbol id="i-check" viewBox="0 0 64 64"><path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" d="M10 34l14 14 30-30"/></symbol>
+    <symbol id="i-pistol" viewBox="0 0 64 64"><path fill="currentColor" d="M4 18h52v10H30l-4 4-4 18H10l4-18-4-4H4z"/></symbol>
+    <symbol id="i-vest" viewBox="0 0 64 64"><path fill="currentColor" d="M20 6h8l4 6 4-6h8l2 10 8 6v34H10V22l8-6zm-2 22v8h28v-8zm0 14v8h28v-8z"/></symbol>
+    <symbol id="i-brush" viewBox="0 0 64 64"><g fill="currentColor"><path d="M56 4l4 4-26 30-8-8z"/><path d="M22 34l8 8c0 10-10 18-26 16 8-4 6-14 18-24z"/></g></symbol>
+    <symbol id="i-medkit" viewBox="0 0 64 64"><g fill="currentColor"><path d="M22 10h20v8h-4v-4H26v4h-4z"/><path d="M6 18h52v38H6zm22 10v8h-8v8h8v8h8v-8h8v-8h-8v-8z"/></g></symbol>
+    <symbol id="i-plate" viewBox="0 0 64 64"><path fill="currentColor" d="M14 8h36l6 10v22c0 8-12 16-24 18C20 56 8 48 8 40V18zm8 10v20l20-20z"/></symbol>
+    <symbol id="i-torch" viewBox="0 0 64 64"><g fill="currentColor"><path d="M40 10l14 14-24 24-14-14z"/><path d="M14 36l14 14-6 6c-4 4-10 4-14 0s-4-10 0-14z"/></g><g stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M50 6l4-4M58 14l4-4M44 4l2-4"/></g></symbol>
+  </defs>
+</svg>
+
+<div id="game">
+  <!-- canvas #view is inserted by src/topdown/renderer.js -->
+  <div id="tdHurt" aria-hidden="true"></div>
+  <div class="tdhud">
+    <div class="hProfile">
+      <img class="avatar" data-avatar alt="">
+      <div class="pBody">
+        <div class="pName">ОПЕРАТИВНИК-7</div>
+        <div class="pHp"><svg class="ico hpIco"><use href="#i-cross"/></svg><div class="tdHpBar"><div id="tdHpFill"></div></div><b id="tdHpText">100 / 100</b></div>
+      </div>
+    </div>
+    <div class="hLogo"><b>DARK ARENA</b><span>◂ M3.3 TOPDOWN ▸</span></div>
+    <div class="hWave">
+      <div class="wCell"><svg class="ico bio"><use href="#i-bio"/></svg><span id="tdWave">Волна <em>1/3</em></span></div>
+      <div class="wCell"><svg class="ico"><use href="#i-crowd"/></svg><span id="tdKills">0 / 0</span></div>
+      <div class="wCell"><svg class="ico"><use href="#i-timer"/></svg><span id="tdTime">00:00</span></div>
+    </div>
+    <div class="hScore" id="tdScoreBox"><span class="sLbl">ОЧКИ</span><b id="tdScore">0</b></div>
+    <div id="tdCombo" aria-hidden="true"><span id="tdComboX"></span><i><b id="tdComboBar"></b></i></div>
+    <div id="tdGain" aria-hidden="true"></div>
+    <div id="tdToast" role="status" aria-live="polite"></div>
+    <div class="hTask"><div class="tTitle">ТЕКУЩАЯ ЗАДАЧА</div><ul id="tdTasks"></ul></div>
+    <div id="tdBanner" role="status" aria-live="polite"></div>
+    <div class="hReload" id="tdReloadBox"><svg class="ico"><use href="#i-reload"/></svg><span>Перезарядка: <em id="tdReloadT">0.0 с</em></span><div class="tdReload"><div id="tdReload"></div></div></div>
+    <div class="hCards" id="tdCards">
+      <div class="wcard" data-slot="0"><b class="num">1</b><span class="wName"></span><img class="wImg" alt=""><span class="wAmmo"><svg class="ico"><use href="#i-ammo"/></svg><b></b><i></i></span></div>
+      <div class="wcard" data-slot="1"><b class="num">2</b><span class="wName"></span><img class="wImg" alt=""><span class="wAmmo"><svg class="ico"><use href="#i-ammo"/></svg><b></b><i></i></span></div>
+      <div class="wcard" data-slot="2"><b class="num">3</b><span class="wName"></span><img class="wImg" alt=""><span class="wAmmo"><svg class="ico"><use href="#i-ammo"/></svg><b></b><i></i></span></div>
+    </div>
+    <div class="sr" aria-live="polite"><span id="tdWeapon">RAVEN</span> <span id="tdAmmo">30 / 120</span></div>
+    <div class="hFoot"><b>DARK ARENA</b><i>//</i><span>M3.2 TOPDOWN</span></div>
+  </div>
+  <div class="ring moveRing" aria-hidden="true"><i></i><b class="a u"></b><b class="a d"></b><b class="a l"></b><b class="a r"></b></div>
+  <div class="ring aimRing" aria-hidden="true"><svg class="ico"><use href="#i-aim"/></svg></div>
+  <div id="stickL" class="stick" aria-hidden="true"><i></i></div>
+  <div id="stickR" class="stick aim" aria-hidden="true"><i></i></div>
+  <div class="tdButtons">
+    <button type="button" id="btnMelee" class="tdBtn sm" aria-label="Удар прикладом"><svg class="ico"><use href="#i-butt"/></svg></button>
+    <button type="button" id="btnWeapon" class="tdBtn" aria-label="Сменить оружие"><svg class="ico"><use href="#i-swap"/></svg><span>ОРУЖ.</span></button>
+    <button type="button" id="btnReload" class="tdBtn" aria-label="Перезарядка"><svg class="ico"><use href="#i-ammo"/></svg><span>ПЕРЕЗ.</span></button>
+    <button type="button" id="btnDash" class="tdBtn red" aria-label="Рывок"><svg class="ico"><use href="#i-run"/></svg><span>РЫВОК</span></button>
+  </div>
+  <button type="button" id="btnPause" class="tdPause" aria-label="Пауза"><span></span><span></span></button>
+</div>
+
+<!-- main menu (REF-01): the 3D hero in the lab is the background (rendered by the game canvas) -->
+<section id="menu" class="screen menu">
+  <div class="logo big"><div class="lTri" aria-hidden="true"></div><h1>DARK ARENA</h1><p>TOPDOWN&nbsp;PROTOTYPE</p></div>
+  <div class="profile"><img class="avatar" data-avatar alt=""><div><b>Оперативник-7</b><small id="profileStat">Рекорд: —</small></div><svg class="ico chev"><use href="#i-chevrons"/></svg></div>
+  <nav class="mButtons">
+    <button type="button" id="playBtn" class="mBtn primary"><svg class="ico"><use href="#i-play"/></svg><span>Играть</span></button>
+    <button type="button" id="continueBtn" class="mBtn" disabled><svg class="ico"><use href="#i-cont"/></svg><span>Продолжить</span></button>
+    <button type="button" id="loadoutBtn" class="mBtn"><svg class="ico wide"><use href="#i-rifle"/></svg><span>Выбор оружия</span></button>
+    <button type="button" id="settingsBtn" class="mBtn"><svg class="ico"><use href="#i-gear"/></svg><span>Настройки</span></button>
+    <button type="button" id="aboutBtn" class="mBtn"><svg class="ico"><use href="#i-info"/></svg><span>Об игре</span></button>
+  </nav>
+  <div class="gfxSel" data-gfx-sel><svg class="ico"><use href="#i-monitor"/></svg><span>Качество<br>графики</span>
+    <button type="button" data-gfx="performance">Низкое</button><button type="button" data-gfx="balanced">Среднее</button><button type="button" data-gfx="quality">Высокое</button></div>
+  <div class="loadBox"><div class="load"><div id="loadFill"></div></div><p id="loadText" class="small">Загрузка моделей…</p></div>
+  <footer class="foot"><b>DARK ARENA</b><i>//</i><em>M3.2 TOPDOWN</em><span>Прототип: топдаун-шутер с зомби</span><span>Версия: M3.2 TOPDOWN</span></footer>
+</section>
+
+<!-- weapon selection (REF-03): real weapons from defs.js, live 3D previews in the card windows -->
+<section id="loadout" class="screen loadout hidden">
+  <div class="logo"><div class="lTri" aria-hidden="true"></div><h1>DARK ARENA</h1><p>M3.2&nbsp;TOPDOWN</p></div>
+  <div class="profile"><img class="avatar" data-avatar alt=""><div><b>Оперативник-7</b><small data-profile-stat>Рекорд: —</small></div><svg class="ico chev"><use href="#i-chevrons"/></svg></div>
+  <nav class="tabs" role="tablist">
+    <button type="button" role="tab" data-tab="primary" class="on"><svg class="ico wide"><use href="#i-rifle"/></svg><span>Основное</span></button>
+    <button type="button" role="tab" data-tab="secondary"><svg class="ico"><use href="#i-pistol"/></svg><span>Вторичное</span></button>
+    <button type="button" role="tab" data-tab="gear"><svg class="ico"><use href="#i-vest"/></svg><span>Снаряжение</span></button>
+    <button type="button" role="tab" data-tab="skins"><svg class="ico"><use href="#i-brush"/></svg><span>Скины</span></button>
+  </nav>
+  <div class="lHead"><i class="slashes"></i><h2 id="lTitle">Выбор оружия</h2><p id="lHint">Соберите экипировку для следующей операции</p></div>
+  <div class="lBody">
+    <div class="lCards" id="lCards" data-pane="primary"></div>
+    <div class="lPane hidden" data-pane="secondary"><p class="dev">Вторичного оружия пока нет — пистолет в разработке.<br>В бою доступны три основных ствола (1 / 2 / 3).</p></div>
+    <div class="lPane hidden" data-pane="gear"><div class="gearBig" id="gearBig"></div></div>
+    <div class="lPane hidden" data-pane="skins"><div class="skins" id="lSkins"></div></div>
+  </div>
+  <div class="gearRow" data-pane-gear-row><div class="gTitle"><i class="slashes"></i><b>Снаряжение</b><small>Тактическое оснащение и расходники</small></div><div class="gItems" id="gearRow"></div></div>
+  <button type="button" id="backBtn" class="backBtn"><svg class="ico"><use href="#i-back"/></svg><span>Назад</span></button>
+  <footer class="foot"><b>DARK ARENA</b><i>//</i><em>M3.2 TOPDOWN</em><span>Прототип: топдаун-шутер с зомби</span><span>Версия: M3.2 TOPDOWN</span></footer>
+  <button type="button" id="fightBtn" class="fightBtn"><svg class="ico"><use href="#i-play"/></svg><span>В бой</span></button>
+</section>
+
+<section id="settings" class="screen dialog hidden"><div class="panel">
+  <h2>Настройки</h2>
+  <div class="row"><span>Качество графики</span><div class="gfxSel inline" data-gfx-sel><button type="button" data-gfx="performance">Низкое</button><button type="button" data-gfx="balanced">Среднее</button><button type="button" data-gfx="quality">Высокое</button></div></div>
+  <p class="small" id="gfxDesc"></p>
+  <div class="row"><label for="volRange">Громкость</label><input id="volRange" type="range" min="0" max="1" step="0.05"></div>
+  <div class="row"><label for="muteChk">Без звука</label><input id="muteChk" type="checkbox"></div>
+  <button type="button" class="primary" data-close>Готово</button>
+</div></section>
+
+<section id="about" class="screen dialog hidden"><div class="panel">
+  <h2>Об игре</h2>
+  <p>DARK ARENA — топдаун-шутер: застава OUTPOST ZERO, биолаборатория сектора B-3. Три волны заражённых — ходоки, громилы, мутанты. Продержись.</p>
+  <p class="keys">ПК: WASD — движение · мышь — прицел · ЛКМ — огонь · R — перезарядка · V — удар прикладом · Пробел — рывок · 1/2/3 — оружие · Esc — пауза<br>
+    iPhone: левый палец — движение · правый — прицел, дальше от центра — огонь · РЫВОК · ПЕРЕЗ. · ОРУЖ. · удар прикладом</p>
+  <p class="small">Оружие: DA-R1 RAVEN · AK-47 MOD · DA-S12 KRAIT. Версия M3.2 TOPDOWN (прототип, без сервера и покупок).</p>
+  <button type="button" class="primary" data-close>Закрыть</button>
+</div></section>
+
+<section id="paused" class="screen dialog hidden"><div class="panel"><h2>ПАУЗА</h2>
+  <button type="button" id="resumeBtn" class="primary">ПРОДОЛЖИТЬ</button><button type="button" id="restartBtn">ЗАНОВО</button><button type="button" id="menuBtn">ГЛАВНОЕ МЕНЮ</button></div></section>
+<section id="dead" class="screen dialog hidden"><div class="panel"><h2>ВЫ ПОГИБЛИ</h2><p id="deadLead">Заражённые захватили заставу.</p>
+  <div class="sumScore"><small>ОЧКИ</small><b id="sumPoints">0</b><span id="sumRecord" class="rec hidden">НОВЫЙ РЕКОРД</span></div>
+  <dl class="sumGrid" id="sumGrid"></dl>
+  <p class="small" id="deadStat"></p>
+  <button type="button" id="againBtn" class="primary">ЗАНОВО</button><button type="button" data-to-menu>ГЛАВНОЕ МЕНЮ</button></div></section>
+<section id="victory" class="screen dialog hidden"><div class="panel"><h2>ПОБЕДА</h2><p>Все три волны отбиты.</p><p id="victoryKills"></p>
+  <button type="button" id="againBtn2" class="primary">ЕЩЁ РАЗ</button><button type="button" data-to-menu>ГЛАВНОЕ МЕНЮ</button></div></section>
+
+<div id="fade" aria-hidden="true"></div>
+
+<section id="rotate" class="rotate" role="alertdialog" aria-live="assertive" aria-label="Поверните телефон горизонтально">
+  <div class="rotIcon" aria-hidden="true"><i></i></div>
+  <h2>Поверните телефон горизонтально</h2>
+  <p>DARK ARENA играется только в горизонтальной ориентации. Игра на паузе — прогресс сохранён.</p>
+</section>
+
+<script type="module" src="./src/topdown/main.js"></script>
+</body>
+</html>

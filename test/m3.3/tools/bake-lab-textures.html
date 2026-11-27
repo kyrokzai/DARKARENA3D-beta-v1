@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>DARK ARENA · bake lab textures (dev tool)</title>
+<style>body{margin:0;background:#111;color:#ccc;font:12px system-ui}canvas{width:256px;height:256px;margin:4px;image-rendering:auto}</style></head>
+<body>
+<!-- Developer tool (M3.2): bakes the tileable PBR maps of the modular OUTPOST ZERO floor / walls offline (seeded, deterministic).
+     Driven by scripts/bake-lab-textures.js (Playwright): window.__bake() → { name: { albedo, normal, orm } as WebP data URLs }.
+     Not part of the game; the game only loads the saved WebP files. -->
+<script type="module">
+const N = 1024;
+// ---------- seeded noise ----------
+function rng(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
+function valueNoise(seed, period) { // tileable value noise on a period×period lattice
+  const r = rng(seed), g = new Float32Array(period * period); for (let i = 0; i < g.length; i++) g[i] = r();
+  const sm = t => t * t * (3 - 2 * t);
+  return (x, y) => { // x, y in [0,1)
+    const fx = x * period, fy = y * period, x0 = Math.floor(fx), y0 = Math.floor(fy), tx = sm(fx - x0), ty = sm(fy - y0);
+    const a = g[(y0 % period) * period + (x0 % period)], b = g[(y0 % period) * period + ((x0 + 1) % period)];
+    const c = g[((y0 + 1) % period) * period + (x0 % period)], d = g[((y0 + 1) % period) * period + ((x0 + 1) % period)];
+    return a + (b - a) * tx + (c - a) * ty + (a - b - c + d) * tx * ty;
+  };
+}
+function fbm(seed, base, oct = 5) { const ns = []; for (let o = 0; o < oct; o++) ns.push(valueNoise(seed + o * 97, base << o)); return (x, y) => { let v = 0, a = 0.5, n = 0; for (const f of ns) { v += f(x, y) * a; n += a; a *= 0.5; } return v / n; }; }
+// ---------- map buffers ----------
+const mk = () => ({ h: new Float32Array(N * N), r: new Float32Array(N * N), g: new Float32Array(N * N), b: new Float32Array(N * N), rough: new Float32Array(N * N), metal: new Float32Array(N * N), ao: new Float32Array(N * N).fill(1) });
+const clamp = (v, a = 0, b = 1) => v < a ? a : v > b ? b : v;
+const mix = (a, b, t) => a + (b - a) * t;
+const smooth = (e0, e1, x) => { const t = clamp((x - e0) / (e1 - e0)); return t * t * (3 - 2 * t); };
+function toCanvas(fn) { const c = document.createElement('canvas'); c.width = c.height = N; const x = c.getContext('2d'), im = x.createImageData(N, N); for (let i = 0; i < N * N; i++) { const [r, g, b] = fn(i); im.data[i * 4] = r; im.data[i * 4 + 1] = g; im.data[i * 4 + 2] = b; im.data[i * 4 + 3] = 255; } x.putImageData(im, 0, 0); document.body.appendChild(c); return c; }
+function finish(M, normalStrength = 3) {
+  const lin2srgb = v => Math.round(255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055));
+  const albedo = toCanvas(i => [lin2srgb(clamp(M.r[i] * M.ao[i])), lin2srgb(clamp(M.g[i] * M.ao[i])), lin2srgb(clamp(M.b[i] * M.ao[i]))]);
+  const H = (x, y) => M.h[((y + N) % N) * N + ((x + N) % N)];
+  const normal = toCanvas(i => { const x = i % N, y = (i / N) | 0; const dx = (H(x + 1, y) - H(x - 1, y)) * normalStrength, dy = (H(x, y + 1) - H(x, y - 1)) * normalStrength; const l = Math.hypot(dx, dy, 1); return [Math.round((-dx / l * 0.5 + 0.5) * 255), Math.round((dy / l * 0.5 + 0.5) * 255), Math.round((1 / l * 0.5 + 0.5) * 255)]; });
+  const orm = toCanvas(i => [Math.round(clamp(M.ao[i]) * 255), Math.round(clamp(M.rough[i]) * 255), Math.round(clamp(M.metal[i]) * 255)]); // glTF / three ORM: R=AO, G=roughness, B=metalness
+  return { albedo, normal, orm };
+}
+// helpers in pixel space (px = N per tile)
+const bolt = (M, cx, cy, rad, x, y, i) => { const d = Math.hypot(x - cx, y - cy); if (d < rad) { const k = 1 - (d / rad) ** 2; M.h[i] += 2.2 * Math.sqrt(k); M.rough[i] = 0.35; M.metal[i] = 0.9; return true; } if (d < rad + 3) M.ao[i] *= 0.82; return false; };
+
+// ---------- 1. floor plate: 2 × 2 m tile = 4 diamond / smooth panels, deep seams, bolts, wear, grime ----------
+function floorPlate(seed) {
+  const M = mk(), big = fbm(seed, 4), mid = fbm(seed + 11, 16), fine = fbm(seed + 23, 64), scr = rng(seed + 5);
+  const scratches = []; for (let k = 0; k < 140; k++) scratches.push({ x: scr(), y: scr(), a: scr() * Math.PI, l: 0.02 + scr() * 0.09, w: 0.0008 + scr() * 0.0012 });
+  const half = N / 2, seam = 7;
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const i = y * N + x, u = x / N, v = y / N, px = x % half, py = y % half, panel = (x < half ? 0 : 1) + (y < half ? 0 : 2);
+    const edge = Math.min(px, py, half - 1 - px, half - 1 - py);
+    let h = 0.0, base = 0.105 + big(u, v) * 0.05, rough = 0.52 + mid(u, v) * 0.18, metal = 0.82;
+    // diamond tread on panels 0 and 3, brushed smooth steel on 1 and 2
+    if (panel === 0 || panel === 3) {
+      const s = 26, a = ((px + py) % s) / s, b = ((px - py + 4096) % s) / s;
+      const dmd = Math.max(0, 1 - Math.abs(a - 0.5) * 6) * Math.max(0, 1 - Math.abs(b - 0.5) * 2.2);
+      h += dmd * 0.9; base += dmd * 0.035; rough -= dmd * 0.12;
+    } else { h += (fine(u * 0.25, v * 8) - 0.5) * 0.12; base += (fine(u, v * 30) - 0.5) * 0.02; }
+    // seams (V groove) + panel bevel
+    if (edge < seam) { const t = edge / seam; h -= (1 - t) * 3.2; base *= 0.35 + 0.65 * t; rough = 0.8; }
+    else if (edge < seam + 10) { h += (1 - (edge - seam) / 10) * 0.35; }
+    // corner bolts (4 per panel)
+    for (const [bx, by] of [[34, 34], [half - 34, 34], [34, half - 34], [half - 34, half - 34]]) if (bolt(M, bx, by, 9, px, py, i)) { base = 0.2; }
+    // grime collects in seams / around bolts, wear brightens raised tread
+    const grime = smooth(0.45, 0.9, mid(u * 2, v * 2)) * (edge < seam + 40 ? 1 : 0.35);
+    base *= 1 - grime * 0.45; rough = mix(rough, 0.9, grime * 0.7);
+    if (h > 0.4) { base += 0.06; rough -= 0.15; }
+    // scratches
+    for (const s of scratches) { const dx = u - s.x, dy = v - s.y, along = dx * Math.cos(s.a) + dy * Math.sin(s.a), across = -dx * Math.sin(s.a) + dy * Math.cos(s.a); if (Math.abs(along) < s.l && Math.abs(across) < s.w) { base += 0.05; rough -= 0.2; h -= 0.08; } }
+    M.h[i] += h; M.r[i] = base * 0.94; M.g[i] = base * 0.98; M.b[i] = base * 1.05; M.rough[i] = M.rough[i] || clamp(rough, 0.18, 0.95); M.metal[i] = M.metal[i] || metal;
+    M.ao[i] *= edge < seam ? 0.55 + 0.45 * edge / seam : 1;
+  }
+  return finish(M, 2.4);
+}
+// ---------- 2. floor grate: steel bars over a dark sump (with faint green glow far below) ----------
+function floorGrate(seed) {
+  const M = mk(), mid = fbm(seed, 16), period = 32, bar = 9, frame = 22;
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const i = y * N + x, u = x / N, v = y / N, inFrame = x < frame || y < frame || x > N - frame || y > N - frame;
+    const gx = x % period, gy = y % period, onBar = gx < bar || gy < bar / 2;
+    let base, h, rough = 0.5 + mid(u, v) * 0.2, metal = 0.85;
+    if (inFrame) { base = 0.14; h = 1.5; }
+    else if (onBar) { base = 0.12 + mid(u * 3, v * 3) * 0.05; h = 1.0 - (gx < bar ? Math.abs(gx - bar / 2) / bar : 0); }
+    else { base = 0.012; h = -2; rough = 0.95; metal = 0; }
+    M.h[i] = h; M.rough[i] = rough; M.metal[i] = metal;
+    const glow = !inFrame && !onBar ? 0.03 * mid(u * 0.5, v * 0.5) : 0;
+    M.r[i] = base * 0.92; M.g[i] = base + glow; M.b[i] = base * 1.04;
+    M.ao[i] = onBar || inFrame ? 1 : 0.35;
+  }
+  return finish(M, 2.0);
+}
+// ---------- 3. wall panel: 2 m wide × 2 m tall atlas tile (used 1.5 m): plinth, ribbed panels, vent, warning strip ----------
+function wallPanel(seed) {
+  const M = mk(), big = fbm(seed, 4), mid = fbm(seed + 3, 16), fine = fbm(seed + 9, 64);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const i = y * N + x, u = x / N, v = y / N; // v = 0 at the TOP of the wall
+    let base = 0.16 + big(u, v) * 0.05, h = 0, rough = 0.55 + mid(u, v) * 0.2, metal = 0.6;
+    const plinth = v > 0.86, band = v > 0.40 && v < 0.44;
+    if (plinth) { base = 0.07; h = 1.2; rough = 0.75; metal = 0.3; }
+    // two tall panels separated by a vertical rib
+    const px = x % (N / 2), rib = Math.abs(px - N / 4) < 10;
+    if (!plinth) {
+      const e = Math.min(px, N / 2 - 1 - px, Math.abs(y - 0.02 * N), Math.abs(0.86 * N - y));
+      if (e < 6) { h -= 2.5; base *= 0.4; }
+      if (rib) { h += 1.4; base += 0.03; metal = 0.85; rough = 0.4; }
+      if (band) { h += 0.8; base = 0.08; } // black rubber seal band
+      // vent grille on the upper panel half of the right panel
+      if (x > N * 0.62 && x < N * 0.88 && y > N * 0.08 && y < N * 0.3) { const sl = (y % 22) < 11; h += sl ? -1.6 : 0.4; base *= sl ? 0.25 : 1.0; }
+      // stencil warning strip (yellow) on the left panel
+      if (x > N * 0.07 && x < N * 0.36 && y > N * 0.5 && y < N * 0.56) { const st = ((x + y) % 48) < 24; if (st) { M.r[i] = 0.55; M.g[i] = 0.38; M.b[i] = 0.02; rough = 0.6; metal = 0.1; } }
+    }
+    // dirt / streaks running down from the top, scuffs near the plinth
+    const streak = smooth(0.55, 0.85, fine(u * 8, v * 0.6)) * 0.35, scuff = v > 0.78 ? smooth(0.5, 0.8, mid(u * 4, v * 4)) * 0.4 : 0;
+    base *= 1 - streak - scuff * 0.5; rough = mix(rough, 0.9, streak + scuff);
+    M.h[i] += h + (fine(u, v) - 0.5) * 0.15; M.rough[i] = clamp(rough, 0.2, 0.95); M.metal[i] = metal;
+    if (!M.r[i]) { M.r[i] = base * 0.95; M.g[i] = base * 0.99; M.b[i] = base * 1.06; }
+  }
+  return finish(M, 2.2);
+}
+// ---------- 4. hazard trim (worn yellow / black diagonal) ----------
+function hazard(seed) {
+  const M = mk(), mid = fbm(seed, 16), fine = fbm(seed + 1, 64);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const i = y * N + x, u = x / N, v = y / N, yel = ((x + y) % 256) < 128, wear = smooth(0.62, 0.8, mid(u * 2, v * 2) * 0.6 + fine(u, v) * 0.5);
+    let r = yel ? 0.62 : 0.02, g = yel ? 0.42 : 0.02, b = yel ? 0.01 : 0.02;
+    if (wear > 0) { r = mix(r, 0.16, wear); g = mix(g, 0.16, wear); b = mix(b, 0.17, wear); }
+    M.r[i] = r; M.g[i] = g; M.b[i] = b; M.h[i] = wear * -0.4 + (fine(u, v) - 0.5) * 0.2; M.rough[i] = mix(0.55, 0.45, wear); M.metal[i] = wear * 0.8;
+  }
+  return finish(M, 1.5);
+}
+window.__bake = async () => {
+  const out = {};
+  for (const [name, fn, seed] of [['floor_plate', floorPlate, 101], ['floor_grate', floorGrate, 202], ['wall_panel', wallPanel, 303], ['hazard', hazard, 404]]) {
+    const m = fn(seed); out[name] = {};
+    for (const k of ['albedo', 'normal', 'orm']) out[name][k] = m[k].toDataURL('image/webp', k === 'normal' ? 0.92 : 0.86);
+  }
+  return out;
+};
+window.__ready = true;
+</script></body></html>
