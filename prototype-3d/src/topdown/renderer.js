@@ -13,6 +13,7 @@ import { createImpacts } from '../render/effects/impacts.js';
 import { createHero, addShoulderPatch } from './hero.js';
 import { createGlbInfectedView } from './infected-glb.js';
 import { createPreviews } from './previews.js';
+import { createPickupsView } from './pickups-view.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
@@ -51,6 +52,7 @@ export function createTopdownRenderer({ container, world, models, lab: labAssets
   const hero = createHero(models.hero, scene);
   const patch = addShoulderPatch(hero.root, labAssets.textures.kz_patch);
   const infected = createGlbInfectedView(scene, models);
+  const pickups = createPickupsView(scene); // M3.3 drops (medkit / ammo)
   hero.root.traverse(o => { if (o.isMesh) o.castShadow = true; });
   const previews = createPreviews(renderer);
 
@@ -202,7 +204,7 @@ export function createTopdownRenderer({ container, world, models, lab: labAssets
   const proxy = { x: 0, y: 0, prevX: 0, prevY: 0, yaw: 0, dead: false, dashT: 0, dashes: 0 };
 
   return {
-    renderer, scene, camera, hero, infected, impacts, level, previews, patch,
+    renderer, scene, camera, hero, infected, impacts, level, previews, patch, pickups,
     get composer() { return composer; }, get bloom() { return bloom; }, get gfx() { return gfx; }, get mode() { return mode; }, get flight() { return flightT; },
     setMode, debugCamera: null, // debugCamera: () => ({ pos, look, fov }) — ?debug=1 visual checks only
     /** Graphics level at runtime (menu / settings): resolution, MSAA, bloom, shadows, lab light balance. */
@@ -232,6 +234,7 @@ export function createTopdownRenderer({ container, world, models, lab: labAssets
         hero.update(proxy, 1, uiDt, heroView);
       } else hero.update(p, alpha, Math.max(dt, flightT < 1 ? uiDt : 0), heroView);
       infected.update(game.enemies, dt, alpha);
+      pickups.update(game, inGame ? dt : 0);
       impacts.update(dt);
       stepCasings(dt);
       // game camera: follow with a small lead towards the aim

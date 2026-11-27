@@ -197,7 +197,7 @@ export class WeaponSystem {
       if (hit.type === 'entity') {
         const dmg = (hit.zone === 'head' ? def.damage.head : def.damage.body) * falloffK(def.falloff, hit.t * CELL_SIZE);
         const r = hit.entity.applyDamage(dmg, hit.zone, { dir, point: hit.point });
-        if (r.killed && g.onEntityKilled) g.onEntityKilled(hit.entity);
+        if (r.killed && g.onEntityKilled) g.onEntityKilled(hit.entity, { headshot: hit.zone === 'head' });
         anyHit = true; anyKill = anyKill || r.killed; anyHead = anyHead || hit.zone === 'head';
         const first = !seen.has(hit.entity.id); seen.add(hit.entity.id);
         g.emit('targetHit', { id: hit.entity.id, zone: hit.zone, killed: r.killed, point: hit.point, damage: dmg, pellet: i, first });
@@ -207,6 +207,7 @@ export class WeaponSystem {
       g.emit('shot', { origin, dir, aim: base, hit, ads: this.adsT, spread, index: this.shotsInSpray, pellet: i });
     }
     if (anyHit) st.registerHit({ kill: anyKill, headshot: anyHead }); // one confirmation per shot (8 pellets → one marker)
+    st.noteShot(anyHit); // M3.3 accuracy: one round = one shot, whatever the pellet count
     this.totalShots++;
     this.shotsInSpray++;
     // One 'fire' per round (feedback: flash, sound, recoil anim); 'shot' above is per pellet (hit logic).

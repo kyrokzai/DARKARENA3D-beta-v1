@@ -9,7 +9,7 @@ import arena from '../data/maps/outpost-zero.js';
 import { Game } from '../sim/game.js';
 import { startLoop } from '../core/loop.js';
 import { InputState } from '../input/input.js';
-import { TOPDOWN_WAVES, TOPDOWN_MATCH } from '../sim/waves/wave-defs.js';
+import { TOPDOWN_WAVES, TOPDOWN_MATCH, topdownEndlessWave } from '../sim/waves/wave-defs.js';
 import { LOADOUT } from '../sim/weapons/defs.js';
 import { loadoutStats, GEAR } from './loadout-data.js';
 import { TD_GRAPHICS } from './graphics.js';
@@ -22,7 +22,7 @@ import { createTopdownRenderer } from './renderer.js';
 import { createTopdownInput } from './input.js';
 import { createTopdownHud } from './hud.js';
 
-export const VERSION = 'M3.2 TOPDOWN';
+export const VERSION = 'M3.3 TOPDOWN';
 export const AIM_HEIGHT = 1.15;          // m: muzzle height of the top-down hero (chest / belly zones of every type)
 export const AIM_ASSIST_DEG = 11;         // touch only: the aim snaps to the nearest infected inside this cone…
 export const AIM_ASSIST_RANGE = 9;        // …within this many cells (18 m)
@@ -40,7 +40,10 @@ if (!SKINS[settings.ravenSkin]) settings.ravenSkin = 'obsidian';
 function save() { try { const o = { v: 1 }; for (const k of SAVED) o[k] = settings[k]; localStorage.setItem(STORE, JSON.stringify(o)); } catch (_) {} }
 // test hook (rule 7, ?debug=1 only): &gfx=performance|balanced|quality picks the graphics profile for the session
 { const q = new URLSearchParams(location.search), gfx = q.get('gfx'); if (DEBUG && ['performance', 'balanced', 'quality'].includes(gfx)) settings.graphicsProfile = gfx; }
-const game = new Game(arena, { waves: TOPDOWN_WAVES, match: TOPDOWN_MATCH, aimHeight: AIM_HEIGHT, flatAim: true, dash: true });
+// M3.3: endless survival after the three scripted waves, score + combo, drops (medkit / ammo) — top-down only
+const game = new Game(arena, { waves: TOPDOWN_WAVES, match: TOPDOWN_MATCH, aimHeight: AIM_HEIGHT, flatAim: true, dash: true,
+  endless: topdownEndlessWave, scoring: true, drops: true });
+const waveDef = n => (n <= TOPDOWN_WAVES.length ? TOPDOWN_WAVES[n - 1] : topdownEndlessWave(n));
 const input = new InputState();
 input.actions.dash = false; input.presses.dash = 0;   // M3.0 action (the FPS InputState has no dash)
 const sfx = createSfx(() => settings);
@@ -66,7 +69,7 @@ const loadF = { m: 0, l: 0 }, showLoad = () => { loadBar.style.width = ((loadF.m
 Promise.all([loadModels(f => { loadF.m = f; showLoad(); }), loadLab(f => { loadF.l = f; showLoad(); })]).then(([models, lab]) => {
   view = createTopdownRenderer({ container: gameEl, world: game.world, models, lab, getProfileId: () => settings.graphicsProfile });
   view.hero.setSkin(settings.ravenSkin); view.previews.setSkin(settings.ravenSkin);
-  hud = createTopdownHud(gameEl, game, { waves: TOPDOWN_WAVES });
+  hud = createTopdownHud(gameEl, game, { waves: TOPDOWN_WAVES, waveDef });
   td = createTopdownInput({
     layer: gameEl, input,
     buttons: { dash: $('btnDash'), reload: $('btnReload'), weapon: $('btnWeapon'), melee: $('btnMelee'), pause: $('btnPause') },
@@ -82,6 +85,7 @@ Promise.all([loadModels(f => { loadF.m = f; showLoad(); }), loadLab(f => { loadF
   $('loadText').textContent = 'ГОТОВО';
   playBtn.disabled = false;
   if (state === 'loading') { state = 'menu'; view.setMode('menu'); }
+  refreshProfile(); // M3.3 fix: the saved record was only shown after returning to the menu once (M3.2 showed "—" after a reload)
   // the loop starts in the NEXT animation frame: the set-up above (shader compiles, icon renders) can block the main
   // thread for seconds, and a frame timestamp from before that block would give the loop a large negative first dt
   // (its accumulator then stays negative and the sim does not step for that long — seen in M3.2 testing)
@@ -92,20 +96,35 @@ Promise.all([loadModels(f => { loadF.m = f; showLoad(); }), loadLab(f => { loadF
 function startRun() {
   if (portrait) return;
   const go = () => { game.arsenal.start = settings.startSlot; // the equipped weapon is in the hands at the start (all three are carried)
-    game.restart(); view.hero.reset(); hud.reset(); deathTimer = 0; runActive = true; show('play'); };
+    game.restart(); view.hero.reset(); view.pickups.reset(); hud.reset(); deathTimer = 0; runActive = true; show('play'); };
   // from the menus: a short fade hides the hero leaving the menu stage, then the camera flies down to the follow view
   if (state === 'menu' || state === 'loadout') { const f = $('fade'); f.classList.add('on'); setTimeout(() => { go(); f.classList.remove('on'); }, 190); }
   else go();
 }
+// M3.3 record = best score (an M3.2 record has no score: it counts as 0 points, its wave / kills are kept until beaten)
+function isBetter(r, b) { if (!b) return true; const bs = b.score || 0; return r.score > bs || (r.score === bs && (r.wave > b.wave || (r.wave === b.wave && r.kills > b.kills))); }
+const fmtPts = v => Math.round(v).toLocaleString('ru-RU').replace(/\u00a0/g, ' ');
 function endRun(won) {
   runActive = false;
-  const s = game.state, wave = won ? s.wave.of : s.wave.number, b = settings.best;
-  if (!b || wave > b.wave || (wave === b.wave && s.kills > b.kills)) { settings.best = { wave, of: s.wave.of, kills: s.kills }; save(); }
-  $('deadStat').textContent = `Волна ${s.wave.number}/${s.wave.of} · уничтожено ${s.kills} · ${fmtTime(s.runTime)}`;
+  const s = game.state, wave = won ? s.wave.of : s.wave.number, st = s.stats;
+  // waves held = fully cleared waves (the wave you died in does not count)
+  const held = won ? s.wave.of : Math.max(0, s.wave.number - (s.wave.phase === 'cleared' ? 0 : 1));
+  const run = { score: s.score.points, wave, held, kills: s.kills, of: s.wave.of, endless: !!s.wave.endless };
+  const record = run.score > 0 && isBetter(run, settings.best);
+  if (record) { settings.best = run; save(); }
+  $('sumPoints').textContent = fmtPts(run.score);
+  $('sumRecord').classList.toggle('hidden', !record);
+  $('deadLead').textContent = held > 0 ? `Застава держалась ${held} ${plural(held, 'волну', 'волны', 'волн')}. Погибли на волне ${s.wave.number}.` : 'Заражённые захватили заставу.';
+  const acc = st.shots ? Math.round(100 * st.hits / st.shots) + ' %' : '—';
+  $('sumGrid').innerHTML = [['Волна', s.wave.number], ['Убито', s.kills], ['Время', fmtTime(s.runTime)], ['Точность', acc], ['Лучшее комбо', s.score.bestCombo ? s.score.bestCombo + ' подряд' : '—'], ['В голову', st.headshotKills]]
+    .map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('');
+  const b = settings.best;
+  $('deadStat').textContent = record ? 'Это ваш лучший результат.' : b ? `Рекорд: ${fmtPts(b.score || 0)} · волна ${b.wave}` : '';
 }
+const plural = (n, one, few, many) => (n % 10 === 1 && n % 100 !== 11 ? one : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? few : many);
 const fmtTime = t => `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
 function refreshProfile() {
-  const b = settings.best, txt = b ? `Рекорд: волна ${b.wave}/${b.of} · ${b.kills} убито` : 'Рекорд: —';
+  const b = settings.best, txt = !b ? 'Рекорд: —' : b.score != null ? `Рекорд: ${fmtPts(b.score)} · волна ${b.wave}` : `Рекорд: волна ${b.wave}/${b.of} · ${b.kills} убито`;
   for (const el of document.querySelectorAll('#profileStat,[data-profile-stat]')) el.textContent = txt;
 }
 function setAvatar() { try { const url = view.avatar(128); for (const img of document.querySelectorAll('img[data-avatar]')) img.src = url; } catch (e) { console.warn('avatar', e); } }
@@ -288,6 +307,8 @@ function wireEvents() {
   game.on('infectedAttack', e => { const r = rel(e.x, e.y); sfx.infected('attack', r.pan, r.dist); });
   game.on('infectedKilled', e => { const en = byId(e.id); if (en) view.infected.onDeath(en); view.bloodSplat(e.x + e.dir.x * 0.25, e.y + e.dir.y * 0.25, 1.1); const r = rel(e.x, e.y); sfx.infected('death', r.pan, r.dist); });
   game.on('playerHurt', () => sfx.playerHurt());
+  // M3.3 drops: visual lives in the renderer (reads game.pickups); sound on collect
+  game.on('pickupTaken', e => { view.pickups.onTaken(e); if (e.kind === 'medkit') sfx.shellIn(); else sfx.switchIn(); });
   game.on('playerDied', () => { deathTimer = 0; endRun(false); });
   game.on('victory', e => { endRun(true); $('victoryKills').textContent = `Уничтожено заражённых: ${e.kills} · время ${fmtTime(game.state.runTime)}`; setTimeout(() => { if (state === 'play') show('victory'); }, 1200); });
 }

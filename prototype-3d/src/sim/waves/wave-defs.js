@@ -49,3 +49,23 @@ export const TOPDOWN_WAVES = Object.freeze([
   twave(3, [tgroup('walker', 5), tgroup('mutant', 3), tgroup('brute', 2)]),
 ]);
 export const TOPDOWN_MATCH = Object.freeze({ ...MATCH, maxActive: 6, startDelay: 2.5, spawnInterval: 1.1, intermission: 5.0 });
+
+// M3.3 TOPDOWN ENDLESS SURVIVAL — after the three scripted waves the match goes on (data + a pure formula; the FPS game
+// never passes `endless`, so it keeps WAVES / MATCH and its victory). Wave n ≥ 4 grows smoothly: more walkers, more
+// brutes and mutants, more infected alive at once and a shorter spawn interval, all capped. Stats never scale (rule 10).
+export const ENDLESS = Object.freeze({
+  from: 4,                                  // first generated wave
+  walkers: [4, 1],                          // 4 + 1·n
+  brutes: [1, 0.5],                         // 1 + ⌊n/2⌋
+  mutants: [1, 0.5, 1],                     // 1 + ⌊(n−1)/2⌋
+  maxActive: [6, 0.5, 10],                  // 6 + ⌊(n−3)/2⌋, at most 10 alive
+  spawnInterval: [1.1, -0.06, 0.6],         // 1.1 − 0.06·(n−3) s, at least 0.6 s
+});
+/** Wave definition for wave n of the endless top-down match (n ≥ ENDLESS.from). Pure, deterministic. */
+export function topdownEndlessWave(n) {
+  const E = ENDLESS, walkers = E.walkers[0] + E.walkers[1] * n, brutes = E.brutes[0] + Math.floor(n * E.brutes[1]);
+  const mutants = E.mutants[0] + Math.floor((n - E.mutants[2]) * E.mutants[1]);
+  const w = twave(n, [tgroup('walker', walkers), tgroup('mutant', mutants), tgroup('brute', brutes)]);
+  return Object.freeze({ ...w, maxActive: Math.min(E.maxActive[2], E.maxActive[0] + Math.floor((n - 3) * E.maxActive[1])),
+    spawnInterval: Math.max(E.spawnInterval[2], E.spawnInterval[0] + E.spawnInterval[1] * (n - 3)) });
+}

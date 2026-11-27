@@ -53,12 +53,16 @@
         <div class="pHp"><svg class="ico hpIco"><use href="#i-cross"/></svg><div class="tdHpBar"><div id="tdHpFill"></div></div><b id="tdHpText">100 / 100</b></div>
       </div>
     </div>
-    <div class="hLogo"><b>DARK ARENA</b><span>◂ M3.2 TOPDOWN ▸</span></div>
+    <div class="hLogo"><b>DARK ARENA</b><span>◂ M3.3 TOPDOWN ▸</span></div>
     <div class="hWave">
       <div class="wCell"><svg class="ico bio"><use href="#i-bio"/></svg><span id="tdWave">Волна <em>1/3</em></span></div>
       <div class="wCell"><svg class="ico"><use href="#i-crowd"/></svg><span id="tdKills">0 / 0</span></div>
       <div class="wCell"><svg class="ico"><use href="#i-timer"/></svg><span id="tdTime">00:00</span></div>
     </div>
+    <div class="hScore" id="tdScoreBox"><span class="sLbl">ОЧКИ</span><b id="tdScore">0</b></div>
+    <div id="tdCombo" aria-hidden="true"><span id="tdComboX"></span><i><b id="tdComboBar"></b></i></div>
+    <div id="tdGain" aria-hidden="true"></div>
+    <div id="tdToast" role="status" aria-live="polite"></div>
     <div class="hTask"><div class="tTitle">ТЕКУЩАЯ ЗАДАЧА</div><ul id="tdTasks"></ul></div>
     <div id="tdBanner" role="status" aria-live="polite"></div>
     <div class="hReload" id="tdReloadBox"><svg class="ico"><use href="#i-reload"/></svg><span>Перезарядка: <em id="tdReloadT">0.0 с</em></span><div class="tdReload"><div id="tdReload"></div></div></div>
@@ -143,7 +147,10 @@
 
 <section id="paused" class="screen dialog hidden"><div class="panel"><h2>ПАУЗА</h2>
   <button type="button" id="resumeBtn" class="primary">ПРОДОЛЖИТЬ</button><button type="button" id="restartBtn">ЗАНОВО</button><button type="button" id="menuBtn">ГЛАВНОЕ МЕНЮ</button></div></section>
-<section id="dead" class="screen dialog hidden"><div class="panel"><h2>ВЫ ПОГИБЛИ</h2><p>Заражённые захватили заставу.</p><p class="small" id="deadStat"></p>
+<section id="dead" class="screen dialog hidden"><div class="panel"><h2>ВЫ ПОГИБЛИ</h2><p id="deadLead">Заражённые захватили заставу.</p>
+  <div class="sumScore"><small>ОЧКИ</small><b id="sumPoints">0</b><span id="sumRecord" class="rec hidden">НОВЫЙ РЕКОРД</span></div>
+  <dl class="sumGrid" id="sumGrid"></dl>
+  <p class="small" id="deadStat"></p>
   <button type="button" id="againBtn" class="primary">ЗАНОВО</button><button type="button" data-to-menu>ГЛАВНОЕ МЕНЮ</button></div></section>
 <section id="victory" class="screen dialog hidden"><div class="panel"><h2>ПОБЕДА</h2><p>Все три волны отбиты.</p><p id="victoryKills"></p>
   <button type="button" id="againBtn2" class="primary">ЕЩЁ РАЗ</button><button type="button" data-to-menu>ГЛАВНОЕ МЕНЮ</button></div></section>

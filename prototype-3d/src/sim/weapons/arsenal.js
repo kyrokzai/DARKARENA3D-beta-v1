@@ -33,6 +33,20 @@ export class Arsenal {
     this.publish();
   }
 
+  /** M3.3 ammo pickup: + `mags` magazines' worth of reserve for every weapon, each capped at its full reserve.
+   *  Returns the rounds added in total (0 = every weapon already full → the pickup stays on the floor). */
+  addAmmo(mags = 1) {
+    const st = this.game.state; let added = 0;
+    this.ids.forEach((id, i) => {
+      const def = WEAPONS[id], cur = i === this.active ? st.weapon.reserve : this.ammo[i].reserve;
+      const next = Math.min(def.reserve, cur + Math.round(def.magSize * mags)); if (next <= cur) return;
+      added += next - cur;
+      if (i === this.active) st.setAmmo(st.weapon.mag, next); else this.ammo[i].reserve = next;
+    });
+    if (added) this.publish();
+    return added;
+  }
+
   resolve(req) {
     const n = this.ids.length, from = this.pending ?? (this.phase === 'holster' ? this.target : this.active);
     if (req === 'next') return (from + 1) % n;

@@ -8,6 +8,7 @@
 //   'hit'     {kill, headshot}            'waveCleared' {number}
 //   'melee'   {active, ready}  (M1.9)      'kills'   {kills}  (M1.5)                'alarm'  {phase, siren, warn}  (M1.7, only when one of them changes)
 import { ALARM_OFF } from './waves/alarm.js';
+import { SCORE, killPoints, comboMult } from './score.js';
 export const DEFAULT_WEAPON = Object.freeze({ magSize: 30, mag: 30, reserve: 120, reloadTime: 1.3 });
 export const CRITICAL_HP = 0.25; // fraction of max HP
 
@@ -33,6 +34,10 @@ export class GameState {
     // Melee strike (M1.9): written every tick by the MeleeSystem, POLLED by the viewmodel / HUD button.
     // progress 0..1 while a strike runs; cooldown 1 → 0 until the next strike is possible; 'melee' event on start / end.
     this.melee = { available: false, active: false, progress: 0, cooldown: 0, ready: false };
+    // M3.3 TOPDOWN (FPS does not read these): score + combo ('score' event on every change of points / combo; comboT is
+    // polled), shot accuracy (rounds fired / rounds that hit something), headshot kills, best combo of the run.
+    this.score = { points: 0, combo: 0, mult: 1, comboT: 0, bestCombo: 0, lastGain: 0 };
+    this.stats = { shots: 0, hits: 0, headshotKills: 0, meleeKills: 0, pickups: 0 };
   }
 
   // ---- health ----
@@ -82,9 +87,10 @@ export class GameState {
   }
 
   // ---- waves ----
-  setWave({ number = this.wave.number, remaining = this.wave.remaining, total = this.wave.total, phase = this.wave.phase, of = this.wave.of, countdown = this.wave.countdown } = {}) {
+  setWave({ number = this.wave.number, remaining = this.wave.remaining, total = this.wave.total, phase = this.wave.phase, of = this.wave.of, countdown = this.wave.countdown, endless = this.wave.endless } = {}) {
     const prev = this.wave.phase;
-    Object.assign(this.wave, { number: clampInt(number, 1, 999), of: clampInt(of, 1, 999), total: clampInt(total, 0, 999), remaining: clampInt(remaining, 0, 999), phase, countdown: clampInt(countdown, 0, 999) });
+    // endless (M3.3 top-down): the match has no last wave — `of` is the number of scripted waves only
+    Object.assign(this.wave, { number: clampInt(number, 1, 999), of: clampInt(of, 1, 999), total: clampInt(total, 0, 999), remaining: clampInt(remaining, 0, 999), phase, countdown: clampInt(countdown, 0, 999), endless: !!endless });
     this.emit('wave', { ...this.wave });
     if (phase === 'cleared' && prev !== 'cleared') this.emit('waveCleared', { number: this.wave.number });
   }
@@ -107,11 +113,42 @@ export class GameState {
   }
 
   addKill(type = null) { this.kills++; if (type) this.typeKills[type] = (this.typeKills[type] || 0) + 1; this.emit('kills', { kills: this.kills }); }
-  tickRun(dt) { this.runTime += dt; }
+  tickRun(dt) {
+    this.runTime += dt;
+    const sc = this.score; // M3.3 combo timer (only runs after a scored kill)
+    if (sc.comboT > 0 && (sc.comboT = Math.max(0, sc.comboT - dt)) === 0) { sc.combo = 0; sc.mult = 1; this.emit('score', { ...sc, gain: 0 }); }
+  }
+
+  // ---- M3.3 score / accuracy / pickups ----
+  /** A scored kill: extends the combo, adds the points. Returns the points gained. */
+  scoreKill(type, how = {}) {
+    const sc = this.score;
+    sc.combo = sc.comboT > 0 ? sc.combo + 1 : 1; sc.comboT = SCORE.window; sc.mult = comboMult(sc.combo);
+    if (sc.combo > sc.bestCombo) sc.bestCombo = sc.combo;
+    const gain = killPoints(type, how, sc.combo);
+    sc.points += gain; sc.lastGain = gain;
+    if (how.headshot) this.stats.headshotKills++;
+    if (how.melee) this.stats.meleeKills++;
+    this.emit('score', { ...sc, gain, kind: 'kill', headshot: !!how.headshot, melee: !!how.melee });
+    return gain;
+  }
+  scoreWave(n) {
+    const gain = SCORE.waveClear * Math.max(1, n), sc = this.score;
+    sc.points += gain; sc.lastGain = gain;
+    this.emit('score', { ...sc, gain, kind: 'wave', wave: n });
+    return gain;
+  }
+  /** One round fired (written by the weapon system); hit = it hit a target or an infected. */
+  noteShot(hit) { this.stats.shots++; if (hit) this.stats.hits++; }
+  get accuracy() { return this.stats.shots ? this.stats.hits / this.stats.shots : 0; }
+  /** A pickup was collected (M3.3 drops): kind 'medkit' | 'ammo', amount = HP healed / rounds added. */
+  pickupTaken(kind, amount) { this.stats.pickups++; this.emit('pickup', { kind, amount }); }
   /** New run (restart after death / from the menu): full health, kills 0. Ammo is reset by the weapon. */
   resetRun() {
     this.setHealth(this.health.max);
     this.kills = 0; this.typeKills = {}; this.runTime = 0; this.emit('kills', { kills: 0 });
+    Object.assign(this.score, { points: 0, combo: 0, mult: 1, comboT: 0, bestCombo: 0, lastGain: 0 }); this.emit('score', { ...this.score, gain: 0 });
+    Object.assign(this.stats, { shots: 0, hits: 0, headshotKills: 0, meleeKills: 0, pickups: 0 });
     this.setWave({ number: 1, remaining: 0, total: 0, phase: 'idle', countdown: 0 });
     this.setAlarm(ALARM_OFF); this.waveTime = 0;
   }

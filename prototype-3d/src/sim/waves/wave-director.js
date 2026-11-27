@@ -11,8 +11,11 @@ import { alarmState, ALARM_OFF } from './alarm.js';
 const M = 0.5; // cells per metre
 
 export class WaveDirector {
-  constructor(game, { waves = WAVES, match = MATCH, rules = SPAWN_RULES, rng = Math.random } = {}) {
+  constructor(game, { waves = WAVES, match = MATCH, rules = SPAWN_RULES, rng = Math.random, endless = null } = {}) {
     this.game = game; this.waves = waves; this.match = match; this.rules = rules; this.rng = rng;
+    // M3.3: endless = fn(n) → wave definition for every wave after the scripted ones (top-down). null = the match ends
+    // with victory after the last wave (FPS, unchanged). Generated waves are cached (same object per wave number).
+    this.endless = endless; this.generated = [];
     this.cand = [];
     this.reset();
   }
@@ -21,7 +24,14 @@ export class WaveDirector {
     this.t = 0; this.queue = []; this.spawned = 0; this.lastCountdown = -1; this.maxAlive = 0;
     if (this.game.state) { this.game.state.setAlarm(ALARM_OFF); this.game.state.waveTime = 0; }
   }
-  get wave() { return this.waves[this.index] || null; }
+  get wave() {
+    if (this.index < this.waves.length) return this.waves[this.index] || null;
+    if (!this.endless || this.index < 0) return null;
+    const k = this.index - this.waves.length;
+    return this.generated[k] || (this.generated[k] = this.endless(this.index + 1));
+  }
+  get maxActive() { const w = this.wave; return (w && w.maxActive) || this.match.maxActive; }
+  get spawnInterval() { const w = this.wave; return (w && w.spawnInterval) || this.match.spawnInterval; }
   get aliveCount() { let n = 0; for (const e of this.game.enemies) if (e.alive) n++; return n; }
 
   /** Start the match at wave n (1-based). */
@@ -37,7 +47,7 @@ export class WaveDirector {
       if (this.match.resupplyReserve) { if (this.game.arsenal) this.game.arsenal.resupply(); else st.setAmmo(st.weapon.mag, this.game.weapon.def.reserve); } // M2.0: every weapon of the loadout
       if (this.match.healBetweenWaves > 0 && st.health.hp > 0) st.heal(this.match.healBetweenWaves);
     }
-    st.setWave({ number: w.number, of: this.waves.length, total: this.queue.length, remaining: this.queue.length, phase: 'idle', countdown: Math.ceil(delay) });
+    st.setWave({ number: w.number, of: this.waves.length, total: this.queue.length, remaining: this.queue.length, phase: 'idle', countdown: Math.ceil(delay), endless: !!this.endless });
   }
 
   step(dt) {
@@ -61,7 +71,7 @@ export class WaveDirector {
     }
     // spawn while slots are free (alive infected < maxActive), one per spawnInterval
     const alive = this.aliveCount; if (alive > this.maxAlive) this.maxAlive = alive;
-    if (this.queue.length && this.t <= 0 && alive < this.match.maxActive) {
+    if (this.queue.length && this.t <= 0 && alive < this.maxActive) {
       const pt = this.pickSpawn();
       if (pt) {
         const q = this.queue.shift();
@@ -69,15 +79,16 @@ export class WaveDirector {
         // hunters start by running to where the player was when they appeared (not tracking him afterwards)
         e.lastSeen.x = this.game.player.x; e.lastSeen.y = this.game.player.y;
         e.startSearch(this.game.aiCtx, e.lastSeen.x, e.lastSeen.y);
-        this.spawned++; this.t = this.match.spawnInterval;
+        this.spawned++; this.t = this.spawnInterval;
         if (alive + 1 > this.maxAlive) this.maxAlive = alive + 1;
       } else this.t = 0.25; // no valid point right now — try again shortly
     }
     // wave finished: everyone spawned and killed (GameState.remaining counts kills, incl. those still waiting)
     if (!this.queue.length && st.wave.remaining === 0) {
-      if (this.index + 1 < this.waves.length) {
+      if (this.endless || this.index + 1 < this.waves.length) {
         this.phase = 'intermission'; this.t = this.match.intermission; this.lastCountdown = -1;
         this.game.emit('waveIntermission', { finished: w.number, next: w.number + 1, time: this.match.intermission });
+        if (this.game.onWaveCleared) this.game.onWaveCleared(w.number); // M3.3 score bonus (no-op unless scoring is on)
       } else {
         this.phase = 'victory'; st.setWave({ phase: 'victory', countdown: 0 });
         this.game.onVictory();

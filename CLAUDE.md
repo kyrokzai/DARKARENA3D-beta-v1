@@ -31,7 +31,8 @@ Browser FPS (survival vs. waves of infected). Owner makes key decisions; work in
    + `node tests/sim-m1.9.test.mjs` + `node tests/m1.9-fp-combat.test.js`
    + `node tests/sim-m2.0.test.mjs` + `node tests/m2.0-arsenal.test.js` + `node tests/m2.0-hud-ergonomics.test.js`
    + `node tests/sim-m3.0.test.mjs` + `node tests/m3.0-topdown.test.js` + `node tests/m3.0-aim-orientation.test.js`
-   + `node tests/m3.1-assets.test.mjs` + `node tests/m3.2-premium.test.js`; report changed files,
+   + `node tests/m3.1-assets.test.mjs` + `node tests/m3.2-premium.test.js`
+   + `node tests/sim-m3.3.test.mjs` + `node tests/m3.3-gameplay.test.js`; report changed files,
    test results, how to verify on PC and iPhone, and known limitations. Not accepted until the owner confirms.
 7. Test hooks and the debug panel are allowed only behind `?debug=1`.
 8. Gameplay values reach the HUD only through `prototype-3d/src/sim/game-state.js` (GameState + events);
@@ -90,3 +91,12 @@ Browser FPS (survival vs. waves of infected). Owner makes key decisions; work in
     The Kazakhstan patch is an own drawing (`scripts/make-kz-patch.py` → `bake-patch.js`) projected in the hero's
     material — 0 extra draw calls. `core/loop.js` clamps a negative frame dt to 0 (a frame timestamp from before a long
     synchronous start-up used to drive the accumulator negative and stall the sim for seconds — FPS and top-down).
+19. M3.3 top-down gameplay. Three Game options, OFF by default (the FPS game keeps its 3 waves, victory, no score, no drops):
+    `endless` (fn n → wave def; `ENDLESS` + `topdownEndlessWave` in `wave-defs.js`: after the scripted waves the match goes on,
+    counts / max alive / spawn interval grow with caps, infected stats never scale — rule 10), `scoring` (`sim/score.js` data +
+    `GameState.score` / `stats`: kill points by type, headshot / melee bonus, combo window + capped multiplier, wave bonus;
+    accuracy = rounds that hit / rounds fired, written by the weapon system via `noteShot`) and `drops` (`sim/pickups.js`:
+    per-type drop tables, medkit / ammo, collected by walking over them only when useful, ttl + blink, max on the floor;
+    `Arsenal.addAmmo` caps every weapon at its full reserve). The renderer reads `game.pickups.list`
+    (`topdown/pickups-view.js`: own geometry, InstancedMeshes, no lights); the HUD gets score / pickups only from GameState
+    (rule 8). Record (localStorage) = best score; an M3.2 record without score counts as 0 points.

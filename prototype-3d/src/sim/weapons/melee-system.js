@@ -74,7 +74,7 @@ export class MeleeSystem {
     const dx = best.x - p.x, dy = best.y - p.y, l = Math.hypot(dx, dy) || 1;
     const dir = { x: dx / l, y: dy / l, z: 0 };
     const r = best.applyMelee(d.damage, dir, d);
-    if (r.killed && g.onEntityKilled) g.onEntityKilled(best);
+    if (r.killed && g.onEntityKilled) g.onEntityKilled(best, { melee: true });
     this.hits++;
     g.state.registerHit({ kill: r.killed, headshot: false, melee: true });
     const hb = best.hitboxes()[1]; // chest

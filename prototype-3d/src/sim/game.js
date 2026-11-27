@@ -16,6 +16,7 @@ import { Infected } from './enemies/infected.js';
 import { getInfectedDef } from './enemies/infected-defs.js';
 import { FlowField } from './nav/grid-nav.js';
 import { WaveDirector } from './waves/wave-director.js';
+import { Pickups } from './pickups.js';
 
 export class Game {
   constructor(map, opts = {}) {
@@ -34,7 +35,10 @@ export class Game {
     // The combined list is rebuilt only when one of them changes (no allocation per shot).
     this.targets = []; this.enemies = []; this.hittables = [];
     this.flow = new FlowField(this.world);       // shared navigation field towards the player (M1.5)
-    this.waves = new WaveDirector(this, { rng: opts.waveRng || Math.random, ...(opts.waves ? { waves: opts.waves } : {}), ...(opts.match ? { match: opts.match } : {}) });
+    this.waves = new WaveDirector(this, { rng: opts.waveRng || Math.random, ...(opts.waves ? { waves: opts.waves } : {}), ...(opts.match ? { match: opts.match } : {}), ...(opts.endless ? { endless: opts.endless } : {}) });
+    // M3.3 TOPDOWN options (off by default → the FPS game is unchanged): score + combo, drops (medkit / ammo)
+    this.scoring = !!opts.scoring;
+    this.pickups = opts.drops ? new Pickups(this, { rng: opts.dropRng || Math.random }) : null;
     this.matchOver = false; this.noise = false;
     this.nextEnemyId = 1;
     this.aiCtx = { world: this.world, player: this.player, playerAlive: true, flow: this.flow, others: this.enemies, rng: opts.aiRng || Math.random,
@@ -76,11 +80,13 @@ export class Game {
     this.emit('infectedRemoved', { id: e.id });
   }
   /** Called when a hit kills an infected (weapon) — counted exactly once per infected. */
-  onEntityKilled(e) { if (e instanceof Infected) this.onInfectedKilled(e); }
-  onInfectedKilled(e) {
+  onEntityKilled(e, how = undefined) { if (e instanceof Infected) this.onInfectedKilled(e, how); }
+  onInfectedKilled(e, how = {}) {
     if (e.alive || e.killCounted) return;
     e.killCounted = true;
     this.state.addKill(e.type);
+    if (this.scoring && !this.player.dead) this.state.scoreKill(e.type, how);   // M3.3
+    if (this.pickups) this.pickups.onKill(e.type, e.x, e.y);                    // M3.3
     this.state.enemyKilled(); // wave remaining − 1 (→ 'cleared' + waveCleared when it reaches 0)
     this.emit('infectedKilled', { id: e.id, x: e.x, y: e.y, dir: { x: e.killDir.x, y: e.killDir.y } });
   }
@@ -92,6 +98,8 @@ export class Game {
     this.emit('playerHurt', { damage: n, from: from ? { id: from.id, x: from.x, y: from.y } : null, hp: this.state.health.hp });
     if (this.state.health.hp === 0) { p.dead = true; this.weapon.release(); this.melee.release(); this.emit('playerDied', { tick: this.tick }); }
   }
+  /** M3.3: a wave was cleared (wave director) → wave bonus when scoring. */
+  onWaveCleared(n) { if (this.scoring && !this.player.dead) this.state.scoreWave(n); }
   /** Last wave cleared: the match is won (once). */
   onVictory() { if (this.matchOver) return; this.matchOver = true; this.weapon.release(); this.emit('victory', { kills: this.state.kills, waves: this.waves.waves.length }); }
   /** Start the wave sequence (from PLAY). */
@@ -103,6 +111,7 @@ export class Game {
     Object.assign(p, { x: s.x, y: s.y, dashT: 0, dashCd: 0, invuln: 0, prevX: s.x, prevY: s.y, z: 0, prevZ: 0, vz: 0, onGround: true, jumpBuffer: 0, yaw: s.yaw || 0, pitch: 0, dead: false });
     this.state.resetRun();
     this.arsenal.reset(); this.state.setFlashlight(false);
+    if (this.pickups) this.pickups.reset();
     this.flow.tx = this.flow.ty = -1;
     this.jumpResync = true; this.dashResync = true; this.matchOver = false; this.noise = false;
     this.waves.reset(); if (waves) this.startWaves(1);
@@ -137,6 +146,7 @@ export class Game {
       for (let i = this.enemies.length - 1; i >= 0; i--) if (this.enemies[i].removed) this.removeInfected(this.enemies[i]); // plain loop, no closures per tick
     }
     this.noise = false;
+    if (this.pickups) this.pickups.step(dt);
     this.waves.step(dt);
     if (alive && !this.matchOver) this.state.tickRun(dt); // M3.2 run clock (GameState.runTime)
     this.tick++;
