@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>DARK ARENA — bake infected maps (dev tool)</title>
+<script type="importmap">{ "imports": { "three": "../vendor/three/three.module.js" } }</script>
+<style>body{background:#111;color:#ccc;font:13px monospace} canvas{width:256px;height:256px;margin:4px;border:1px solid #333}</style></head>
+<body><p>Инструмент разработчика (M1.8): запекание PBR-карт заражённых. Не часть игры. Запуск: <code>node scripts/bake-infected.js</code>.</p><div id="out"></div>
+<script type="module">
+import { getHollowAssets, ATLAS, keepBakeData } from '../src/render/enemies/hollow-model.js';
+keepBakeData(true);
+import { bakeGeometry } from '../src/tools/bake-infected.js';
+window.__bake = (variant, part) => {
+  const A = getHollowAssets(variant, { bake: true });
+  const r = bakeGeometry(A.geo[part], ATLAS[part]);
+  for (const c of [r.colorCanvas, r.nrCanvas]) document.getElementById('out').appendChild(c);
+  return { color: r.colorCanvas.toDataURL('image/jpeg', 0.9), nr: r.nrCanvas.toDataURL('image/jpeg', 0.93), coverage: +r.coverage.toFixed(3), size: ATLAS[part] };
+};
+window.__ready = true;
+</script></body></html>
